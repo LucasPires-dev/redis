@@ -27,7 +27,7 @@ import { useDB, actions, visiblePeople, MINISTRY_LABEL } from "@/lib/mock-store"
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/pessoas")({
-  head: () => ({ meta: [{ title: "Pessoas — Kairos" }] }),
+  head: () => ({ meta: [{ title: "Pessoas — Redis" }] }),
   component: PeoplePage,
 });
 

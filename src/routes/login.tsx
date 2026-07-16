@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Entrar — Kairos" }] }),
+  head: () => ({ meta: [{ title: "Entrar — Redis" }] }),
   component: Login,
 });
 
@@ -19,7 +19,7 @@ function Login() {
     e.preventDefault();
     try {
       localStorage.setItem(
-        "kairos-user",
+        "redis-user",
         JSON.stringify({ name: name || "Pastor Demo", email: email || "demo@igreja.org" }),
       );
     } catch {}
@@ -33,7 +33,7 @@ function Login() {
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
             <Church className="h-4 w-4" />
           </div>
-          <span className="font-semibold tracking-tight">Kairos</span>
+          <span className="font-semibold tracking-tight">Redis</span>
         </Link>
         <div>
           <p className="max-w-md text-2xl font-medium leading-snug tracking-tight text-foreground">
@@ -41,7 +41,7 @@ function Login() {
           </p>
           <p className="mt-4 text-sm text-muted-foreground">Protótipo de demonstração</p>
         </div>
-        <div className="text-xs text-muted-foreground">© Kairos 2026</div>
+        <div className="text-xs text-muted-foreground">© Redis 2026</div>
       </div>
 
       <div className="flex items-center justify-center p-10">

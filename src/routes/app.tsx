@@ -45,7 +45,7 @@ import {
 import { ROLE_LABEL, MINISTRY_LABEL, actions, useDB, type RoleKey, type MinistryKind } from "@/lib/mock-store";
 
 export const Route = createFileRoute("/app")({
-  head: () => ({ meta: [{ title: "Painel — Kairos" }] }),
+  head: () => ({ meta: [{ title: "Painel — Redis" }] }),
   component: AppShell,
 });
 
@@ -85,7 +85,7 @@ function AppSidebar() {
             <Church className="h-4 w-4" />
           </div>
           <div className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
-            <div className="truncate text-sm font-semibold">Kairos</div>
+            <div className="truncate text-sm font-semibold">Redis</div>
             <div className="truncate text-xs text-muted-foreground">Mega Igreja Vida</div>
           </div>
         </div>

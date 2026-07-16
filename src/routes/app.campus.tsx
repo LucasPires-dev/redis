@@ -10,7 +10,7 @@ import { useDB, actions } from "@/lib/mock-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/campus")({
-  head: () => ({ meta: [{ title: "Campus — Kairos" }] }),
+  head: () => ({ meta: [{ title: "Campus — Redis" }] }),
   component: CampusPage,
 });
 
