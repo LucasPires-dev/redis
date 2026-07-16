@@ -49,7 +49,7 @@ export const Route = createFileRoute("/app")({
   component: AppShell,
 });
 
-const NAV = [
+const NAV: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/campus", label: "Campus", icon: Building2 },
   { to: "/app/ministerios", label: "Ministérios", icon: HeartHandshake },
@@ -57,7 +57,7 @@ const NAV = [
   { to: "/app/celulas", label: "Células", icon: Sparkles },
   { to: "/app/eventos", label: "Eventos", icon: Calendar },
   { to: "/app/cursos", label: "Cursos", icon: GraduationCap },
-] as const;
+];
 
 function AppShell() {
   return (
