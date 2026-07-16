@@ -100,7 +100,7 @@ function AppSidebar() {
                 return (
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
-                      <Link to={item.to}>
+                      <Link to={item.to as string}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.label}</span>
                       </Link>
