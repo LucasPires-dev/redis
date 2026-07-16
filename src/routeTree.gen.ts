@@ -9,38 +9,164 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
+import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
+import { Route as AppEventosRouteImport } from './routes/app.eventos'
+import { Route as AppCursosRouteImport } from './routes/app.cursos'
+import { Route as AppCelulasRouteImport } from './routes/app.celulas'
+import { Route as AppCampusRouteImport } from './routes/app.campus'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPessoasRoute = AppPessoasRouteImport.update({
+  id: '/pessoas',
+  path: '/pessoas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMinisteriosRoute = AppMinisteriosRouteImport.update({
+  id: '/ministerios',
+  path: '/ministerios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEventosRoute = AppEventosRouteImport.update({
+  id: '/eventos',
+  path: '/eventos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCursosRoute = AppCursosRouteImport.update({
+  id: '/cursos',
+  path: '/cursos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCelulasRoute = AppCelulasRouteImport.update({
+  id: '/celulas',
+  path: '/celulas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCampusRoute = AppCampusRouteImport.update({
+  id: '/campus',
+  path: '/campus',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/app/campus': typeof AppCampusRoute
+  '/app/celulas': typeof AppCelulasRoute
+  '/app/cursos': typeof AppCursosRoute
+  '/app/eventos': typeof AppEventosRoute
+  '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/pessoas': typeof AppPessoasRoute
+  '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/app/campus': typeof AppCampusRoute
+  '/app/celulas': typeof AppCelulasRoute
+  '/app/cursos': typeof AppCursosRoute
+  '/app/eventos': typeof AppEventosRoute
+  '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/pessoas': typeof AppPessoasRoute
+  '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/app/campus': typeof AppCampusRoute
+  '/app/celulas': typeof AppCelulasRoute
+  '/app/cursos': typeof AppCursosRoute
+  '/app/eventos': typeof AppEventosRoute
+  '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/pessoas': typeof AppPessoasRoute
+  '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/login'
+    | '/app/campus'
+    | '/app/celulas'
+    | '/app/cursos'
+    | '/app/eventos'
+    | '/app/ministerios'
+    | '/app/pessoas'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/app/campus'
+    | '/app/celulas'
+    | '/app/cursos'
+    | '/app/eventos'
+    | '/app/ministerios'
+    | '/app/pessoas'
+    | '/app'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/login'
+    | '/app/campus'
+    | '/app/celulas'
+    | '/app/cursos'
+    | '/app/eventos'
+    | '/app/ministerios'
+    | '/app/pessoas'
+    | '/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +174,85 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/pessoas': {
+      id: '/app/pessoas'
+      path: '/pessoas'
+      fullPath: '/app/pessoas'
+      preLoaderRoute: typeof AppPessoasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/ministerios': {
+      id: '/app/ministerios'
+      path: '/ministerios'
+      fullPath: '/app/ministerios'
+      preLoaderRoute: typeof AppMinisteriosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/eventos': {
+      id: '/app/eventos'
+      path: '/eventos'
+      fullPath: '/app/eventos'
+      preLoaderRoute: typeof AppEventosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/cursos': {
+      id: '/app/cursos'
+      path: '/cursos'
+      fullPath: '/app/cursos'
+      preLoaderRoute: typeof AppCursosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/celulas': {
+      id: '/app/celulas'
+      path: '/celulas'
+      fullPath: '/app/celulas'
+      preLoaderRoute: typeof AppCelulasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/campus': {
+      id: '/app/campus'
+      path: '/campus'
+      fullPath: '/app/campus'
+      preLoaderRoute: typeof AppCampusRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppCampusRoute: typeof AppCampusRoute
+  AppCelulasRoute: typeof AppCelulasRoute
+  AppCursosRoute: typeof AppCursosRoute
+  AppEventosRoute: typeof AppEventosRoute
+  AppMinisteriosRoute: typeof AppMinisteriosRoute
+  AppPessoasRoute: typeof AppPessoasRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppCampusRoute: AppCampusRoute,
+  AppCelulasRoute: AppCelulasRoute,
+  AppCursosRoute: AppCursosRoute,
+  AppEventosRoute: AppEventosRoute,
+  AppMinisteriosRoute: AppMinisteriosRoute,
+  AppPessoasRoute: AppPessoasRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
