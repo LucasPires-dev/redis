@@ -25,7 +25,7 @@ import { useDB, actions, visibleEvents, type EventScope, MINISTRY_LABEL } from "
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/eventos")({
-  head: () => ({ meta: [{ title: "Eventos — Kairos" }] }),
+  head: () => ({ meta: [{ title: "Eventos — Redis" }] }),
   component: EventsPage,
 });
 

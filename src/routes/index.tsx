@@ -15,7 +15,7 @@ function Landing() {
             <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
               <Church className="h-4 w-4" />
             </div>
-            <span className="font-semibold tracking-tight">Kairos</span>
+            <span className="font-semibold tracking-tight">Redis</span>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login">
@@ -74,7 +74,7 @@ function Landing() {
 
       <footer className="border-t border-border">
         <div className="mx-auto max-w-6xl px-6 py-6 text-xs text-muted-foreground">
-          Kairos · Protótipo frontend sem backend
+          Redis · Protótipo frontend sem backend
         </div>
       </footer>
     </div>

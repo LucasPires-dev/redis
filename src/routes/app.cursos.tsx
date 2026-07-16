@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDB } from "@/lib/mock-store";
 
 export const Route = createFileRoute("/app/cursos")({
-  head: () => ({ meta: [{ title: "Cursos — Kairos" }] }),
+  head: () => ({ meta: [{ title: "Cursos — Redis" }] }),
   component: CoursesPage,
 });
 

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDB } from "@/lib/mock-store";
 
 export const Route = createFileRoute("/app/celulas")({
-  head: () => ({ meta: [{ title: "Células — Kairos" }] }),
+  head: () => ({ meta: [{ title: "Células — Redis" }] }),
   component: CellsPage,
 });
 

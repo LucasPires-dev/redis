@@ -74,13 +74,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Kairos — Gestão de Mega Igrejas" },
+      { title: "Redis — Gestão de Mega Igrejas" },
       {
         name: "description",
         content:
           "Plataforma de gestão para mega igrejas: campus, ministérios, células, pessoas e eventos em uma hierarquia clara.",
       },
-      { property: "og:title", content: "Kairos — Gestão de Mega Igrejas" },
+      { property: "og:title", content: "Redis — Gestão de Mega Igrejas" },
       {
         property: "og:description",
         content: "Gestão unificada de campus, ministérios, células e pessoas.",

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { MINISTRY_LABEL, useDB } from "@/lib/mock-store";
 
 export const Route = createFileRoute("/app/ministerios")({
-  head: () => ({ meta: [{ title: "Ministérios — Kairos" }] }),
+  head: () => ({ meta: [{ title: "Ministérios — Redis" }] }),
   component: MinistryPage,
 });
 
