@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { GraduationCap } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { GraduationCap, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDB } from "@/lib/mock-store";
@@ -27,24 +27,29 @@ function CoursesPage() {
         {list.map((c) => {
           const campus = c.campusId ? db.campuses.find((cc) => cc.id === c.campusId) : null;
           return (
-            <Card key={c.id}>
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground">
-                    <GraduationCap className="h-5 w-5" />
+            <Link key={c.id} to="/app/cursos/$id" params={{ id: c.id }} className="group">
+              <Card className="h-full transition-colors hover:border-primary/40">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground">
+                      <GraduationCap className="h-5 w-5" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={campus ? "outline" : "secondary"}>
+                        {campus ? campus.name : "Geral"}
+                      </Badge>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    </div>
                   </div>
-                  <Badge variant={campus ? "outline" : "secondary"}>
-                    {campus ? campus.name : "Geral"}
-                  </Badge>
-                </div>
-                <h3 className="mt-4 text-lg font-semibold tracking-tight">{c.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{c.description}</p>
-                <div className="mt-3 text-sm">
-                  <span className="font-semibold tabular-nums">{c.enrolled}</span>{" "}
-                  <span className="text-muted-foreground">inscritos</span>
-                </div>
-              </CardContent>
-            </Card>
+                  <h3 className="mt-4 text-lg font-semibold tracking-tight">{c.name}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{c.description}</p>
+                  <div className="mt-3 text-sm">
+                    <span className="font-semibold tabular-nums">{c.enrolled}</span>{" "}
+                    <span className="text-muted-foreground">inscritos</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           );
         })}
       </div>

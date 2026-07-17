@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -75,22 +75,25 @@ function CampusPage() {
           const mins = db.ministries.filter((m) => m.campusId === c.id).length;
           const cells = db.cells.filter((ce) => ce.campusId === c.id).length;
           return (
-            <Card key={c.id} className="transition-colors hover:border-primary/40">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground">
-                    <Building2 className="h-5 w-5" />
+            <Link key={c.id} to="/app/campus/$id" params={{ id: c.id }} className="group">
+              <Card className="h-full transition-colors hover:border-primary/40">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground">
+                      <Building2 className="h-5 w-5" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
-                </div>
-                <h3 className="mt-4 text-lg font-semibold tracking-tight">{c.name}</h3>
-                <p className="text-sm text-muted-foreground">{c.city}</p>
-                <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4 text-center">
-                  <Metric label="Pessoas" value={people} />
-                  <Metric label="Ministérios" value={mins} />
-                  <Metric label="Células" value={cells} />
-                </div>
-              </CardContent>
-            </Card>
+                  <h3 className="mt-4 text-lg font-semibold tracking-tight">{c.name}</h3>
+                  <p className="text-sm text-muted-foreground">{c.city}</p>
+                  <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4 text-center">
+                    <Metric label="Pessoas" value={people} />
+                    <Metric label="Ministérios" value={mins} />
+                    <Metric label="Células" value={cells} />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           );
         })}
       </div>
