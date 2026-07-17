@@ -19,6 +19,9 @@ import { Route as AppEventosRouteImport } from './routes/app.eventos'
 import { Route as AppCursosRouteImport } from './routes/app.cursos'
 import { Route as AppCelulasRouteImport } from './routes/app.celulas'
 import { Route as AppCampusRouteImport } from './routes/app.campus'
+import { Route as AppMinisteriosKindRouteImport } from './routes/app.ministerios.$kind'
+import { Route as AppCursosIdRouteImport } from './routes/app.cursos.$id'
+import { Route as AppCampusIdRouteImport } from './routes/app.campus.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -70,42 +73,66 @@ const AppCampusRoute = AppCampusRouteImport.update({
   path: '/campus',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMinisteriosKindRoute = AppMinisteriosKindRouteImport.update({
+  id: '/$kind',
+  path: '/$kind',
+  getParentRoute: () => AppMinisteriosRoute,
+} as any)
+const AppCursosIdRoute = AppCursosIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppCursosRoute,
+} as any)
+const AppCampusIdRoute = AppCampusIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppCampusRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/app/campus': typeof AppCampusRoute
+  '/app/campus': typeof AppCampusRouteWithChildren
   '/app/celulas': typeof AppCelulasRoute
-  '/app/cursos': typeof AppCursosRoute
+  '/app/cursos': typeof AppCursosRouteWithChildren
   '/app/eventos': typeof AppEventosRoute
-  '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/ministerios': typeof AppMinisteriosRouteWithChildren
   '/app/pessoas': typeof AppPessoasRoute
   '/app/': typeof AppIndexRoute
+  '/app/campus/$id': typeof AppCampusIdRoute
+  '/app/cursos/$id': typeof AppCursosIdRoute
+  '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/app/campus': typeof AppCampusRoute
+  '/app/campus': typeof AppCampusRouteWithChildren
   '/app/celulas': typeof AppCelulasRoute
-  '/app/cursos': typeof AppCursosRoute
+  '/app/cursos': typeof AppCursosRouteWithChildren
   '/app/eventos': typeof AppEventosRoute
-  '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/ministerios': typeof AppMinisteriosRouteWithChildren
   '/app/pessoas': typeof AppPessoasRoute
   '/app': typeof AppIndexRoute
+  '/app/campus/$id': typeof AppCampusIdRoute
+  '/app/cursos/$id': typeof AppCursosIdRoute
+  '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/app/campus': typeof AppCampusRoute
+  '/app/campus': typeof AppCampusRouteWithChildren
   '/app/celulas': typeof AppCelulasRoute
-  '/app/cursos': typeof AppCursosRoute
+  '/app/cursos': typeof AppCursosRouteWithChildren
   '/app/eventos': typeof AppEventosRoute
-  '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/ministerios': typeof AppMinisteriosRouteWithChildren
   '/app/pessoas': typeof AppPessoasRoute
   '/app/': typeof AppIndexRoute
+  '/app/campus/$id': typeof AppCampusIdRoute
+  '/app/cursos/$id': typeof AppCursosIdRoute
+  '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -120,6 +147,9 @@ export interface FileRouteTypes {
     | '/app/ministerios'
     | '/app/pessoas'
     | '/app/'
+    | '/app/campus/$id'
+    | '/app/cursos/$id'
+    | '/app/ministerios/$kind'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -131,6 +161,9 @@ export interface FileRouteTypes {
     | '/app/ministerios'
     | '/app/pessoas'
     | '/app'
+    | '/app/campus/$id'
+    | '/app/cursos/$id'
+    | '/app/ministerios/$kind'
   id:
     | '__root__'
     | '/'
@@ -143,6 +176,9 @@ export interface FileRouteTypes {
     | '/app/ministerios'
     | '/app/pessoas'
     | '/app/'
+    | '/app/campus/$id'
+    | '/app/cursos/$id'
+    | '/app/ministerios/$kind'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,25 +259,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCampusRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/ministerios/$kind': {
+      id: '/app/ministerios/$kind'
+      path: '/$kind'
+      fullPath: '/app/ministerios/$kind'
+      preLoaderRoute: typeof AppMinisteriosKindRouteImport
+      parentRoute: typeof AppMinisteriosRoute
+    }
+    '/app/cursos/$id': {
+      id: '/app/cursos/$id'
+      path: '/$id'
+      fullPath: '/app/cursos/$id'
+      preLoaderRoute: typeof AppCursosIdRouteImport
+      parentRoute: typeof AppCursosRoute
+    }
+    '/app/campus/$id': {
+      id: '/app/campus/$id'
+      path: '/$id'
+      fullPath: '/app/campus/$id'
+      preLoaderRoute: typeof AppCampusIdRouteImport
+      parentRoute: typeof AppCampusRoute
+    }
   }
 }
 
+interface AppCampusRouteChildren {
+  AppCampusIdRoute: typeof AppCampusIdRoute
+}
+
+const AppCampusRouteChildren: AppCampusRouteChildren = {
+  AppCampusIdRoute: AppCampusIdRoute,
+}
+
+const AppCampusRouteWithChildren = AppCampusRoute._addFileChildren(
+  AppCampusRouteChildren,
+)
+
+interface AppCursosRouteChildren {
+  AppCursosIdRoute: typeof AppCursosIdRoute
+}
+
+const AppCursosRouteChildren: AppCursosRouteChildren = {
+  AppCursosIdRoute: AppCursosIdRoute,
+}
+
+const AppCursosRouteWithChildren = AppCursosRoute._addFileChildren(
+  AppCursosRouteChildren,
+)
+
+interface AppMinisteriosRouteChildren {
+  AppMinisteriosKindRoute: typeof AppMinisteriosKindRoute
+}
+
+const AppMinisteriosRouteChildren: AppMinisteriosRouteChildren = {
+  AppMinisteriosKindRoute: AppMinisteriosKindRoute,
+}
+
+const AppMinisteriosRouteWithChildren = AppMinisteriosRoute._addFileChildren(
+  AppMinisteriosRouteChildren,
+)
+
 interface AppRouteChildren {
-  AppCampusRoute: typeof AppCampusRoute
+  AppCampusRoute: typeof AppCampusRouteWithChildren
   AppCelulasRoute: typeof AppCelulasRoute
-  AppCursosRoute: typeof AppCursosRoute
+  AppCursosRoute: typeof AppCursosRouteWithChildren
   AppEventosRoute: typeof AppEventosRoute
-  AppMinisteriosRoute: typeof AppMinisteriosRoute
+  AppMinisteriosRoute: typeof AppMinisteriosRouteWithChildren
   AppPessoasRoute: typeof AppPessoasRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppCampusRoute: AppCampusRoute,
+  AppCampusRoute: AppCampusRouteWithChildren,
   AppCelulasRoute: AppCelulasRoute,
-  AppCursosRoute: AppCursosRoute,
+  AppCursosRoute: AppCursosRouteWithChildren,
   AppEventosRoute: AppEventosRoute,
-  AppMinisteriosRoute: AppMinisteriosRoute,
+  AppMinisteriosRoute: AppMinisteriosRouteWithChildren,
   AppPessoasRoute: AppPessoasRoute,
   AppIndexRoute: AppIndexRoute,
 }
@@ -256,13 +349,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
