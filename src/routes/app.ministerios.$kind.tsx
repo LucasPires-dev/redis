@@ -1,7 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, HeartHandshake, Users, Droplet, Sparkles } from "lucide-react";
+import { HeartHandshake, Users, Droplet, Sparkles, Building2, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DetailHeader } from "@/components/detail/DetailHeader";
+import { StatCard } from "@/components/detail/StatCard";
+import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { MINISTRY_LABEL, useDB, type MinistryKind } from "@/lib/mock-store";
 
 export const Route = createFileRoute("/app/ministerios/$kind")({
@@ -22,7 +25,6 @@ function MinistryDetail() {
   if (!(kind in MINISTRY_LABEL)) throw notFound();
   const k = kind as MinistryKind;
 
-  // Scope campuses shown in the detail view
   const scopedCampuses = db.campuses.filter((c) => {
     if (role === "lider_campus" || role === "lider_ministerio_campus")
       return c.id === db.currentCampusId;
@@ -50,37 +52,31 @@ function MinistryDetail() {
   const totalBaptized = rows.reduce((s, r) => s + r.baptized, 0);
   const totalCell = rows.reduce((s, r) => s + r.inCell, 0);
 
+  const ministryEvents = db.events.filter(
+    (e) =>
+      e.scope === "ministerio" &&
+      db.ministries.find((m) => m.id === e.ministryId)?.kind === k &&
+      rows.some((r) => r.ministry.campusId === e.campusId),
+  );
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <Link
-        to="/app/ministerios"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" /> Ministérios
-      </Link>
+      <DetailHeader
+        backTo="/app/ministerios"
+        backLabel="Ministérios"
+        icon={<HeartHandshake className="h-6 w-6" />}
+        title={MINISTRY_LABEL[k]}
+        subtitle={`Presente em ${rows.length} campus.`}
+      />
 
-      <div className="flex items-center gap-4">
-        <div className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-accent-foreground">
-          <HeartHandshake className="h-6 w-6" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{MINISTRY_LABEL[k]}</h1>
-          <p className="text-sm text-muted-foreground">
-            Presente em {rows.length} {rows.length === 1 ? "campus" : "campus"}.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard icon={<Building2 className="h-4 w-4" />} label="Campus" value={rows.length} />
         <StatCard icon={<Users className="h-4 w-4" />} label="Pessoas" value={totalPeople} />
         <StatCard icon={<Droplet className="h-4 w-4" />} label="Batizados" value={totalBaptized} />
         <StatCard icon={<Sparkles className="h-4 w-4" />} label="Em célula" value={totalCell} />
       </div>
 
-      <div>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          Por campus
-        </h2>
+      <DetailSection title="Por campus" count={rows.length}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {rows.map(({ campus, members, baptized, inCell }) => (
             <Link key={campus.id} to="/app/campus/$id" params={{ id: campus.id }}>
@@ -102,28 +98,36 @@ function MinistryDetail() {
               </Card>
             </Link>
           ))}
-          {rows.length === 0 && (
-            <p className="text-sm text-muted-foreground">Sem campus com este ministério.</p>
-          )}
+          {rows.length === 0 && <EmptyState>Sem campus com este ministério.</EmptyState>}
         </div>
-      </div>
-    </div>
-  );
-}
+      </DetailSection>
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="flex items-center justify-between p-5">
-        <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+      <DetailSection title="Próximos eventos ministeriais" count={ministryEvents.length}>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {ministryEvents.map((e) => {
+            const campus = db.campuses.find((c) => c.id === e.campusId);
+            return (
+              <Link key={e.id} to="/app/eventos/$id" params={{ id: e.id }}>
+                <Card className="transition-colors hover:border-primary/40">
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div>
+                      <div className="text-sm font-semibold">{e.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {e.date} · {campus?.name}
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="gap-1">
+                      <Calendar className="h-3 w-3" />
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
+          {ministryEvents.length === 0 && <EmptyState>Nenhum evento marcado.</EmptyState>}
         </div>
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-accent text-accent-foreground">
-          {icon}
-        </div>
-      </CardContent>
-    </Card>
+      </DetailSection>
+    </div>
   );
 }
 

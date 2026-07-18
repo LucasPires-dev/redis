@@ -1,7 +1,17 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Building2, Users, HeartHandshake, Sparkles, Droplet, Calendar } from "lucide-react";
+import {
+  Building2,
+  Users,
+  HeartHandshake,
+  Sparkles,
+  Droplet,
+  Calendar,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DetailHeader } from "@/components/detail/DetailHeader";
+import { StatCard } from "@/components/detail/StatCard";
+import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { MINISTRY_LABEL, useDB } from "@/lib/mock-store";
 
 export const Route = createFileRoute("/app/campus/$id")({
@@ -27,34 +37,22 @@ function CampusDetail() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <Link
-        to="/app/campus"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" /> Campus
-      </Link>
-
-      <div className="flex items-center gap-4">
-        <div className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-accent-foreground">
-          <Building2 className="h-6 w-6" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{campus.name}</h1>
-          <p className="text-sm text-muted-foreground">{campus.city}</p>
-        </div>
-      </div>
+      <DetailHeader
+        backTo="/app/campus"
+        backLabel="Campus"
+        icon={<Building2 className="h-6 w-6" />}
+        title={campus.name}
+        subtitle={campus.city}
+      />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat icon={<Users className="h-4 w-4" />} label="Pessoas" value={people.length} />
-        <Stat icon={<Droplet className="h-4 w-4" />} label="Batizados" value={baptized} />
-        <Stat icon={<Sparkles className="h-4 w-4" />} label="Em célula" value={inCell} />
-        <Stat icon={<Calendar className="h-4 w-4" />} label="Eventos" value={events.length} />
+        <StatCard icon={<Users className="h-4 w-4" />} label="Pessoas" value={people.length} />
+        <StatCard icon={<Droplet className="h-4 w-4" />} label="Batizados" value={baptized} />
+        <StatCard icon={<Sparkles className="h-4 w-4" />} label="Em célula" value={inCell} />
+        <StatCard icon={<Calendar className="h-4 w-4" />} label="Eventos" value={events.length} />
       </div>
 
-      <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          Ministérios ({ministries.length})
-        </h2>
+      <DetailSection title="Ministérios" count={ministries.length}>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {ministries.map((m) => {
             const members = db.people.filter((p) => p.ministryIds.includes(m.id)).length;
@@ -76,72 +74,50 @@ function CampusDetail() {
               </Link>
             );
           })}
-          {ministries.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhum ministério cadastrado.</p>
-          )}
+          {ministries.length === 0 && <EmptyState>Nenhum ministério cadastrado.</EmptyState>}
         </div>
-      </section>
+      </DetailSection>
 
-      <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          Células ({cells.length})
-        </h2>
+      <DetailSection title="Células" count={cells.length}>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {cells.map((c) => (
-            <Card key={c.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-semibold">{c.name}</div>
-                    <div className="text-xs text-muted-foreground">{c.weekday}</div>
+            <Link key={c.id} to="/app/celulas/$id" params={{ id: c.id }}>
+              <Card className="transition-colors hover:border-primary/40">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-semibold">{c.name}</div>
+                      <div className="text-xs text-muted-foreground">{c.weekday}</div>
+                    </div>
+                    <Badge variant="outline">{c.memberIds.length} membros</Badge>
                   </div>
-                  <Badge variant="outline">{c.memberIds.length} membros</Badge>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
-      </section>
+      </DetailSection>
 
-      <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          Próximos eventos
-        </h2>
+      <DetailSection title="Próximos eventos">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {events.slice(0, 6).map((e) => (
-            <Card key={e.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div>
-                  <div className="text-sm font-semibold">{e.title}</div>
-                  <div className="text-xs text-muted-foreground">{e.date}</div>
-                </div>
-                <Badge variant="secondary" className="capitalize">
-                  {e.scope}
-                </Badge>
-              </CardContent>
-            </Card>
+            <Link key={e.id} to="/app/eventos/$id" params={{ id: e.id }}>
+              <Card className="transition-colors hover:border-primary/40">
+                <CardContent className="flex items-center justify-between p-4">
+                  <div>
+                    <div className="text-sm font-semibold">{e.title}</div>
+                    <div className="text-xs text-muted-foreground">{e.date}</div>
+                  </div>
+                  <Badge variant="secondary" className="capitalize">
+                    {e.scope}
+                  </Badge>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
-          {events.length === 0 && (
-            <p className="text-sm text-muted-foreground">Sem eventos.</p>
-          )}
+          {events.length === 0 && <EmptyState>Sem eventos.</EmptyState>}
         </div>
-      </section>
+      </DetailSection>
     </div>
-  );
-}
-
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="flex items-center justify-between p-5">
-        <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
-        </div>
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-accent text-accent-foreground">
-          {icon}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
