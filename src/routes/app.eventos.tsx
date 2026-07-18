@@ -186,27 +186,29 @@ function EventsPage() {
           const campus = e.campusId ? db.campuses.find((c) => c.id === e.campusId) : null;
           const ministry = e.ministryId ? db.ministries.find((m) => m.id === e.ministryId) : null;
           return (
-            <Card key={e.id}>
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground">
-                    <Icon className="h-5 w-5" />
+            <Link key={e.id} to="/app/eventos/$id" params={{ id: e.id }}>
+              <Card className="h-full transition-colors hover:border-primary/40">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <Badge variant="secondary" className="gap-1 capitalize">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(e.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="gap-1 capitalize">
-                    <Calendar className="h-3 w-3" />
-                    {new Date(e.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-                  </Badge>
-                </div>
-                <h3 className="mt-4 text-lg font-semibold tracking-tight">{e.title}</h3>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline" className="capitalize">
-                    {e.scope}
-                  </Badge>
-                  {campus && <span>{campus.name}</span>}
-                  {ministry && <span>· {MINISTRY_LABEL[ministry.kind]}</span>}
-                </div>
-              </CardContent>
-            </Card>
+                  <h3 className="mt-4 text-lg font-semibold tracking-tight">{e.title}</h3>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline" className="capitalize">
+                      {e.scope}
+                    </Badge>
+                    {campus && <span>{campus.name}</span>}
+                    {ministry && <span>· {MINISTRY_LABEL[ministry.kind]}</span>}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           );
         })}
         {events.length === 0 && (
