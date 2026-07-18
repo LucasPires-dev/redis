@@ -33,6 +33,7 @@ export const Route = createFileRoute("/app/pessoas")({
 
 function PeoplePage() {
   const db = useDB((d) => d);
+  const navigate = useNavigate();
   const people = visiblePeople(db);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
