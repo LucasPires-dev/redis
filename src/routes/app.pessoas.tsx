@@ -162,7 +162,11 @@ function PeoplePage() {
                 .slice(0, 2)
                 .join("");
               return (
-                <TableRow key={p.id}>
+                <TableRow
+                  key={p.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate({ to: "/app/pessoas/$id", params: { id: p.id } })}
+                >
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
