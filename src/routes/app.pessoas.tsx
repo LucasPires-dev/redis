@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Plus, Search, Droplet, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ export const Route = createFileRoute("/app/pessoas")({
 
 function PeoplePage() {
   const db = useDB((d) => d);
+  const navigate = useNavigate();
   const people = visiblePeople(db);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -161,7 +162,11 @@ function PeoplePage() {
                 .slice(0, 2)
                 .join("");
               return (
-                <TableRow key={p.id}>
+                <TableRow
+                  key={p.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate({ to: "/app/pessoas/$id", params: { id: p.id } })}
+                >
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
