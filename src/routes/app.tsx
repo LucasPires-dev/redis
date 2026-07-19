@@ -7,10 +7,10 @@ import {
   Sparkles,
   Calendar,
   GraduationCap,
-  Church,
   ChevronsUpDown,
   LogOut,
 } from "lucide-react";
+import { RedisLogo } from "@/components/brand/RedisLogo";
 import {
   Sidebar,
   SidebarContent,
@@ -73,12 +73,14 @@ function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-1 py-1.5">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <Church className="h-4 w-4" />
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white ring-1 ring-sidebar-border">
+            <RedisLogo className="h-5 w-5" />
           </div>
           <div className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
-            <div className="truncate text-sm font-semibold">Redis</div>
-            <div className="truncate text-xs text-muted-foreground">Mega Igreja Vida</div>
+            <div className="truncate text-sm font-semibold tracking-tight">redis</div>
+            <div className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Mega Igreja Vida
+            </div>
           </div>
         </div>
       </SidebarHeader>
