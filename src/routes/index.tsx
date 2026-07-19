@@ -12,12 +12,8 @@ function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Church className="h-4 w-4" />
-            </div>
-            <span className="font-semibold tracking-tight">Redis</span>
-          </div>
+          <RedisLogo withWordmark className="text-base" />
+          <span className="sr-only">Redis</span>
           <div className="flex items-center gap-3">
             <Link to="/login">
               <Button variant="ghost" size="sm">
@@ -58,7 +54,7 @@ function Landing() {
           { icon: Layers, title: "Campus e Ministérios", desc: "Estrutura em cascata: igreja → campus → ministérios." },
           { icon: Users, title: "Pessoas e Células", desc: "Cadastro, batismo, célula, discipulador e GTs." },
           { icon: Calendar, title: "Eventos com regras", desc: "Compartilhamento geral, por campus ou ministerial." },
-          { icon: Church, title: "Papéis definidos", desc: "Gestor, líderes de campus, ministério geral e GT." },
+          { icon: ShieldCheck, title: "Papéis definidos", desc: "Gestor, líderes de campus, ministério geral e GT." },
         ].map((f) => (
           <div
             key={f.title}
