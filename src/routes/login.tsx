@@ -29,11 +29,8 @@ function Login() {
   return (
     <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
       <div className="flex flex-col justify-between border-r border-border bg-muted/40 p-10">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <Church className="h-4 w-4" />
-          </div>
-          <span className="font-semibold tracking-tight">Redis</span>
+        <Link to="/" className="inline-flex">
+          <RedisLogo withWordmark withTagline className="text-lg" />
         </Link>
         <div>
           <p className="max-w-md text-2xl font-medium leading-snug tracking-tight text-foreground">
