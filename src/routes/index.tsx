@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Church, Users, Layers, Calendar, ArrowRight } from "lucide-react";
+import { Users, Layers, Calendar, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RedisLogo } from "@/components/brand/RedisLogo";
 
 export const Route = createFileRoute("/")({
   component: Landing,
