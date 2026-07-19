@@ -84,12 +84,12 @@ export function RedisLogo({
   }
 
   return (
-    <span className={`inline-flex items-center gap-2 ${className ?? ""}`}>
-      <span className="h-full aspect-square shrink-0">{Symbol}</span>
+    <span className={`inline-flex items-center gap-2 leading-none ${className ?? ""}`}>
+      <span className="inline-block h-[1.75em] w-[1.75em] shrink-0">{Symbol}</span>
       <span className="flex flex-col leading-none">
         <span
           className="font-semibold tracking-tight"
-          style={{ color: "var(--brand-ink)", fontSize: "1.35em", letterSpacing: "-0.02em" }}
+          style={{ color: "var(--brand-ink)", fontSize: "1.25em", letterSpacing: "-0.02em" }}
         >
           redis
         </span>
