@@ -9,27 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/app.index'
-import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
-import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
-import { Route as AppEventosRouteImport } from './routes/app.eventos'
-import { Route as AppCursosRouteImport } from './routes/app.cursos'
-import { Route as AppCelulasRouteImport } from './routes/app.celulas'
 import { Route as AppCampusRouteImport } from './routes/app.campus'
-import { Route as AppPessoasIdRouteImport } from './routes/app.pessoas_.$id'
-import { Route as AppMinisteriosKindRouteImport } from './routes/app.ministerios_.$kind'
-import { Route as AppEventosIdRouteImport } from './routes/app.eventos_.$id'
-import { Route as AppCursosIdRouteImport } from './routes/app.cursos_.$id'
-import { Route as AppCelulasIdRouteImport } from './routes/app.celulas_.$id'
+import { Route as AppCelulasRouteImport } from './routes/app.celulas'
+import { Route as AppCursosRouteImport } from './routes/app.cursos'
+import { Route as AppEventosRouteImport } from './routes/app.eventos'
+import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
+import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
 import { Route as AppCampusIdRouteImport } from './routes/app.campus_.$id'
+import { Route as AppCelulasIdRouteImport } from './routes/app.celulas_.$id'
+import { Route as AppCursosIdRouteImport } from './routes/app.cursos_.$id'
+import { Route as AppEventosIdRouteImport } from './routes/app.eventos_.$id'
+import { Route as AppMinisteriosKindRouteImport } from './routes/app.ministerios_.$kind'
+import { Route as AppPessoasIdRouteImport } from './routes/app.pessoas_.$id'
 import { Route as AppMinisteriosKindCampusIdRouteImport } from './routes/app.ministerios_.$kind_.$campusId'
+import { Route as AppMinisteriosKindCampusIdEquipesTeamIdRouteImport } from './routes/app.ministerios_.$kind_.$campusId_.equipes.$teamId'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -37,9 +38,9 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -47,24 +48,9 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppPessoasRoute = AppPessoasRouteImport.update({
-  id: '/pessoas',
-  path: '/pessoas',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMinisteriosRoute = AppMinisteriosRouteImport.update({
-  id: '/ministerios',
-  path: '/ministerios',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppEventosRoute = AppEventosRouteImport.update({
-  id: '/eventos',
-  path: '/eventos',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCursosRoute = AppCursosRouteImport.update({
-  id: '/cursos',
-  path: '/cursos',
+const AppCampusRoute = AppCampusRouteImport.update({
+  id: '/campus',
+  path: '/campus',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCelulasRoute = AppCelulasRouteImport.update({
@@ -72,34 +58,24 @@ const AppCelulasRoute = AppCelulasRouteImport.update({
   path: '/celulas',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCampusRoute = AppCampusRouteImport.update({
-  id: '/campus',
-  path: '/campus',
+const AppCursosRoute = AppCursosRouteImport.update({
+  id: '/cursos',
+  path: '/cursos',
   getParentRoute: () => AppRoute,
 } as any)
-const AppPessoasIdRoute = AppPessoasIdRouteImport.update({
-  id: '/pessoas_/$id',
-  path: '/pessoas/$id',
+const AppEventosRoute = AppEventosRouteImport.update({
+  id: '/eventos',
+  path: '/eventos',
   getParentRoute: () => AppRoute,
 } as any)
-const AppMinisteriosKindRoute = AppMinisteriosKindRouteImport.update({
-  id: '/ministerios_/$kind',
-  path: '/ministerios/$kind',
+const AppMinisteriosRoute = AppMinisteriosRouteImport.update({
+  id: '/ministerios',
+  path: '/ministerios',
   getParentRoute: () => AppRoute,
 } as any)
-const AppEventosIdRoute = AppEventosIdRouteImport.update({
-  id: '/eventos_/$id',
-  path: '/eventos/$id',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCursosIdRoute = AppCursosIdRouteImport.update({
-  id: '/cursos_/$id',
-  path: '/cursos/$id',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCelulasIdRoute = AppCelulasIdRouteImport.update({
-  id: '/celulas_/$id',
-  path: '/celulas/$id',
+const AppPessoasRoute = AppPessoasRouteImport.update({
+  id: '/pessoas',
+  path: '/pessoas',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCampusIdRoute = AppCampusIdRouteImport.update({
@@ -107,10 +83,41 @@ const AppCampusIdRoute = AppCampusIdRouteImport.update({
   path: '/campus/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCelulasIdRoute = AppCelulasIdRouteImport.update({
+  id: '/celulas_/$id',
+  path: '/celulas/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCursosIdRoute = AppCursosIdRouteImport.update({
+  id: '/cursos_/$id',
+  path: '/cursos/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEventosIdRoute = AppEventosIdRouteImport.update({
+  id: '/eventos_/$id',
+  path: '/eventos/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMinisteriosKindRoute = AppMinisteriosKindRouteImport.update({
+  id: '/ministerios_/$kind',
+  path: '/ministerios/$kind',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPessoasIdRoute = AppPessoasIdRouteImport.update({
+  id: '/pessoas_/$id',
+  path: '/pessoas/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMinisteriosKindCampusIdRoute =
   AppMinisteriosKindCampusIdRouteImport.update({
     id: '/ministerios_/$kind_/$campusId',
     path: '/ministerios/$kind/$campusId',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppMinisteriosKindCampusIdEquipesTeamIdRoute =
+  AppMinisteriosKindCampusIdEquipesTeamIdRouteImport.update({
+    id: '/ministerios_/$kind_/$campusId_/equipes/$teamId',
+    path: '/ministerios/$kind/$campusId/equipes/$teamId',
     getParentRoute: () => AppRoute,
   } as any)
 
@@ -132,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
   '/app/ministerios/$kind/$campusId': typeof AppMinisteriosKindCampusIdRoute
+  '/app/ministerios/$kind/$campusId/equipes/$teamId': typeof AppMinisteriosKindCampusIdEquipesTeamIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -150,6 +158,7 @@ export interface FileRoutesByTo {
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
   '/app/ministerios/$kind/$campusId': typeof AppMinisteriosKindCampusIdRoute
+  '/app/ministerios/$kind/$campusId/equipes/$teamId': typeof AppMinisteriosKindCampusIdEquipesTeamIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -170,6 +179,7 @@ export interface FileRoutesById {
   '/app/ministerios_/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas_/$id': typeof AppPessoasIdRoute
   '/app/ministerios_/$kind_/$campusId': typeof AppMinisteriosKindCampusIdRoute
+  '/app/ministerios_/$kind_/$campusId_/equipes/$teamId': typeof AppMinisteriosKindCampusIdEquipesTeamIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/app/ministerios/$kind'
     | '/app/pessoas/$id'
     | '/app/ministerios/$kind/$campusId'
+    | '/app/ministerios/$kind/$campusId/equipes/$teamId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/app/ministerios/$kind'
     | '/app/pessoas/$id'
     | '/app/ministerios/$kind/$campusId'
+    | '/app/ministerios/$kind/$campusId/equipes/$teamId'
   id:
     | '__root__'
     | '/'
@@ -228,6 +240,7 @@ export interface FileRouteTypes {
     | '/app/ministerios_/$kind'
     | '/app/pessoas_/$id'
     | '/app/ministerios_/$kind_/$campusId'
+    | '/app/ministerios_/$kind_/$campusId_/equipes/$teamId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -238,11 +251,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -252,11 +265,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -266,32 +279,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/pessoas': {
-      id: '/app/pessoas'
-      path: '/pessoas'
-      fullPath: '/app/pessoas'
-      preLoaderRoute: typeof AppPessoasRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/ministerios': {
-      id: '/app/ministerios'
-      path: '/ministerios'
-      fullPath: '/app/ministerios'
-      preLoaderRoute: typeof AppMinisteriosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/eventos': {
-      id: '/app/eventos'
-      path: '/eventos'
-      fullPath: '/app/eventos'
-      preLoaderRoute: typeof AppEventosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/cursos': {
-      id: '/app/cursos'
-      path: '/cursos'
-      fullPath: '/app/cursos'
-      preLoaderRoute: typeof AppCursosRouteImport
+    '/app/campus': {
+      id: '/app/campus'
+      path: '/campus'
+      fullPath: '/app/campus'
+      preLoaderRoute: typeof AppCampusRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/celulas': {
@@ -301,46 +293,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCelulasRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/campus': {
-      id: '/app/campus'
-      path: '/campus'
-      fullPath: '/app/campus'
-      preLoaderRoute: typeof AppCampusRouteImport
+    '/app/cursos': {
+      id: '/app/cursos'
+      path: '/cursos'
+      fullPath: '/app/cursos'
+      preLoaderRoute: typeof AppCursosRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/pessoas_/$id': {
-      id: '/app/pessoas_/$id'
-      path: '/pessoas/$id'
-      fullPath: '/app/pessoas/$id'
-      preLoaderRoute: typeof AppPessoasIdRouteImport
+    '/app/eventos': {
+      id: '/app/eventos'
+      path: '/eventos'
+      fullPath: '/app/eventos'
+      preLoaderRoute: typeof AppEventosRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/ministerios_/$kind': {
-      id: '/app/ministerios_/$kind'
-      path: '/ministerios/$kind'
-      fullPath: '/app/ministerios/$kind'
-      preLoaderRoute: typeof AppMinisteriosKindRouteImport
+    '/app/ministerios': {
+      id: '/app/ministerios'
+      path: '/ministerios'
+      fullPath: '/app/ministerios'
+      preLoaderRoute: typeof AppMinisteriosRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/eventos_/$id': {
-      id: '/app/eventos_/$id'
-      path: '/eventos/$id'
-      fullPath: '/app/eventos/$id'
-      preLoaderRoute: typeof AppEventosIdRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/cursos_/$id': {
-      id: '/app/cursos_/$id'
-      path: '/cursos/$id'
-      fullPath: '/app/cursos/$id'
-      preLoaderRoute: typeof AppCursosIdRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/celulas_/$id': {
-      id: '/app/celulas_/$id'
-      path: '/celulas/$id'
-      fullPath: '/app/celulas/$id'
-      preLoaderRoute: typeof AppCelulasIdRouteImport
+    '/app/pessoas': {
+      id: '/app/pessoas'
+      path: '/pessoas'
+      fullPath: '/app/pessoas'
+      preLoaderRoute: typeof AppPessoasRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/campus_/$id': {
@@ -350,11 +328,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCampusIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/celulas_/$id': {
+      id: '/app/celulas_/$id'
+      path: '/celulas/$id'
+      fullPath: '/app/celulas/$id'
+      preLoaderRoute: typeof AppCelulasIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/cursos_/$id': {
+      id: '/app/cursos_/$id'
+      path: '/cursos/$id'
+      fullPath: '/app/cursos/$id'
+      preLoaderRoute: typeof AppCursosIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/eventos_/$id': {
+      id: '/app/eventos_/$id'
+      path: '/eventos/$id'
+      fullPath: '/app/eventos/$id'
+      preLoaderRoute: typeof AppEventosIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/ministerios_/$kind': {
+      id: '/app/ministerios_/$kind'
+      path: '/ministerios/$kind'
+      fullPath: '/app/ministerios/$kind'
+      preLoaderRoute: typeof AppMinisteriosKindRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/pessoas_/$id': {
+      id: '/app/pessoas_/$id'
+      path: '/pessoas/$id'
+      fullPath: '/app/pessoas/$id'
+      preLoaderRoute: typeof AppPessoasIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/ministerios_/$kind_/$campusId': {
       id: '/app/ministerios_/$kind_/$campusId'
       path: '/ministerios/$kind/$campusId'
       fullPath: '/app/ministerios/$kind/$campusId'
       preLoaderRoute: typeof AppMinisteriosKindCampusIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/ministerios_/$kind_/$campusId_/equipes/$teamId': {
+      id: '/app/ministerios_/$kind_/$campusId_/equipes/$teamId'
+      path: '/ministerios/$kind/$campusId/equipes/$teamId'
+      fullPath: '/app/ministerios/$kind/$campusId/equipes/$teamId'
+      preLoaderRoute: typeof AppMinisteriosKindCampusIdEquipesTeamIdRouteImport
       parentRoute: typeof AppRoute
     }
   }
@@ -375,6 +395,7 @@ interface AppRouteChildren {
   AppMinisteriosKindRoute: typeof AppMinisteriosKindRoute
   AppPessoasIdRoute: typeof AppPessoasIdRoute
   AppMinisteriosKindCampusIdRoute: typeof AppMinisteriosKindCampusIdRoute
+  AppMinisteriosKindCampusIdEquipesTeamIdRoute: typeof AppMinisteriosKindCampusIdEquipesTeamIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -392,6 +413,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppMinisteriosKindRoute: AppMinisteriosKindRoute,
   AppPessoasIdRoute: AppPessoasIdRoute,
   AppMinisteriosKindCampusIdRoute: AppMinisteriosKindCampusIdRoute,
+  AppMinisteriosKindCampusIdEquipesTeamIdRoute:
+    AppMinisteriosKindCampusIdEquipesTeamIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -404,3 +427,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

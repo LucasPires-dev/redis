@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { HeartHandshake, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MINISTRY_LABEL, useDB, type MinistryKind } from "@/lib/mock-store";
+import { MINISTRY_LABEL, useMinistries, type MinistryKind } from "@/lib/api/ministries";
 
 export const Route = createFileRoute("/app/ministerios")({
   head: () => ({ meta: [{ title: "Ministérios — Redis" }] }),
@@ -10,23 +10,11 @@ export const Route = createFileRoute("/app/ministerios")({
 });
 
 function MinistryPage() {
-  const db = useDB((d) => d);
-  const role = db.currentRole;
+  const { data: ministries, isLoading } = useMinistries();
 
-  // Decide the set of ministry kinds visible for the role
-  let kinds: MinistryKind[] = [];
-  if (role === "gestor") {
-    kinds = Array.from(new Set(db.ministries.map((m) => m.kind)));
-  } else if (role === "lider_campus") {
-    kinds = Array.from(
-      new Set(db.ministries.filter((m) => m.campusId === db.currentCampusId).map((m) => m.kind)),
-    );
-  } else if (role === "lider_geral_ministerio") {
-    kinds = [db.currentMinistryKind];
-  } else {
-    // lider_ministerio_campus
-    kinds = [db.currentMinistryKind];
-  }
+  // The API returns a flat list already scoped to the caller's role — grouping by
+  // kind (for the "one card per kind" list view) happens client-side.
+  const kinds = Array.from(new Set((ministries ?? []).map((m) => m.kind))) as MinistryKind[];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -39,24 +27,12 @@ function MinistryPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {kinds.map((kind) => {
-          const relevantMinistries = db.ministries.filter((m) => {
-            if (m.kind !== kind) return false;
-            if (role === "lider_campus" || role === "lider_ministerio_campus")
-              return m.campusId === db.currentCampusId;
-            return true;
-          });
-          const campusIds = new Set(relevantMinistries.map((m) => m.campusId));
-          const members = db.people.filter((p) =>
-            p.ministryIds.some((mid) => relevantMinistries.find((m) => m.id === mid)),
-          ).length;
+          const relevant = (ministries ?? []).filter((m) => m.kind === kind);
+          const campusIds = new Set(relevant.map((m) => m.campus.id));
+          const members = relevant.reduce((sum, m) => sum + m.member_count, 0);
 
           return (
-            <Link
-              key={kind}
-              to="/app/ministerios/$kind"
-              params={{ kind }}
-              className="group"
-            >
+            <Link key={kind} to="/app/ministerios/$kind" params={{ kind }} className="group">
               <Card className="h-full transition-colors hover:border-primary/40">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
@@ -82,9 +58,10 @@ function MinistryPage() {
             </Link>
           );
         })}
-        {kinds.length === 0 && (
+        {!isLoading && kinds.length === 0 && (
           <p className="text-sm text-muted-foreground">Nenhum ministério visível para seu perfil.</p>
         )}
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
       </div>
     </div>
   );

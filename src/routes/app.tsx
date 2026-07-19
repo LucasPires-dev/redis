@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -34,24 +35,70 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ROLE_LABEL, actions, useDB } from "@/lib/mock-store";
+import { hasAccessToken } from "@/lib/api/client";
+import { deriveRoleLabel, useAuth, type Me } from "@/lib/api/auth";
 
 export const Route = createFileRoute("/app")({
   head: () => ({ meta: [{ title: "Painel — Redis" }] }),
   component: AppShell,
 });
 
-const NAV: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
-  { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/app/campus", label: "Campus", icon: Building2 },
+const NAV: {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+  hideForMinistryLeader?: boolean;
+}[] = [
+  {
+    to: "/app",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    exact: true,
+    hideForMinistryLeader: true,
+  },
+  { to: "/app/campus", label: "Campus", icon: Building2, hideForMinistryLeader: true },
   { to: "/app/ministerios", label: "Ministérios", icon: HeartHandshake },
-  { to: "/app/pessoas", label: "Pessoas", icon: Users },
-  { to: "/app/celulas", label: "Células", icon: Sparkles },
-  { to: "/app/eventos", label: "Eventos", icon: Calendar },
-  { to: "/app/cursos", label: "Cursos", icon: GraduationCap },
+  { to: "/app/pessoas", label: "Pessoas", icon: Users, hideForMinistryLeader: true },
+  { to: "/app/celulas", label: "Células", icon: Sparkles, hideForMinistryLeader: true },
+  { to: "/app/eventos", label: "Eventos", icon: Calendar, hideForMinistryLeader: true },
+  { to: "/app/cursos", label: "Cursos", icon: GraduationCap, hideForMinistryLeader: true },
 ];
 
+// A "ministry leader" account (local or general, not the mega-church manager) only
+// has Ministérios to manage — the other areas (Campus, Pessoas, Eventos...) are out
+// of their scope. Células stays hidden for everyone here too, until it's a real,
+// backend-linked feature instead of the mock-only leaderId concept in mock-store.ts.
+function isMinistryLeaderOnly(me: Me | undefined): boolean {
+  return (
+    !!me && !me.is_manager && (me.led_ministries.length > 0 || me.general_led_kinds.length > 0)
+  );
+}
+
 function AppShell() {
+  const navigate = useNavigate();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!hasAccessToken()) {
+      navigate({ to: "/login" });
+      return;
+    }
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: "/login" });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
+  // Client-only guard (no token / not yet authenticated) — render nothing while
+  // useEffect above redirects, same SSR-tolerance pattern the mock store used.
+  if (typeof window === "undefined" || !hasAccessToken() || isLoading || !isAuthenticated) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">
+        Carregando…
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
@@ -69,6 +116,9 @@ function AppShell() {
 
 function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const { me } = useAuth();
+  const ministryLeaderOnly = isMinistryLeaderOnly(me);
+  const items = NAV.filter((item) => !(item.hideForMinistryLeader && ministryLeaderOnly));
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
@@ -89,7 +139,7 @@ function AppSidebar() {
           <SidebarGroupLabel>Geral</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV.map((item) => {
+              {items.map((item) => {
                 const active = item.exact ? pathname === item.to : pathname.startsWith(item.to);
                 return (
                   <SidebarMenuItem key={item.to}>
@@ -115,17 +165,27 @@ function AppSidebar() {
 
 function UserMenu() {
   const navigate = useNavigate();
-  const role = useDB((d) => d.currentRole);
+  const { me, logout } = useAuth();
+  const initials = me
+    ? me.name
+        .split(" ")
+        .map((s) => s[0])
+        .slice(0, 2)
+        .join("")
+    : "…";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex w-full items-center gap-2 rounded-md p-1.5 text-left hover:bg-sidebar-accent">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">PD</AvatarFallback>
+            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+              {initials}
+            </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1 leading-tight group-data-[collapsible=icon]:hidden">
-            <div className="truncate text-sm font-medium">Pastor Demo</div>
-            <div className="truncate text-xs text-muted-foreground">{ROLE_LABEL[role]}</div>
+            <div className="truncate text-sm font-medium">{me?.name ?? "…"}</div>
+            <div className="truncate text-xs text-muted-foreground">{deriveRoleLabel(me)}</div>
           </div>
           <ChevronsUpDown className="h-4 w-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
         </button>
@@ -135,12 +195,10 @@ function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
-            actions.reset();
+            logout();
+            navigate({ to: "/login" });
           }}
         >
-          Resetar dados de demo
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate({ to: "/" })}>
           <LogOut className="mr-2 h-4 w-4" /> Sair
         </DropdownMenuItem>
       </DropdownMenuContent>

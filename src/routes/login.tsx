@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RedisLogo } from "@/components/brand/RedisLogo";
+import { ApiError, AuthError } from "@/lib/api/client";
+import { login } from "@/lib/api/auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — Redis" }] }),
@@ -12,18 +14,27 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
+    setSubmitting(true);
     try {
-      localStorage.setItem(
-        "redis-user",
-        JSON.stringify({ name: name || "Pastor Demo", email: email || "demo@igreja.org" }),
-      );
-    } catch {}
-    navigate({ to: "/app" });
+      await login(email, password);
+      navigate({ to: "/app" });
+    } catch (err) {
+      if (err instanceof AuthError || (err instanceof ApiError && err.status === 401)) {
+        setError("Email ou senha inválidos.");
+      } else {
+        setError("Não foi possível conectar à API. Tente novamente.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -36,7 +47,6 @@ function Login() {
           <p className="max-w-md text-2xl font-medium leading-snug tracking-tight text-foreground">
             "Uma plataforma que enxerga a igreja inteira — do gestor geral ao líder de célula."
           </p>
-          <p className="mt-4 text-sm text-muted-foreground">Protótipo de demonstração</p>
         </div>
         <div className="text-xs text-muted-foreground">© Redis 2026</div>
       </div>
@@ -45,42 +55,36 @@ function Login() {
         <form onSubmit={submit} className="w-full max-w-sm space-y-6">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Entrar</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Use qualquer nome e email para acessar a demo.
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">Acesse com seu email e senha.</p>
           </div>
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Nome</Label>
-              <Input
-                id="name"
-                placeholder="Pastor João"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="voce@igreja.org"
+                placeholder="voce@ilan.church"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pwd">Senha</Label>
-              <Input id="pwd" type="password" placeholder="••••••••" />
+              <Input
+                id="pwd"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
           </div>
-          <Button type="submit" className="w-full">
-            Entrar na plataforma
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? "Entrando…" : "Entrar na plataforma"}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            Ainda sem cadastro?{" "}
-            <span className="text-foreground underline underline-offset-4">Criar conta</span>
-          </p>
         </form>
       </div>
     </div>
