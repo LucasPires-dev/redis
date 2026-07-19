@@ -1,4 +1,5 @@
 // Frontend-only mock store. Persists in localStorage. No backend.
+// Role hierarchy and visibility rules are documented in docs/access-levels.md
 import { useSyncExternalStore } from "react";
 
 export type RoleKey =
@@ -77,6 +78,7 @@ interface DB {
   currentMinistryKind: MinistryKind;
   campuses: Campus[];
   ministries: Ministry[];
+  ministryGeneralLeaders: Record<MinistryKind, string>; // líder geral do ministério (todos os campus)
   people: Person[];
   cells: Cell[];
   courses: Course[];
@@ -84,7 +86,7 @@ interface DB {
   attendance: Attendance[];
 }
 
-const KEY = "mega-church-db-v1";
+const KEY = "mega-church-db-v2";
 
 function seed(): DB {
   const campuses: Campus[] = [
@@ -124,6 +126,25 @@ function seed(): DB {
     });
     cell.memberIds.push(`p-${i}`);
   }
+
+  // Resolve leaders to real people so the leadership hierarchy (líder geral →
+  // líder local) shows up meaningfully in the UI instead of dangling ids.
+  for (const c of cells) {
+    c.leaderId = c.memberIds[0] ?? "";
+  }
+  for (const c of campuses) {
+    c.leaderId = people.find((p) => p.campusId === c.id)?.id ?? "";
+  }
+  for (const m of ministries) {
+    m.leaderId = people.find((p) => p.ministryIds.includes(m.id))?.id ?? "";
+  }
+  const ministryGeneralLeaders = {} as Record<MinistryKind, string>;
+  for (const k of kinds) {
+    const inKind = ministries.filter((m) => m.kind === k);
+    ministryGeneralLeaders[k] =
+      people.find((p) => inKind.some((m) => p.ministryIds.includes(m.id)))?.id ?? "";
+  }
+
   const courses: Course[] = [
     { id: "co1", campusId: null, name: "Escola de Líderes", description: "Formação de novos líderes.", enrolled: 42 },
     { id: "co2", campusId: null, name: "Fundamentos da Fé", description: "Curso para novos convertidos.", enrolled: 128 },
@@ -146,6 +167,7 @@ function seed(): DB {
     currentMinistryKind: "jovens",
     campuses,
     ministries,
+    ministryGeneralLeaders,
     people,
     cells,
     courses,
@@ -274,6 +296,20 @@ export function visibleEvents(d: DB): ChurchEvent[] {
             e.campusId === d.currentCampusId &&
             d.ministries.find((m) => m.id === e.ministryId)?.kind === d.currentMinistryKind),
       );
+  }
+}
+
+// Can the active role view a given ministry kind at a given campus?
+export function canAccessMinistryAtCampus(d: DB, kind: MinistryKind, campusId: string): boolean {
+  switch (d.currentRole) {
+    case "gestor":
+      return true;
+    case "lider_geral_ministerio":
+      return kind === d.currentMinistryKind;
+    case "lider_campus":
+      return campusId === d.currentCampusId;
+    case "lider_ministerio_campus":
+      return kind === d.currentMinistryKind && campusId === d.currentCampusId;
   }
 }
 

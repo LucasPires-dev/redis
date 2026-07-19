@@ -8,7 +8,7 @@ import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { useDB } from "@/lib/mock-store";
 
-export const Route = createFileRoute("/app/celulas/$id")({
+export const Route = createFileRoute("/app/celulas_/$id")({
   head: () => ({ meta: [{ title: "Célula — Redis" }] }),
   component: CellDetail,
   notFoundComponent: () => (

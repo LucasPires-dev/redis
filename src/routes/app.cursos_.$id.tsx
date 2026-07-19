@@ -7,7 +7,7 @@ import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection } from "@/components/detail/DetailSection";
 import { useDB } from "@/lib/mock-store";
 
-export const Route = createFileRoute("/app/cursos/$id")({
+export const Route = createFileRoute("/app/cursos_/$id")({
   head: () => ({ meta: [{ title: "Curso — Redis" }] }),
   component: CourseDetail,
   notFoundComponent: () => (

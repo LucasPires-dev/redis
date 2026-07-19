@@ -17,7 +17,7 @@ import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection } from "@/components/detail/DetailSection";
 import { useDB, MINISTRY_LABEL } from "@/lib/mock-store";
 
-export const Route = createFileRoute("/app/pessoas/$id")({
+export const Route = createFileRoute("/app/pessoas_/$id")({
   head: () => ({ meta: [{ title: "Pessoa — Redis" }] }),
   component: PersonDetail,
   notFoundComponent: () => (

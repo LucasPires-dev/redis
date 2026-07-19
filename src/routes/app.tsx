@@ -25,14 +25,6 @@ import {
   SidebarTrigger,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -42,7 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ROLE_LABEL, MINISTRY_LABEL, actions, useDB, type RoleKey, type MinistryKind } from "@/lib/mock-store";
+import { ROLE_LABEL, actions, useDB } from "@/lib/mock-store";
 
 export const Route = createFileRoute("/app")({
   head: () => ({ meta: [{ title: "Painel — Redis" }] }),
@@ -155,66 +147,10 @@ function UserMenu() {
 }
 
 function TopBar() {
-  const role = useDB((d) => d.currentRole);
-  const currentCampusId = useDB((d) => d.currentCampusId);
-  const currentMinistryKind = useDB((d) => d.currentMinistryKind);
-  const campuses = useDB((d) => d.campuses);
-
-  const showCampus = role === "lider_campus" || role === "lider_ministerio_campus";
-  const showMinistry = role === "lider_geral_ministerio" || role === "lider_ministerio_campus";
-
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
       <SidebarTrigger />
-      <div className="ml-2 flex flex-1 items-center gap-2">
-        <span className="text-xs text-muted-foreground">Perfil de demonstração</span>
-        <Select value={role} onValueChange={(v) => actions.setRole(v as RoleKey)}>
-          <SelectTrigger className="h-8 w-[240px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(ROLE_LABEL) as RoleKey[]).map((k) => (
-              <SelectItem key={k} value={k}>
-                {ROLE_LABEL[k]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {showCampus && (
-          <Select value={currentCampusId} onValueChange={(v) => actions.setCampus(v)}>
-            <SelectTrigger className="h-8 w-[180px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {campuses.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        {showMinistry && (
-          <Select
-            value={currentMinistryKind}
-            onValueChange={(v) => actions.setMinistryKind(v as MinistryKind)}
-          >
-            <SelectTrigger className="h-8 w-[160px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(MINISTRY_LABEL) as MinistryKind[]).map((k) => (
-                <SelectItem key={k} value={k}>
-                  {MINISTRY_LABEL[k]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
-      <Button size="sm" variant="outline" onClick={() => actions.reset()}>
-        Resetar demo
-      </Button>
+      <div className="flex-1" />
     </header>
   );
 }

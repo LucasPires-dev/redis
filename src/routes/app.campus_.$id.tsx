@@ -14,7 +14,7 @@ import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { MINISTRY_LABEL, useDB } from "@/lib/mock-store";
 
-export const Route = createFileRoute("/app/campus/$id")({
+export const Route = createFileRoute("/app/campus_/$id")({
   head: () => ({ meta: [{ title: "Campus — Redis" }] }),
   component: CampusDetail,
   notFoundComponent: () => (
@@ -57,7 +57,11 @@ function CampusDetail() {
           {ministries.map((m) => {
             const members = db.people.filter((p) => p.ministryIds.includes(m.id)).length;
             return (
-              <Link key={m.id} to="/app/ministerios/$kind" params={{ kind: m.kind }}>
+              <Link
+                key={m.id}
+                to="/app/ministerios/$kind/$campusId"
+                params={{ kind: m.kind, campusId: campus.id }}
+              >
                 <Card className="h-full transition-colors hover:border-primary/40">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">

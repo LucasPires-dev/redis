@@ -9,7 +9,7 @@ import { useDB, MINISTRY_LABEL, ROLE_LABEL } from "@/lib/mock-store";
 
 const scopeIcon = { geral: Globe, campus: Building2, ministerio: HeartHandshake } as const;
 
-export const Route = createFileRoute("/app/eventos/$id")({
+export const Route = createFileRoute("/app/eventos_/$id")({
   head: () => ({ meta: [{ title: "Evento — Redis" }] }),
   component: EventDetail,
   notFoundComponent: () => (

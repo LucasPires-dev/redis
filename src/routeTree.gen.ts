@@ -9,26 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/app.index'
-import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
-import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
-import { Route as AppEventosRouteImport } from './routes/app.eventos'
-import { Route as AppCursosRouteImport } from './routes/app.cursos'
-import { Route as AppCelulasRouteImport } from './routes/app.celulas'
 import { Route as AppCampusRouteImport } from './routes/app.campus'
-import { Route as AppPessoasIdRouteImport } from './routes/app.pessoas.$id'
-import { Route as AppMinisteriosKindRouteImport } from './routes/app.ministerios.$kind'
-import { Route as AppEventosIdRouteImport } from './routes/app.eventos.$id'
-import { Route as AppCursosIdRouteImport } from './routes/app.cursos.$id'
-import { Route as AppCelulasIdRouteImport } from './routes/app.celulas.$id'
-import { Route as AppCampusIdRouteImport } from './routes/app.campus.$id'
+import { Route as AppCelulasRouteImport } from './routes/app.celulas'
+import { Route as AppCursosRouteImport } from './routes/app.cursos'
+import { Route as AppEventosRouteImport } from './routes/app.eventos'
+import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
+import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
+import { Route as AppCampusIdRouteImport } from './routes/app.campus_.$id'
+import { Route as AppCelulasIdRouteImport } from './routes/app.celulas_.$id'
+import { Route as AppCursosIdRouteImport } from './routes/app.cursos_.$id'
+import { Route as AppEventosIdRouteImport } from './routes/app.eventos_.$id'
+import { Route as AppMinisteriosKindRouteImport } from './routes/app.ministerios_.$kind'
+import { Route as AppPessoasIdRouteImport } from './routes/app.pessoas_.$id'
+import { Route as AppMinisteriosKindCampusIdRouteImport } from './routes/app.ministerios_.$kind_.$campusId'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -36,9 +37,9 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -46,24 +47,9 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppPessoasRoute = AppPessoasRouteImport.update({
-  id: '/pessoas',
-  path: '/pessoas',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMinisteriosRoute = AppMinisteriosRouteImport.update({
-  id: '/ministerios',
-  path: '/ministerios',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppEventosRoute = AppEventosRouteImport.update({
-  id: '/eventos',
-  path: '/eventos',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCursosRoute = AppCursosRouteImport.update({
-  id: '/cursos',
-  path: '/cursos',
+const AppCampusRoute = AppCampusRouteImport.update({
+  id: '/campus',
+  path: '/campus',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCelulasRoute = AppCelulasRouteImport.update({
@@ -71,52 +57,73 @@ const AppCelulasRoute = AppCelulasRouteImport.update({
   path: '/celulas',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCampusRoute = AppCampusRouteImport.update({
-  id: '/campus',
-  path: '/campus',
+const AppCursosRoute = AppCursosRouteImport.update({
+  id: '/cursos',
+  path: '/cursos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEventosRoute = AppEventosRouteImport.update({
+  id: '/eventos',
+  path: '/eventos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMinisteriosRoute = AppMinisteriosRouteImport.update({
+  id: '/ministerios',
+  path: '/ministerios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPessoasRoute = AppPessoasRouteImport.update({
+  id: '/pessoas',
+  path: '/pessoas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCampusIdRoute = AppCampusIdRouteImport.update({
+  id: '/campus_/$id',
+  path: '/campus/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCelulasIdRoute = AppCelulasIdRouteImport.update({
+  id: '/celulas_/$id',
+  path: '/celulas/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCursosIdRoute = AppCursosIdRouteImport.update({
+  id: '/cursos_/$id',
+  path: '/cursos/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEventosIdRoute = AppEventosIdRouteImport.update({
+  id: '/eventos_/$id',
+  path: '/eventos/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMinisteriosKindRoute = AppMinisteriosKindRouteImport.update({
+  id: '/ministerios_/$kind',
+  path: '/ministerios/$kind',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPessoasIdRoute = AppPessoasIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppPessoasRoute,
+  id: '/pessoas_/$id',
+  path: '/pessoas/$id',
+  getParentRoute: () => AppRoute,
 } as any)
-const AppMinisteriosKindRoute = AppMinisteriosKindRouteImport.update({
-  id: '/$kind',
-  path: '/$kind',
-  getParentRoute: () => AppMinisteriosRoute,
-} as any)
-const AppEventosIdRoute = AppEventosIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppEventosRoute,
-} as any)
-const AppCursosIdRoute = AppCursosIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppCursosRoute,
-} as any)
-const AppCelulasIdRoute = AppCelulasIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppCelulasRoute,
-} as any)
-const AppCampusIdRoute = AppCampusIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppCampusRoute,
-} as any)
+const AppMinisteriosKindCampusIdRoute =
+  AppMinisteriosKindCampusIdRouteImport.update({
+    id: '/ministerios_/$kind_/$campusId',
+    path: '/ministerios/$kind/$campusId',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/app/campus': typeof AppCampusRouteWithChildren
-  '/app/celulas': typeof AppCelulasRouteWithChildren
-  '/app/cursos': typeof AppCursosRouteWithChildren
-  '/app/eventos': typeof AppEventosRouteWithChildren
-  '/app/ministerios': typeof AppMinisteriosRouteWithChildren
-  '/app/pessoas': typeof AppPessoasRouteWithChildren
+  '/app/campus': typeof AppCampusRoute
+  '/app/celulas': typeof AppCelulasRoute
+  '/app/cursos': typeof AppCursosRoute
+  '/app/eventos': typeof AppEventosRoute
+  '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/pessoas': typeof AppPessoasRoute
   '/app/': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/$id': typeof AppCelulasIdRoute
@@ -124,16 +131,17 @@ export interface FileRoutesByFullPath {
   '/app/eventos/$id': typeof AppEventosIdRoute
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
+  '/app/ministerios/$kind/$campusId': typeof AppMinisteriosKindCampusIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/app/campus': typeof AppCampusRouteWithChildren
-  '/app/celulas': typeof AppCelulasRouteWithChildren
-  '/app/cursos': typeof AppCursosRouteWithChildren
-  '/app/eventos': typeof AppEventosRouteWithChildren
-  '/app/ministerios': typeof AppMinisteriosRouteWithChildren
-  '/app/pessoas': typeof AppPessoasRouteWithChildren
+  '/app/campus': typeof AppCampusRoute
+  '/app/celulas': typeof AppCelulasRoute
+  '/app/cursos': typeof AppCursosRoute
+  '/app/eventos': typeof AppEventosRoute
+  '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/pessoas': typeof AppPessoasRoute
   '/app': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/$id': typeof AppCelulasIdRoute
@@ -141,25 +149,27 @@ export interface FileRoutesByTo {
   '/app/eventos/$id': typeof AppEventosIdRoute
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
+  '/app/ministerios/$kind/$campusId': typeof AppMinisteriosKindCampusIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/app/campus': typeof AppCampusRouteWithChildren
-  '/app/celulas': typeof AppCelulasRouteWithChildren
-  '/app/cursos': typeof AppCursosRouteWithChildren
-  '/app/eventos': typeof AppEventosRouteWithChildren
-  '/app/ministerios': typeof AppMinisteriosRouteWithChildren
-  '/app/pessoas': typeof AppPessoasRouteWithChildren
+  '/app/campus': typeof AppCampusRoute
+  '/app/celulas': typeof AppCelulasRoute
+  '/app/cursos': typeof AppCursosRoute
+  '/app/eventos': typeof AppEventosRoute
+  '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/pessoas': typeof AppPessoasRoute
   '/app/': typeof AppIndexRoute
-  '/app/campus/$id': typeof AppCampusIdRoute
-  '/app/celulas/$id': typeof AppCelulasIdRoute
-  '/app/cursos/$id': typeof AppCursosIdRoute
-  '/app/eventos/$id': typeof AppEventosIdRoute
-  '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
-  '/app/pessoas/$id': typeof AppPessoasIdRoute
+  '/app/campus_/$id': typeof AppCampusIdRoute
+  '/app/celulas_/$id': typeof AppCelulasIdRoute
+  '/app/cursos_/$id': typeof AppCursosIdRoute
+  '/app/eventos_/$id': typeof AppEventosIdRoute
+  '/app/ministerios_/$kind': typeof AppMinisteriosKindRoute
+  '/app/pessoas_/$id': typeof AppPessoasIdRoute
+  '/app/ministerios_/$kind_/$campusId': typeof AppMinisteriosKindCampusIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/app/eventos/$id'
     | '/app/ministerios/$kind'
     | '/app/pessoas/$id'
+    | '/app/ministerios/$kind/$campusId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/app/eventos/$id'
     | '/app/ministerios/$kind'
     | '/app/pessoas/$id'
+    | '/app/ministerios/$kind/$campusId'
   id:
     | '__root__'
     | '/'
@@ -209,12 +221,13 @@ export interface FileRouteTypes {
     | '/app/ministerios'
     | '/app/pessoas'
     | '/app/'
-    | '/app/campus/$id'
-    | '/app/celulas/$id'
-    | '/app/cursos/$id'
-    | '/app/eventos/$id'
-    | '/app/ministerios/$kind'
-    | '/app/pessoas/$id'
+    | '/app/campus_/$id'
+    | '/app/celulas_/$id'
+    | '/app/cursos_/$id'
+    | '/app/eventos_/$id'
+    | '/app/ministerios_/$kind'
+    | '/app/pessoas_/$id'
+    | '/app/ministerios_/$kind_/$campusId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -225,11 +238,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -239,11 +252,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -253,32 +266,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/pessoas': {
-      id: '/app/pessoas'
-      path: '/pessoas'
-      fullPath: '/app/pessoas'
-      preLoaderRoute: typeof AppPessoasRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/ministerios': {
-      id: '/app/ministerios'
-      path: '/ministerios'
-      fullPath: '/app/ministerios'
-      preLoaderRoute: typeof AppMinisteriosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/eventos': {
-      id: '/app/eventos'
-      path: '/eventos'
-      fullPath: '/app/eventos'
-      preLoaderRoute: typeof AppEventosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/cursos': {
-      id: '/app/cursos'
-      path: '/cursos'
-      fullPath: '/app/cursos'
-      preLoaderRoute: typeof AppCursosRouteImport
+    '/app/campus': {
+      id: '/app/campus'
+      path: '/campus'
+      fullPath: '/app/campus'
+      preLoaderRoute: typeof AppCampusRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/celulas': {
@@ -288,148 +280,118 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCelulasRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/campus': {
-      id: '/app/campus'
-      path: '/campus'
-      fullPath: '/app/campus'
-      preLoaderRoute: typeof AppCampusRouteImport
+    '/app/cursos': {
+      id: '/app/cursos'
+      path: '/cursos'
+      fullPath: '/app/cursos'
+      preLoaderRoute: typeof AppCursosRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/pessoas/$id': {
-      id: '/app/pessoas/$id'
-      path: '/$id'
-      fullPath: '/app/pessoas/$id'
-      preLoaderRoute: typeof AppPessoasIdRouteImport
-      parentRoute: typeof AppPessoasRoute
+    '/app/eventos': {
+      id: '/app/eventos'
+      path: '/eventos'
+      fullPath: '/app/eventos'
+      preLoaderRoute: typeof AppEventosRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/app/ministerios/$kind': {
-      id: '/app/ministerios/$kind'
-      path: '/$kind'
-      fullPath: '/app/ministerios/$kind'
-      preLoaderRoute: typeof AppMinisteriosKindRouteImport
-      parentRoute: typeof AppMinisteriosRoute
+    '/app/ministerios': {
+      id: '/app/ministerios'
+      path: '/ministerios'
+      fullPath: '/app/ministerios'
+      preLoaderRoute: typeof AppMinisteriosRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/app/eventos/$id': {
-      id: '/app/eventos/$id'
-      path: '/$id'
-      fullPath: '/app/eventos/$id'
-      preLoaderRoute: typeof AppEventosIdRouteImport
-      parentRoute: typeof AppEventosRoute
+    '/app/pessoas': {
+      id: '/app/pessoas'
+      path: '/pessoas'
+      fullPath: '/app/pessoas'
+      preLoaderRoute: typeof AppPessoasRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/app/cursos/$id': {
-      id: '/app/cursos/$id'
-      path: '/$id'
-      fullPath: '/app/cursos/$id'
-      preLoaderRoute: typeof AppCursosIdRouteImport
-      parentRoute: typeof AppCursosRoute
-    }
-    '/app/celulas/$id': {
-      id: '/app/celulas/$id'
-      path: '/$id'
-      fullPath: '/app/celulas/$id'
-      preLoaderRoute: typeof AppCelulasIdRouteImport
-      parentRoute: typeof AppCelulasRoute
-    }
-    '/app/campus/$id': {
-      id: '/app/campus/$id'
-      path: '/$id'
+    '/app/campus_/$id': {
+      id: '/app/campus_/$id'
+      path: '/campus/$id'
       fullPath: '/app/campus/$id'
       preLoaderRoute: typeof AppCampusIdRouteImport
-      parentRoute: typeof AppCampusRoute
+      parentRoute: typeof AppRoute
+    }
+    '/app/celulas_/$id': {
+      id: '/app/celulas_/$id'
+      path: '/celulas/$id'
+      fullPath: '/app/celulas/$id'
+      preLoaderRoute: typeof AppCelulasIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/cursos_/$id': {
+      id: '/app/cursos_/$id'
+      path: '/cursos/$id'
+      fullPath: '/app/cursos/$id'
+      preLoaderRoute: typeof AppCursosIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/eventos_/$id': {
+      id: '/app/eventos_/$id'
+      path: '/eventos/$id'
+      fullPath: '/app/eventos/$id'
+      preLoaderRoute: typeof AppEventosIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/ministerios_/$kind': {
+      id: '/app/ministerios_/$kind'
+      path: '/ministerios/$kind'
+      fullPath: '/app/ministerios/$kind'
+      preLoaderRoute: typeof AppMinisteriosKindRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/pessoas_/$id': {
+      id: '/app/pessoas_/$id'
+      path: '/pessoas/$id'
+      fullPath: '/app/pessoas/$id'
+      preLoaderRoute: typeof AppPessoasIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/ministerios_/$kind_/$campusId': {
+      id: '/app/ministerios_/$kind_/$campusId'
+      path: '/ministerios/$kind/$campusId'
+      fullPath: '/app/ministerios/$kind/$campusId'
+      preLoaderRoute: typeof AppMinisteriosKindCampusIdRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
-interface AppCampusRouteChildren {
-  AppCampusIdRoute: typeof AppCampusIdRoute
-}
-
-const AppCampusRouteChildren: AppCampusRouteChildren = {
-  AppCampusIdRoute: AppCampusIdRoute,
-}
-
-const AppCampusRouteWithChildren = AppCampusRoute._addFileChildren(
-  AppCampusRouteChildren,
-)
-
-interface AppCelulasRouteChildren {
-  AppCelulasIdRoute: typeof AppCelulasIdRoute
-}
-
-const AppCelulasRouteChildren: AppCelulasRouteChildren = {
-  AppCelulasIdRoute: AppCelulasIdRoute,
-}
-
-const AppCelulasRouteWithChildren = AppCelulasRoute._addFileChildren(
-  AppCelulasRouteChildren,
-)
-
-interface AppCursosRouteChildren {
-  AppCursosIdRoute: typeof AppCursosIdRoute
-}
-
-const AppCursosRouteChildren: AppCursosRouteChildren = {
-  AppCursosIdRoute: AppCursosIdRoute,
-}
-
-const AppCursosRouteWithChildren = AppCursosRoute._addFileChildren(
-  AppCursosRouteChildren,
-)
-
-interface AppEventosRouteChildren {
-  AppEventosIdRoute: typeof AppEventosIdRoute
-}
-
-const AppEventosRouteChildren: AppEventosRouteChildren = {
-  AppEventosIdRoute: AppEventosIdRoute,
-}
-
-const AppEventosRouteWithChildren = AppEventosRoute._addFileChildren(
-  AppEventosRouteChildren,
-)
-
-interface AppMinisteriosRouteChildren {
-  AppMinisteriosKindRoute: typeof AppMinisteriosKindRoute
-}
-
-const AppMinisteriosRouteChildren: AppMinisteriosRouteChildren = {
-  AppMinisteriosKindRoute: AppMinisteriosKindRoute,
-}
-
-const AppMinisteriosRouteWithChildren = AppMinisteriosRoute._addFileChildren(
-  AppMinisteriosRouteChildren,
-)
-
-interface AppPessoasRouteChildren {
-  AppPessoasIdRoute: typeof AppPessoasIdRoute
-}
-
-const AppPessoasRouteChildren: AppPessoasRouteChildren = {
-  AppPessoasIdRoute: AppPessoasIdRoute,
-}
-
-const AppPessoasRouteWithChildren = AppPessoasRoute._addFileChildren(
-  AppPessoasRouteChildren,
-)
-
 interface AppRouteChildren {
-  AppCampusRoute: typeof AppCampusRouteWithChildren
-  AppCelulasRoute: typeof AppCelulasRouteWithChildren
-  AppCursosRoute: typeof AppCursosRouteWithChildren
-  AppEventosRoute: typeof AppEventosRouteWithChildren
-  AppMinisteriosRoute: typeof AppMinisteriosRouteWithChildren
-  AppPessoasRoute: typeof AppPessoasRouteWithChildren
+  AppCampusRoute: typeof AppCampusRoute
+  AppCelulasRoute: typeof AppCelulasRoute
+  AppCursosRoute: typeof AppCursosRoute
+  AppEventosRoute: typeof AppEventosRoute
+  AppMinisteriosRoute: typeof AppMinisteriosRoute
+  AppPessoasRoute: typeof AppPessoasRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppCampusIdRoute: typeof AppCampusIdRoute
+  AppCelulasIdRoute: typeof AppCelulasIdRoute
+  AppCursosIdRoute: typeof AppCursosIdRoute
+  AppEventosIdRoute: typeof AppEventosIdRoute
+  AppMinisteriosKindRoute: typeof AppMinisteriosKindRoute
+  AppPessoasIdRoute: typeof AppPessoasIdRoute
+  AppMinisteriosKindCampusIdRoute: typeof AppMinisteriosKindCampusIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppCampusRoute: AppCampusRouteWithChildren,
-  AppCelulasRoute: AppCelulasRouteWithChildren,
-  AppCursosRoute: AppCursosRouteWithChildren,
-  AppEventosRoute: AppEventosRouteWithChildren,
-  AppMinisteriosRoute: AppMinisteriosRouteWithChildren,
-  AppPessoasRoute: AppPessoasRouteWithChildren,
+  AppCampusRoute: AppCampusRoute,
+  AppCelulasRoute: AppCelulasRoute,
+  AppCursosRoute: AppCursosRoute,
+  AppEventosRoute: AppEventosRoute,
+  AppMinisteriosRoute: AppMinisteriosRoute,
+  AppPessoasRoute: AppPessoasRoute,
   AppIndexRoute: AppIndexRoute,
+  AppCampusIdRoute: AppCampusIdRoute,
+  AppCelulasIdRoute: AppCelulasIdRoute,
+  AppCursosIdRoute: AppCursosIdRoute,
+  AppEventosIdRoute: AppEventosIdRoute,
+  AppMinisteriosKindRoute: AppMinisteriosKindRoute,
+  AppPessoasIdRoute: AppPessoasIdRoute,
+  AppMinisteriosKindCampusIdRoute: AppMinisteriosKindCampusIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -442,3 +404,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

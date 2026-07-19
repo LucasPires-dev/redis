@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { HeartHandshake, Users, Droplet, Sparkles, Building2, Calendar } from "lucide-react";
+import { HeartHandshake, Users, Droplet, Sparkles, Building2, Calendar, Crown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DetailHeader } from "@/components/detail/DetailHeader";
@@ -7,7 +7,7 @@ import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { MINISTRY_LABEL, useDB, type MinistryKind } from "@/lib/mock-store";
 
-export const Route = createFileRoute("/app/ministerios/$kind")({
+export const Route = createFileRoute("/app/ministerios_/$kind")({
   head: ({ params }) => ({
     meta: [{ title: `${MINISTRY_LABEL[params.kind as MinistryKind] ?? "Ministério"} — Redis` }],
   }),
@@ -52,6 +52,8 @@ function MinistryDetail() {
   const totalBaptized = rows.reduce((s, r) => s + r.baptized, 0);
   const totalCell = rows.reduce((s, r) => s + r.inCell, 0);
 
+  const generalLeader = db.people.find((p) => p.id === db.ministryGeneralLeaders[k]);
+
   const ministryEvents = db.events.filter(
     (e) =>
       e.scope === "ministerio" &&
@@ -67,6 +69,13 @@ function MinistryDetail() {
         icon={<HeartHandshake className="h-6 w-6" />}
         title={MINISTRY_LABEL[k]}
         subtitle={`Presente em ${rows.length} campus.`}
+        actions={
+          generalLeader && (
+            <Badge variant="outline" className="gap-1.5">
+              <Crown className="h-3 w-3" /> Líder geral: {generalLeader.name}
+            </Badge>
+          )
+        }
       />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -78,26 +87,38 @@ function MinistryDetail() {
 
       <DetailSection title="Por campus" count={rows.length}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {rows.map(({ campus, members, baptized, inCell }) => (
-            <Link key={campus.id} to="/app/campus/$id" params={{ id: campus.id }}>
-              <Card className="h-full transition-colors hover:border-primary/40">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold tracking-tight">{campus.name}</h3>
-                      <p className="text-sm text-muted-foreground">{campus.city}</p>
+          {rows.map(({ campus, ministry, members, baptized, inCell }) => {
+            const localLeader = db.people.find((p) => p.id === ministry.leaderId);
+            return (
+              <Link
+                key={campus.id}
+                to="/app/ministerios/$kind/$campusId"
+                params={{ kind: k, campusId: campus.id }}
+              >
+                <Card className="h-full transition-colors hover:border-primary/40">
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold tracking-tight">{campus.name}</h3>
+                        <p className="text-sm text-muted-foreground">{campus.city}</p>
+                      </div>
+                      <Badge variant="outline">{members.length} pessoas</Badge>
                     </div>
-                    <Badge variant="outline">{members.length} pessoas</Badge>
-                  </div>
-                  <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4 text-center">
-                    <Metric label="Pessoas" value={members.length} />
-                    <Metric label="Batizados" value={baptized} />
-                    <Metric label="Em célula" value={inCell} />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                    {localLeader && (
+                      <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Crown className="h-3 w-3" /> {localLeader.name}
+                      </div>
+                    )}
+                    <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4 text-center">
+                      <Metric label="Pessoas" value={members.length} />
+                      <Metric label="Batizados" value={baptized} />
+                      <Metric label="Em célula" value={inCell} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
           {rows.length === 0 && <EmptyState>Sem campus com este ministério.</EmptyState>}
         </div>
       </DetailSection>
