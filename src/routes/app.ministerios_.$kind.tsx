@@ -1,11 +1,17 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { HeartHandshake, Users, Droplet, Sparkles, Building2, Calendar, Crown } from "lucide-react";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { HeartHandshake, Users, Building2, Crown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
-import { MINISTRY_LABEL, useDB, type MinistryKind } from "@/lib/mock-store";
+import {
+  MINISTRY_LABEL,
+  useMinistries,
+  useMinistryGeneralLeaderships,
+  type MinistryKind,
+} from "@/lib/api/ministries";
 
 export const Route = createFileRoute("/app/ministerios_/$kind")({
   head: ({ params }) => ({
@@ -19,47 +25,36 @@ export const Route = createFileRoute("/app/ministerios_/$kind")({
 
 function MinistryDetail() {
   const { kind } = Route.useParams();
-  const db = useDB((d) => d);
-  const role = db.currentRole;
-
   if (!(kind in MINISTRY_LABEL)) throw notFound();
   const k = kind as MinistryKind;
+  const navigate = useNavigate();
 
-  const scopedCampuses = db.campuses.filter((c) => {
-    if (role === "lider_campus" || role === "lider_ministerio_campus")
-      return c.id === db.currentCampusId;
-    return true;
-  });
+  const { data: ministries, isLoading } = useMinistries();
+  const { data: generalLeaderships } = useMinistryGeneralLeaderships();
 
-  const rows = scopedCampuses
-    .map((campus) => {
-      const ministry = db.ministries.find((m) => m.campusId === campus.id && m.kind === k);
-      if (!ministry) return null;
-      const members = db.people.filter((p) => p.ministryIds.includes(ministry.id));
-      const baptized = members.filter((p) => p.baptized).length;
-      const inCell = members.filter((p) => p.cellId).length;
-      return { campus, ministry, members, baptized, inCell };
-    })
-    .filter(Boolean) as Array<{
-    campus: (typeof db.campuses)[number];
-    ministry: (typeof db.ministries)[number];
-    members: typeof db.people;
-    baptized: number;
-    inCell: number;
-  }>;
+  const rows = (ministries ?? []).filter((m) => m.kind === k);
+  const totalPeople = rows.reduce((s, r) => s + r.member_count, 0);
+  const generalLeaders = generalLeaderships?.find((g) => g.kind === k)?.leaders ?? [];
 
-  const totalPeople = rows.reduce((s, r) => s + r.members.length, 0);
-  const totalBaptized = rows.reduce((s, r) => s + r.baptized, 0);
-  const totalCell = rows.reduce((s, r) => s + r.inCell, 0);
+  // This "one card per campus" list only earns its keep when there's a real choice
+  // to make (a general leader overseeing several campuses). Someone scoped to a
+  // single campus ministry (a local leader/co-leader) always sees exactly one row
+  // here — skip straight to that campus's detail page instead of an extra click.
+  const onlyRow = rows.length === 1 ? rows[0] : undefined;
+  const onlyCampusId = onlyRow?.campus.id;
+  useEffect(() => {
+    if (!isLoading && onlyCampusId) {
+      navigate({
+        to: "/app/ministerios/$kind/$campusId",
+        params: { kind: k, campusId: onlyCampusId },
+        replace: true,
+      });
+    }
+  }, [isLoading, onlyCampusId, k, navigate]);
 
-  const generalLeader = db.people.find((p) => p.id === db.ministryGeneralLeaders[k]);
-
-  const ministryEvents = db.events.filter(
-    (e) =>
-      e.scope === "ministerio" &&
-      db.ministries.find((m) => m.id === e.ministryId)?.kind === k &&
-      rows.some((r) => r.ministry.campusId === e.campusId),
-  );
+  if (!isLoading && onlyRow) {
+    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -70,9 +65,11 @@ function MinistryDetail() {
         title={MINISTRY_LABEL[k]}
         subtitle={`Presente em ${rows.length} campus.`}
         actions={
-          generalLeader && (
+          generalLeaders.length > 0 && (
             <Badge variant="outline" className="gap-1.5">
-              <Crown className="h-3 w-3" /> Líder geral: {generalLeader.name}
+              <Crown className="h-3 w-3" />{" "}
+              {generalLeaders.length > 1 ? "Líderes gerais" : "Líder geral"}:{" "}
+              {generalLeaders.map((l) => l.name).join(", ")}
             </Badge>
           )
         }
@@ -81,82 +78,48 @@ function MinistryDetail() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard icon={<Building2 className="h-4 w-4" />} label="Campus" value={rows.length} />
         <StatCard icon={<Users className="h-4 w-4" />} label="Pessoas" value={totalPeople} />
-        <StatCard icon={<Droplet className="h-4 w-4" />} label="Batizados" value={totalBaptized} />
-        <StatCard icon={<Sparkles className="h-4 w-4" />} label="Em célula" value={totalCell} />
       </div>
 
       <DetailSection title="Por campus" count={rows.length}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {rows.map(({ campus, ministry, members, baptized, inCell }) => {
-            const localLeader = db.people.find((p) => p.id === ministry.leaderId);
-            return (
-              <Link
-                key={campus.id}
-                to="/app/ministerios/$kind/$campusId"
-                params={{ kind: k, campusId: campus.id }}
-              >
-                <Card className="h-full transition-colors hover:border-primary/40">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold tracking-tight">{campus.name}</h3>
-                        <p className="text-sm text-muted-foreground">{campus.city}</p>
-                      </div>
-                      <Badge variant="outline">{members.length} pessoas</Badge>
-                    </div>
-                    {localLeader && (
-                      <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Crown className="h-3 w-3" /> {localLeader.name}
-                      </div>
-                    )}
-                    <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4 text-center">
-                      <Metric label="Pessoas" value={members.length} />
-                      <Metric label="Batizados" value={baptized} />
-                      <Metric label="Em célula" value={inCell} />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-          {rows.length === 0 && <EmptyState>Sem campus com este ministério.</EmptyState>}
-        </div>
-      </DetailSection>
-
-      <DetailSection title="Próximos eventos ministeriais" count={ministryEvents.length}>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {ministryEvents.map((e) => {
-            const campus = db.campuses.find((c) => c.id === e.campusId);
-            return (
-              <Link key={e.id} to="/app/eventos/$id" params={{ id: e.id }}>
-                <Card className="transition-colors hover:border-primary/40">
-                  <CardContent className="flex items-center justify-between p-4">
+          {rows.map((ministry) => (
+            <Link
+              key={ministry.id}
+              to="/app/ministerios/$kind/$campusId"
+              params={{ kind: k, campusId: ministry.campus.id }}
+            >
+              <Card className="h-full transition-colors hover:border-primary/40">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-sm font-semibold">{e.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {e.date} · {campus?.name}
-                      </div>
+                      <h3 className="text-lg font-semibold tracking-tight">{ministry.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {ministry.campus.name}
+                        {ministry.campus.city && ` · ${ministry.campus.city}`}
+                      </p>
                     </div>
-                    <Badge variant="secondary" className="gap-1">
-                      <Calendar className="h-3 w-3" />
-                    </Badge>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-          {ministryEvents.length === 0 && <EmptyState>Nenhum evento marcado.</EmptyState>}
+                    <Badge variant="outline">{ministry.member_count} pessoas</Badge>
+                  </div>
+                  {ministry.leaders.length > 0 && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Crown className="h-3 w-3" /> {ministry.leaders.map((l) => l.name).join(", ")}
+                    </div>
+                  )}
+                  {ministry.co_leaders.length > 0 && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Colíder{ministry.co_leaders.length > 1 ? "es" : ""}:{" "}
+                      {ministry.co_leaders.map((l) => l.name).join(", ")}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+          {!isLoading && rows.length === 0 && (
+            <EmptyState>Sem campus com este ministério.</EmptyState>
+          )}
         </div>
       </DetailSection>
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <div className="text-lg font-semibold tabular-nums">{value}</div>
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
     </div>
   );
 }

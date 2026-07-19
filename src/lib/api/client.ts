@@ -1,0 +1,114 @@
+// Thin fetch wrapper for the real backend (redis-api). Tokens live in localStorage —
+// the backend only understands `Authorization: Bearer <token>`, no cookie/session support.
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
+const TOKEN_KEY = "redis-auth-v1";
+
+interface Tokens {
+  access: string;
+  refresh: string;
+}
+
+function hasWindow() {
+  return typeof window !== "undefined";
+}
+
+export function getTokens(): Tokens | null {
+  if (!hasWindow()) return null;
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY);
+    return raw ? (JSON.parse(raw) as Tokens) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setTokens(tokens: Tokens) {
+  if (!hasWindow()) return;
+  localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
+}
+
+export function clearTokens() {
+  if (!hasWindow()) return;
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+export function hasAccessToken() {
+  return getTokens()?.access != null;
+}
+
+export class ApiError extends Error {
+  status: number;
+  detail: unknown;
+  constructor(status: number, detail: unknown) {
+    super(typeof detail === "string" ? detail : `Erro ${status} na API`);
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+// Thrown when the session is unrecoverable (no/expired token, refresh failed) — the
+// caller is expected to redirect to /login.
+export class AuthError extends ApiError {}
+
+async function refreshAccessToken(): Promise<string | null> {
+  const tokens = getTokens();
+  if (!tokens?.refresh) return null;
+  const res = await fetch(`${BASE_URL}/api/auth/refresh/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh: tokens.refresh }),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { access: string };
+  setTokens({ access: data.access, refresh: tokens.refresh });
+  return data.access;
+}
+
+export async function apiFetch<T>(
+  path: string,
+  options: RequestInit = {},
+  _isRetry = false,
+): Promise<T> {
+  const tokens = getTokens();
+  const headers = new Headers(options.headers);
+  headers.set("Content-Type", "application/json");
+  if (tokens?.access) headers.set("Authorization", `Bearer ${tokens.access}`);
+
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+
+  if (res.status === 401 && !_isRetry) {
+    const newAccess = await refreshAccessToken();
+    if (newAccess) return apiFetch<T>(path, options, true);
+    clearTokens();
+    throw new AuthError(401, "Sessão expirada. Faça login novamente.");
+  }
+
+  if (res.status === 204) return undefined as T;
+
+  let body: unknown = null;
+  const text = await res.text();
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = text;
+    }
+  }
+
+  if (!res.ok) throw new ApiError(res.status, body);
+  return body as T;
+}
+
+export interface Paginated<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+// Our datasets are tiny for now — fetch page 1 and return the array. Revisit if a
+// list ever needs page 2 (DRF default page size is 25).
+export async function apiList<T>(path: string): Promise<T[]> {
+  const page = await apiFetch<Paginated<T>>(path);
+  return page.results;
+}

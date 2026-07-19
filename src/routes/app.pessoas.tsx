@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Search, Droplet, Sparkles } from "lucide-react";
+import { Plus, Search, Droplet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useDB, actions, visiblePeople, MINISTRY_LABEL } from "@/lib/mock-store";
+import { useCampuses, MINISTRY_LABEL } from "@/lib/api/ministries";
+import { usePeople, useCreatePerson } from "@/lib/api/people";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/pessoas")({
@@ -31,22 +32,21 @@ export const Route = createFileRoute("/app/pessoas")({
   component: PeoplePage,
 });
 
+const emptyForm = { name: "", email: "", password: "", campusId: "", baptized: false };
+
 function PeoplePage() {
-  const db = useDB((d) => d);
   const navigate = useNavigate();
-  const people = visiblePeople(db);
+  const { data: people, isLoading } = usePeople();
+  const { data: campuses } = useCampuses();
+  const createPerson = useCreatePerson();
+
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    campusId: db.campuses[0]?.id ?? "",
-    baptized: false,
-  });
+  const [form, setForm] = useState(emptyForm);
 
   const filtered = useMemo(
     () =>
-      people.filter(
+      (people ?? []).filter(
         (p) =>
           !q ||
           p.name.toLowerCase().includes(q.toLowerCase()) ||
@@ -55,13 +55,34 @@ function PeoplePage() {
     [people, q],
   );
 
+  function submit() {
+    if (!form.name || !form.email || !form.password) return;
+    createPerson.mutate(
+      {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        campus_id: form.campusId || undefined,
+        baptized: form.baptized,
+      },
+      {
+        onSuccess: () => {
+          setForm(emptyForm);
+          setOpen(false);
+          toast.success("Pessoa adicionada");
+        },
+        onError: () => toast.error("Não foi possível adicionar essa pessoa."),
+      },
+    );
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Pessoas</h1>
           <p className="text-sm text-muted-foreground">
-            {filtered.length} pessoas visíveis no seu escopo.
+            {isLoading ? "Carregando…" : `${filtered.length} pessoas visíveis no seu escopo.`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -94,13 +115,21 @@ function PeoplePage() {
                   <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
+                  <Label>Senha</Label>
+                  <Input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
                   <Label>Campus</Label>
                   <Select value={form.campusId} onValueChange={(v) => setForm({ ...form, campusId: v })}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Selecione um campus" />
                     </SelectTrigger>
                     <SelectContent>
-                      {db.campuses.map((c) => (
+                      {(campuses ?? []).map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name}
                         </SelectItem>
@@ -117,23 +146,8 @@ function PeoplePage() {
                 </label>
               </div>
               <DialogFooter>
-                <Button
-                  onClick={() => {
-                    if (!form.name || !form.email) return;
-                    actions.addPerson({
-                      name: form.name,
-                      email: form.email,
-                      campusId: form.campusId,
-                      ministryIds: [],
-                      baptized: form.baptized,
-                      baptizedAt: form.baptized ? new Date().toISOString().slice(0, 10) : undefined,
-                    });
-                    setForm({ name: "", email: "", campusId: db.campuses[0]?.id ?? "", baptized: false });
-                    setOpen(false);
-                    toast.success("Pessoa adicionada");
-                  }}
-                >
-                  Adicionar
+                <Button onClick={submit} disabled={createPerson.isPending}>
+                  {createPerson.isPending ? "Adicionando…" : "Adicionar"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -148,14 +162,11 @@ function PeoplePage() {
               <TableHead>Nome</TableHead>
               <TableHead>Campus</TableHead>
               <TableHead>Ministérios</TableHead>
-              <TableHead>Célula</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.slice(0, 100).map((p) => {
-              const campus = db.campuses.find((c) => c.id === p.campusId);
-              const cell = db.cells.find((c) => c.id === p.cellId);
               const initials = p.name
                 .split(" ")
                 .map((s) => s[0])
@@ -180,27 +191,15 @@ function PeoplePage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{campus?.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{p.campus?.name ?? "—"}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {p.ministryIds.map((mid) => {
-                        const m = db.ministries.find((mm) => mm.id === mid);
-                        return m ? (
-                          <Badge key={mid} variant="secondary" className="capitalize">
-                            {MINISTRY_LABEL[m.kind]}
-                          </Badge>
-                        ) : null;
-                      })}
+                      {p.ministries.map((m) => (
+                        <Badge key={m.id} variant="secondary" className="capitalize">
+                          {MINISTRY_LABEL[m.kind]}
+                        </Badge>
+                      ))}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {cell ? (
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        <Sparkles className="h-3 w-3" /> {cell.name}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
                   </TableCell>
                   <TableCell>
                     {p.baptized ? (
@@ -216,7 +215,7 @@ function PeoplePage() {
             })}
           </TableBody>
         </Table>
-        {filtered.length === 0 && (
+        {!isLoading && filtered.length === 0 && (
           <div className="p-8 text-center text-sm text-muted-foreground">Sem resultados.</div>
         )}
       </div>
