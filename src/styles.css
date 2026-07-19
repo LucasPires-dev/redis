@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Manrope", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -45,41 +45,53 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* Light — clean, Notion/Linear inspired neutrals with a warm indigo accent */
+/* Light — Redis brand: petrol blue + emerald green on Notion/Linear neutrals.
+   Brand tokens from brief:
+     petrol  #114B5F   emerald #1E8E5A
+     ink     #1C1F23   cloud   #F5F7F9   white #FFFFFF */
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.995 0.002 260);
-  --foreground: oklch(0.18 0.02 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 260);
-  --primary: oklch(0.48 0.17 268);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.965 0.005 260);
-  --secondary-foreground: oklch(0.24 0.02 260);
-  --muted: oklch(0.965 0.005 260);
-  --muted-foreground: oklch(0.52 0.015 260);
-  --accent: oklch(0.955 0.02 268);
-  --accent-foreground: oklch(0.32 0.12 268);
+
+  /* Raw brand tokens (used by the logo + hero surfaces) */
+  --brand-petrol: #114b5f;
+  --brand-emerald: #1e8e5a;
+  --brand-ink: #1c1f23;
+  --brand-cloud: #f5f7f9;
+
+  --background: #ffffff;
+  --foreground: oklch(0.22 0.02 220);
+  --card: #ffffff;
+  --card-foreground: oklch(0.22 0.02 220);
+  --popover: #ffffff;
+  --popover-foreground: oklch(0.22 0.02 220);
+  /* Primary = petrol */
+  --primary: oklch(0.36 0.06 220);
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.97 0.005 220);
+  --secondary-foreground: oklch(0.24 0.02 220);
+  --muted: oklch(0.97 0.005 220);
+  --muted-foreground: oklch(0.5 0.012 220);
+  /* Accent = emerald tint */
+  --accent: oklch(0.955 0.03 160);
+  --accent-foreground: oklch(0.38 0.11 160);
   --destructive: oklch(0.58 0.22 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.92 0.005 260);
-  --input: oklch(0.94 0.005 260);
-  --ring: oklch(0.48 0.17 268);
-  --chart-1: oklch(0.55 0.18 268);
-  --chart-2: oklch(0.65 0.15 195);
-  --chart-3: oklch(0.7 0.15 150);
+  --destructive-foreground: #ffffff;
+  --border: oklch(0.92 0.005 220);
+  --input: oklch(0.94 0.005 220);
+  --ring: oklch(0.55 0.11 165);
+  --chart-1: oklch(0.36 0.06 220);
+  --chart-2: oklch(0.6 0.13 165);
+  --chart-3: oklch(0.72 0.12 195);
   --chart-4: oklch(0.75 0.16 65);
   --chart-5: oklch(0.65 0.2 20);
-  --sidebar: oklch(0.985 0.003 260);
-  --sidebar-foreground: oklch(0.28 0.02 260);
-  --sidebar-primary: oklch(0.48 0.17 268);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.955 0.008 260);
-  --sidebar-accent-foreground: oklch(0.24 0.02 260);
-  --sidebar-border: oklch(0.92 0.005 260);
-  --sidebar-ring: oklch(0.48 0.17 268);
+  --sidebar: oklch(0.985 0.003 220);
+  --sidebar-foreground: oklch(0.28 0.02 220);
+  --sidebar-primary: oklch(0.36 0.06 220);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: oklch(0.955 0.012 220);
+  --sidebar-accent-foreground: oklch(0.24 0.02 220);
+  --sidebar-border: oklch(0.92 0.005 220);
+  --sidebar-ring: oklch(0.55 0.11 165);
 }
 
 .dark {
