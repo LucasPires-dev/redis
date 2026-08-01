@@ -3,7 +3,18 @@ import { apiFetch, apiList } from "./client";
 import type { PersonMini } from "./people";
 
 export type MinistryKind =
-  "jovens" | "criancas" | "adolescentes" | "mulheres" | "homens" | "casais";
+  | "jovens"
+  | "criancas"
+  | "adolescentes"
+  | "mulheres"
+  | "homens"
+  | "casais"
+  | "reconciliacao"
+  | "media"
+  | "som"
+  | "iluminacao"
+  | "palco"
+  | "transmissao";
 
 export const MINISTRY_LABEL: Record<MinistryKind, string> = {
   jovens: "Jovens",
@@ -12,7 +23,24 @@ export const MINISTRY_LABEL: Record<MinistryKind, string> = {
   mulheres: "Mulheres",
   homens: "Homens",
   casais: "Casais",
+  reconciliacao: "Reconciliação",
+  media: "Mídia",
+  som: "Som",
+  iluminacao: "Iluminação",
+  palco: "Palco",
+  transmissao: "Transmissão",
 };
+
+// Ministérios "técnicos"/de produção — quem executa a produção de um Evento (ao
+// contrário dos ministérios "de público", que criam Eventos e demandam desses).
+// Mesma classificação de PRODUCTION_MINISTRY_KINDS no backend (apps.churches.choices).
+export const PRODUCTION_MINISTRY_KINDS: MinistryKind[] = [
+  "media",
+  "som",
+  "iluminacao",
+  "palco",
+  "transmissao",
+];
 
 export interface CampusMini {
   id: string;

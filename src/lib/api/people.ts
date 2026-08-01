@@ -64,3 +64,20 @@ export function useCreatePerson() {
     },
   });
 }
+
+export interface UpdatePersonInput {
+  baptized?: boolean;
+  baptized_at?: string | null;
+}
+
+export function useUpdatePerson(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdatePersonInput) =>
+      apiFetch<Person>(`/api/people/${id}/`, { method: "PATCH", body: JSON.stringify(input) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["people", id] });
+      queryClient.invalidateQueries({ queryKey: ["reconciliations"] });
+    },
+  });
+}
