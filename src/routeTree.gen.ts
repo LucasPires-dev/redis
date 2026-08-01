@@ -19,13 +19,17 @@ import { Route as AppCursosRouteImport } from './routes/app.cursos'
 import { Route as AppEventosRouteImport } from './routes/app.eventos'
 import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
 import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
+import { Route as AppProducaoRouteImport } from './routes/app.producao'
 import { Route as AppCampusIdRouteImport } from './routes/app.campus_.$id'
 import { Route as AppCelulasIdRouteImport } from './routes/app.celulas_.$id'
 import { Route as AppCursosIdRouteImport } from './routes/app.cursos_.$id'
 import { Route as AppEventosIdRouteImport } from './routes/app.eventos_.$id'
 import { Route as AppMinisteriosKindRouteImport } from './routes/app.ministerios_.$kind'
 import { Route as AppPessoasIdRouteImport } from './routes/app.pessoas_.$id'
+import { Route as AppProducaoDemandasRouteImport } from './routes/app.producao_.demandas'
+import { Route as AppReconciliacaoDashboardRouteImport } from './routes/app.reconciliacao_.dashboard'
 import { Route as AppMinisteriosKindCampusIdRouteImport } from './routes/app.ministerios_.$kind_.$campusId'
+import { Route as AppProducaoEventosIdRouteImport } from './routes/app.producao_.eventos_.$id'
 import { Route as AppMinisteriosKindCampusIdEquipesTeamIdRouteImport } from './routes/app.ministerios_.$kind_.$campusId_.equipes.$teamId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -78,6 +82,11 @@ const AppPessoasRoute = AppPessoasRouteImport.update({
   path: '/pessoas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProducaoRoute = AppProducaoRouteImport.update({
+  id: '/producao',
+  path: '/producao',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCampusIdRoute = AppCampusIdRouteImport.update({
   id: '/campus_/$id',
   path: '/campus/$id',
@@ -108,12 +117,28 @@ const AppPessoasIdRoute = AppPessoasIdRouteImport.update({
   path: '/pessoas/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProducaoDemandasRoute = AppProducaoDemandasRouteImport.update({
+  id: '/producao_/demandas',
+  path: '/producao/demandas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReconciliacaoDashboardRoute =
+  AppReconciliacaoDashboardRouteImport.update({
+    id: '/reconciliacao_/dashboard',
+    path: '/reconciliacao/dashboard',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppMinisteriosKindCampusIdRoute =
   AppMinisteriosKindCampusIdRouteImport.update({
     id: '/ministerios_/$kind_/$campusId',
     path: '/ministerios/$kind/$campusId',
     getParentRoute: () => AppRoute,
   } as any)
+const AppProducaoEventosIdRoute = AppProducaoEventosIdRouteImport.update({
+  id: '/producao_/eventos_/$id',
+  path: '/producao/eventos/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMinisteriosKindCampusIdEquipesTeamIdRoute =
   AppMinisteriosKindCampusIdEquipesTeamIdRouteImport.update({
     id: '/ministerios_/$kind_/$campusId_/equipes/$teamId',
@@ -131,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/app/eventos': typeof AppEventosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
+  '/app/producao': typeof AppProducaoRoute
   '/app/': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/$id': typeof AppCelulasIdRoute
@@ -138,7 +164,10 @@ export interface FileRoutesByFullPath {
   '/app/eventos/$id': typeof AppEventosIdRoute
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
+  '/app/producao/demandas': typeof AppProducaoDemandasRoute
+  '/app/reconciliacao/dashboard': typeof AppReconciliacaoDashboardRoute
   '/app/ministerios/$kind/$campusId': typeof AppMinisteriosKindCampusIdRoute
+  '/app/producao/eventos/$id': typeof AppProducaoEventosIdRoute
   '/app/ministerios/$kind/$campusId/equipes/$teamId': typeof AppMinisteriosKindCampusIdEquipesTeamIdRoute
 }
 export interface FileRoutesByTo {
@@ -150,6 +179,7 @@ export interface FileRoutesByTo {
   '/app/eventos': typeof AppEventosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
+  '/app/producao': typeof AppProducaoRoute
   '/app': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/$id': typeof AppCelulasIdRoute
@@ -157,7 +187,10 @@ export interface FileRoutesByTo {
   '/app/eventos/$id': typeof AppEventosIdRoute
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
+  '/app/producao/demandas': typeof AppProducaoDemandasRoute
+  '/app/reconciliacao/dashboard': typeof AppReconciliacaoDashboardRoute
   '/app/ministerios/$kind/$campusId': typeof AppMinisteriosKindCampusIdRoute
+  '/app/producao/eventos/$id': typeof AppProducaoEventosIdRoute
   '/app/ministerios/$kind/$campusId/equipes/$teamId': typeof AppMinisteriosKindCampusIdEquipesTeamIdRoute
 }
 export interface FileRoutesById {
@@ -171,6 +204,7 @@ export interface FileRoutesById {
   '/app/eventos': typeof AppEventosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
+  '/app/producao': typeof AppProducaoRoute
   '/app/': typeof AppIndexRoute
   '/app/campus_/$id': typeof AppCampusIdRoute
   '/app/celulas_/$id': typeof AppCelulasIdRoute
@@ -178,7 +212,10 @@ export interface FileRoutesById {
   '/app/eventos_/$id': typeof AppEventosIdRoute
   '/app/ministerios_/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas_/$id': typeof AppPessoasIdRoute
+  '/app/producao_/demandas': typeof AppProducaoDemandasRoute
+  '/app/reconciliacao_/dashboard': typeof AppReconciliacaoDashboardRoute
   '/app/ministerios_/$kind_/$campusId': typeof AppMinisteriosKindCampusIdRoute
+  '/app/producao_/eventos_/$id': typeof AppProducaoEventosIdRoute
   '/app/ministerios_/$kind_/$campusId_/equipes/$teamId': typeof AppMinisteriosKindCampusIdEquipesTeamIdRoute
 }
 export interface FileRouteTypes {
@@ -193,6 +230,7 @@ export interface FileRouteTypes {
     | '/app/eventos'
     | '/app/ministerios'
     | '/app/pessoas'
+    | '/app/producao'
     | '/app/'
     | '/app/campus/$id'
     | '/app/celulas/$id'
@@ -200,7 +238,10 @@ export interface FileRouteTypes {
     | '/app/eventos/$id'
     | '/app/ministerios/$kind'
     | '/app/pessoas/$id'
+    | '/app/producao/demandas'
+    | '/app/reconciliacao/dashboard'
     | '/app/ministerios/$kind/$campusId'
+    | '/app/producao/eventos/$id'
     | '/app/ministerios/$kind/$campusId/equipes/$teamId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -212,6 +253,7 @@ export interface FileRouteTypes {
     | '/app/eventos'
     | '/app/ministerios'
     | '/app/pessoas'
+    | '/app/producao'
     | '/app'
     | '/app/campus/$id'
     | '/app/celulas/$id'
@@ -219,7 +261,10 @@ export interface FileRouteTypes {
     | '/app/eventos/$id'
     | '/app/ministerios/$kind'
     | '/app/pessoas/$id'
+    | '/app/producao/demandas'
+    | '/app/reconciliacao/dashboard'
     | '/app/ministerios/$kind/$campusId'
+    | '/app/producao/eventos/$id'
     | '/app/ministerios/$kind/$campusId/equipes/$teamId'
   id:
     | '__root__'
@@ -232,6 +277,7 @@ export interface FileRouteTypes {
     | '/app/eventos'
     | '/app/ministerios'
     | '/app/pessoas'
+    | '/app/producao'
     | '/app/'
     | '/app/campus_/$id'
     | '/app/celulas_/$id'
@@ -239,7 +285,10 @@ export interface FileRouteTypes {
     | '/app/eventos_/$id'
     | '/app/ministerios_/$kind'
     | '/app/pessoas_/$id'
+    | '/app/producao_/demandas'
+    | '/app/reconciliacao_/dashboard'
     | '/app/ministerios_/$kind_/$campusId'
+    | '/app/producao_/eventos_/$id'
     | '/app/ministerios_/$kind_/$campusId_/equipes/$teamId'
   fileRoutesById: FileRoutesById
 }
@@ -321,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPessoasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/producao': {
+      id: '/app/producao'
+      path: '/producao'
+      fullPath: '/app/producao'
+      preLoaderRoute: typeof AppProducaoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/campus_/$id': {
       id: '/app/campus_/$id'
       path: '/campus/$id'
@@ -363,11 +419,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPessoasIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/producao_/demandas': {
+      id: '/app/producao_/demandas'
+      path: '/producao/demandas'
+      fullPath: '/app/producao/demandas'
+      preLoaderRoute: typeof AppProducaoDemandasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reconciliacao_/dashboard': {
+      id: '/app/reconciliacao_/dashboard'
+      path: '/reconciliacao/dashboard'
+      fullPath: '/app/reconciliacao/dashboard'
+      preLoaderRoute: typeof AppReconciliacaoDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/ministerios_/$kind_/$campusId': {
       id: '/app/ministerios_/$kind_/$campusId'
       path: '/ministerios/$kind/$campusId'
       fullPath: '/app/ministerios/$kind/$campusId'
       preLoaderRoute: typeof AppMinisteriosKindCampusIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/producao_/eventos_/$id': {
+      id: '/app/producao_/eventos_/$id'
+      path: '/producao/eventos/$id'
+      fullPath: '/app/producao/eventos/$id'
+      preLoaderRoute: typeof AppProducaoEventosIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/ministerios_/$kind_/$campusId_/equipes/$teamId': {
@@ -387,6 +464,7 @@ interface AppRouteChildren {
   AppEventosRoute: typeof AppEventosRoute
   AppMinisteriosRoute: typeof AppMinisteriosRoute
   AppPessoasRoute: typeof AppPessoasRoute
+  AppProducaoRoute: typeof AppProducaoRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCampusIdRoute: typeof AppCampusIdRoute
   AppCelulasIdRoute: typeof AppCelulasIdRoute
@@ -394,7 +472,10 @@ interface AppRouteChildren {
   AppEventosIdRoute: typeof AppEventosIdRoute
   AppMinisteriosKindRoute: typeof AppMinisteriosKindRoute
   AppPessoasIdRoute: typeof AppPessoasIdRoute
+  AppProducaoDemandasRoute: typeof AppProducaoDemandasRoute
+  AppReconciliacaoDashboardRoute: typeof AppReconciliacaoDashboardRoute
   AppMinisteriosKindCampusIdRoute: typeof AppMinisteriosKindCampusIdRoute
+  AppProducaoEventosIdRoute: typeof AppProducaoEventosIdRoute
   AppMinisteriosKindCampusIdEquipesTeamIdRoute: typeof AppMinisteriosKindCampusIdEquipesTeamIdRoute
 }
 
@@ -405,6 +486,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEventosRoute: AppEventosRoute,
   AppMinisteriosRoute: AppMinisteriosRoute,
   AppPessoasRoute: AppPessoasRoute,
+  AppProducaoRoute: AppProducaoRoute,
   AppIndexRoute: AppIndexRoute,
   AppCampusIdRoute: AppCampusIdRoute,
   AppCelulasIdRoute: AppCelulasIdRoute,
@@ -412,7 +494,10 @@ const AppRouteChildren: AppRouteChildren = {
   AppEventosIdRoute: AppEventosIdRoute,
   AppMinisteriosKindRoute: AppMinisteriosKindRoute,
   AppPessoasIdRoute: AppPessoasIdRoute,
+  AppProducaoDemandasRoute: AppProducaoDemandasRoute,
+  AppReconciliacaoDashboardRoute: AppReconciliacaoDashboardRoute,
   AppMinisteriosKindCampusIdRoute: AppMinisteriosKindCampusIdRoute,
+  AppProducaoEventosIdRoute: AppProducaoEventosIdRoute,
   AppMinisteriosKindCampusIdEquipesTeamIdRoute:
     AppMinisteriosKindCampusIdEquipesTeamIdRoute,
 }

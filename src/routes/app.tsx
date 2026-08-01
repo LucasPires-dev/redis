@@ -8,6 +8,7 @@ import {
   Sparkles,
   Calendar,
   GraduationCap,
+  Clapperboard,
   ChevronsUpDown,
   LogOut,
 } from "lucide-react";
@@ -36,7 +37,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { hasAccessToken } from "@/lib/api/client";
-import { deriveRoleLabel, useAuth, type Me } from "@/lib/api/auth";
+import {
+  deriveRoleLabel,
+  hasCellLeadership,
+  isMinistryLeaderOnly,
+  isReconciliadorOnly,
+  useAuth,
+} from "@/lib/api/auth";
 
 export const Route = createFileRoute("/app")({
   head: () => ({ meta: [{ title: "Painel — Redis" }] }),
@@ -59,21 +66,13 @@ const NAV: {
   },
   { to: "/app/campus", label: "Campus", icon: Building2, hideForMinistryLeader: true },
   { to: "/app/ministerios", label: "Ministérios", icon: HeartHandshake },
+  { to: "/app/producao", label: "Produção", icon: Clapperboard },
   { to: "/app/pessoas", label: "Pessoas", icon: Users, hideForMinistryLeader: true },
   { to: "/app/celulas", label: "Células", icon: Sparkles, hideForMinistryLeader: true },
   { to: "/app/eventos", label: "Eventos", icon: Calendar, hideForMinistryLeader: true },
   { to: "/app/cursos", label: "Cursos", icon: GraduationCap, hideForMinistryLeader: true },
 ];
 
-// A "ministry leader" account (local or general, not the mega-church manager) only
-// has Ministérios to manage — the other areas (Campus, Pessoas, Eventos...) are out
-// of their scope. Células stays hidden for everyone here too, until it's a real,
-// backend-linked feature instead of the mock-only leaderId concept in mock-store.ts.
-function isMinistryLeaderOnly(me: Me | undefined): boolean {
-  return (
-    !!me && !me.is_manager && (me.led_ministries.length > 0 || me.general_led_kinds.length > 0)
-  );
-}
 
 function AppShell() {
   const navigate = useNavigate();
@@ -117,8 +116,11 @@ function AppShell() {
 function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { me } = useAuth();
-  const ministryLeaderOnly = isMinistryLeaderOnly(me);
-  const items = NAV.filter((item) => !(item.hideForMinistryLeader && ministryLeaderOnly));
+  const restrictedNav = isMinistryLeaderOnly(me) || isReconciliadorOnly(me);
+  const items = NAV.filter((item) => {
+    if (!item.hideForMinistryLeader || !restrictedNav) return true;
+    return item.to === "/app/celulas" && hasCellLeadership(me);
+  });
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">

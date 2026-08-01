@@ -44,7 +44,70 @@ Definidos em [`src/lib/mock-store.ts`](../src/lib/mock-store.ts):
 
 ## Importante
 
-Isso hoje é um protótipo **só de frontend** (dados em `localStorage`, sem backend real). As
-regras de `canAccessMinistryAtCampus`/`visiblePeople`/`visibleEvents` são a especificação de
-como a autorização deve se comportar — quando isso for implementado num backend de verdade,
-essa é a lógica que precisa virar permissão de API, não só filtro de UI.
+`lider_campus` (Líder de Campus) já é um papel real no backend (`redis-api`), não mais só
+protótipo de frontend: `apps.churches.models.CampusLeadership` + `led_campuses`/
+`can_manage_campus` em `apps.churches.permissions`, seguindo o mesmo padrão de
+`CellLeadership`/`TeamLeadership`/`MinistryLeadership` — uma liderança é uma linha
+reatribuível, não um campo fixo na pessoa. Ele dá acesso a todo ministério, célula, equipe e
+atividade do campus liderado (`scope_ministries`/`scope_cells`/`scope_teams`/`scope_activities`
+já incluem essa condição), e aparece em `/api/auth/me/` como `led_campuses`.
+
+O restante deste documento — `RoleKey`, o seletor de papel no topo do app, `visiblePeople`/
+`visibleEvents` — continua sendo só um protótipo de frontend (`mock-store.ts`), usado apenas
+pelas telas ainda não migradas para a API real (`/app/campus`, `/app/cursos`, `/app/eventos`).
+Para as telas já migradas (`/app/ministerios`, `/app/celulas`, `/app/pessoas`,
+`/app/reconciliacao`), a autorização é sempre a da API — o filtro de UI aqui é só reflexo dela.
+
+## Ministério de Reconciliação
+
+Acompanhamento de novos convertidos. Modelado como mais um `MinistryKind`
+(`"reconciliacao"`) — reaproveita 100% da estrutura de liderança de ministério:
+`Ministry(kind="reconciliacao").members` é o time de reconciliadores; seus líderes/colíderes
+locais são o "líder do ministério do campus"; `MinistryGeneralLeadership(kind="reconciliacao")`
+é o líder geral.
+
+- Novos convertidos entram como `ReconciliationLead` (linha crua importada da planilha do
+  Google conectada ao Forms) — descartável, sem login. Um líder de campus ou do ministério
+  triagem/atribui a um reconciliador, o que cria a `Person` de verdade (sem senha ainda) e o
+  registro `Reconciliation` de acompanhamento.
+- Batismo reaproveita `Person.baptized`/`baptized_at`; GT reaproveita `Cell.members`; servir
+  reaproveita `Ministry.members` — nada é duplicado. `Reconciliation` só guarda o que não existe
+  em outro lugar: `reconciliador`, `jornada_completed`/`jornada_completed_at`, auditoria de
+  atribuição.
+- App dedicado: `apps.reconciliation` (models/permissions/views/urls próprios, sincronização
+  via `python manage.py sync_reconciliation_leads`).
+- Frontend: `/app/reconciliacao` (triagem) e `/app/reconciliacao/dashboard` (progresso por
+  reconciliador/campus), visível só a gestor, líder de campus e líder (geral ou local) do
+  ministério de Reconciliação — ver `hasReconciliationAccess` em `app.tsx`.
+
+## Módulo de Produção
+
+Coordena a produção de Cultos/Eventos entre os **ministérios de público** (Jovens, Mulheres,
+Homens, Adolescentes — criam Eventos) e os **ministérios técnicos** (Mídia, Som, Iluminação,
+Palco, Transmissão — executam a produção). Mesmo padrão da Reconciliação: reaproveita
+`Ministry`/`MinistryLeadership`/`MinistryGeneralLeadership` de `apps.churches` sem duplicar
+estrutura de liderança — só adiciona `MinistryKind` novos (`media`, `som`, `iluminacao`,
+`palco`, `transmissao`) e a constante `PRODUCTION_MINISTRY_KINDS` (não é campo de banco, só
+classifica quais kinds são "técnicos" para validar o destino de uma `Demand`).
+
+- **Event** — generalização de "Culto": `campus` nulo = escopo geral (líder geral do
+  ministério, vale para todos os campi); preenchido = escopo local. `ministry_kind` nulo =
+  Culto regular (Coordenação Geral); preenchido = evento de um ministério de público.
+- **RundownItem** — ordem do culto, um item por vez, com um `ministry_kind` principal
+  responsável.
+- **RundownItemStatus** — o sinal 🟢🟡🔴 que *qualquer* ministério reporta para um item (não
+  precisa ser o responsável principal do item — ex: Iluminação reporta status no item "Louvor
+  1" mesmo o responsável sendo Louvor).
+- **Demand** — pedido de um ministério a outro (`from_ministry_kind` → `to_ministry_kind`),
+  com prioridade/prazo/status. Só pode ser endereçada a um `to_ministry_kind` técnico
+  (validado no serializer). Fluxo: ministério de público cria Evento → abre Demand pro técnico
+  → técnico aceita/conclui (ou recusa) → time técnico se organiza e "fecha a escala" por fora
+  (a Escala/roster com confirmação de presença é Fase 2, ainda não implementada).
+- Visibilidade (`scope_events`/`scope_demands` em `apps/production/permissions.py`): além do
+  padrão líder geral/local/campus, ministérios **técnicos** enxergam todos os eventos do
+  próprio campus (não só os do seu kind) — eles apoiam a produção de qualquer evento ali, não
+  só os que criaram.
+- App dedicado: `apps.production`. Frontend: `/app/producao` (resumo do dia),
+  `/app/producao/eventos/:id` (ordem do culto, com status por ministério — poll a cada 15s
+  como substituto simples de tempo real nesta fase) e `/app/producao/demandas` (abas
+  Recebidas/Enviadas + criação de demanda).

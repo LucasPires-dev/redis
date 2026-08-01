@@ -1,12 +1,17 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Sparkles, Users, Droplet, Calendar, Building2 } from "lucide-react";
+import { Sparkles, Users, Calendar, Building2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
-import { useDB } from "@/lib/mock-store";
+import { RoleBadge } from "@/components/detail/RoleBadge";
+import { ApiError } from "@/lib/api/client";
+import { useCell, useCellMembers } from "@/lib/api/cells";
+import { MINISTRY_LABEL } from "@/lib/api/ministries";
+import type { PersonMini } from "@/lib/api/people";
+import { buildRoster } from "@/lib/roster";
 
 export const Route = createFileRoute("/app/celulas_/$id")({
   head: () => ({ meta: [{ title: "Célula — Redis" }] }),
@@ -16,17 +21,25 @@ export const Route = createFileRoute("/app/celulas_/$id")({
   ),
 });
 
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((s) => s[0])
+    .slice(0, 2)
+    .join("");
+}
+
 function CellDetail() {
   const { id } = Route.useParams();
-  const db = useDB((d) => d);
-  const cell = db.cells.find((c) => c.id === id);
-  if (!cell) throw notFound();
+  const { data: cell, isLoading, error } = useCell(id);
+  const { data: members } = useCellMembers(id);
 
-  const campus = db.campuses.find((c) => c.id === cell.campusId);
-  const leader = db.people.find((p) => p.id === cell.leaderId);
-  const members = db.people.filter((p) => cell.memberIds.includes(p.id));
-  const baptized = members.filter((m) => m.baptized).length;
-  const meetings = 4; // mock — 1 por semana no mês
+  if (error instanceof ApiError && [404, 403].includes(error.status)) throw notFound();
+  if (isLoading || !cell) {
+    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+  }
+
+  const roster = buildRoster(cell.leaders, cell.co_leaders, members ?? []);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -35,74 +48,71 @@ function CellDetail() {
         backLabel="Células"
         icon={<Sparkles className="h-6 w-6" />}
         title={cell.name}
-        subtitle={campus?.name}
+        subtitle={cell.campus.name}
         actions={
-          <Badge variant="outline" className="gap-1">
-            <Calendar className="h-3 w-3" /> {cell.weekday}
-          </Badge>
+          cell.weekday ? (
+            <Badge variant="outline" className="gap-1">
+              <Calendar className="h-3 w-3" /> {cell.weekday}
+            </Badge>
+          ) : undefined
         }
       />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard icon={<Users className="h-4 w-4" />} label="Membros" value={members.length} />
-        <StatCard icon={<Droplet className="h-4 w-4" />} label="Batizados" value={baptized} />
-        <StatCard
-          icon={<Sparkles className="h-4 w-4" />}
-          label="Frequência média"
-          value={members.length ? `${Math.round((baptized / members.length) * 100)}%` : "—"}
-          hint="mock"
-        />
-        <StatCard icon={<Calendar className="h-4 w-4" />} label="Encontros/mês" value={meetings} />
+        <StatCard icon={<Users className="h-4 w-4" />} label="Membros" value={roster.length} />
       </div>
 
       <DetailSection title="Sobre">
         <Card>
-          <CardContent className="grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
-            <Info label="Líder" value={leader?.name ?? "—"} />
-            <Info label="Dia" value={cell.weekday} />
+          <CardContent className="grid grid-cols-1 gap-4 p-5 md:grid-cols-4">
+            <Info label="Dia" value={cell.weekday || "—"} />
+            <Info
+              label="Público-alvo"
+              value={cell.target_audience ? MINISTRY_LABEL[cell.target_audience] : "—"}
+            />
+            <Info label="Endereço" value={cell.address || "—"} />
             <Info
               label="Campus"
               value={
-                campus ? (
-                  <Link
-                    to="/app/campus/$id"
-                    params={{ id: campus.id }}
-                    className="inline-flex items-center gap-1 hover:text-foreground"
-                  >
-                    <Building2 className="h-3 w-3" /> {campus.name}
-                  </Link>
-                ) : (
-                  "—"
-                )
+                <Link
+                  to="/app/campus/$id"
+                  params={{ id: cell.campus.id }}
+                  className="inline-flex items-center gap-1 hover:text-foreground"
+                >
+                  <Building2 className="h-3 w-3" /> {cell.campus.name}
+                </Link>
               }
             />
           </CardContent>
         </Card>
       </DetailSection>
 
-      <DetailSection title="Membros" count={members.length}>
-        {members.length === 0 ? (
+      <DetailSection title="Liderança">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <LeaderCard label="Líderes" people={cell.leaders} />
+          <LeaderCard label="Colíderes" people={cell.co_leaders} />
+        </div>
+      </DetailSection>
+
+      <DetailSection title="Membros" count={roster.length}>
+        {roster.length === 0 ? (
           <EmptyState>Nenhum membro cadastrado.</EmptyState>
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {members.map((p) => (
-              <Link key={p.id} to="/app/pessoas/$id" params={{ id: p.id }}>
-                <Card className="transition-colors hover:border-primary/40">
+            {roster.map(({ person: p, role }) => (
+              <Link key={p.id} to="/app/pessoas/$id" params={{ id: p.id }} className="group">
+                <Card className="h-full transition-colors group-hover:border-primary/40">
                   <CardContent className="flex items-center gap-3 p-4">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                        {p.name.split(" ").map((s) => s[0]).slice(0, 2).join("")}
+                        {initials(p.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{p.name}</div>
                       <div className="truncate text-xs text-muted-foreground">{p.email}</div>
                     </div>
-                    {p.baptized && (
-                      <Badge className="gap-1 bg-primary/10 text-primary hover:bg-primary/10">
-                        <Droplet className="h-3 w-3" />
-                      </Badge>
-                    )}
+                    <RoleBadge role={role} />
                   </CardContent>
                 </Card>
               </Link>
@@ -114,7 +124,7 @@ function CellDetail() {
       <DetailSection title="Últimos encontros">
         <Card>
           <CardContent className="p-5 text-sm text-muted-foreground">
-            Histórico de frequência ficará disponível quando os encontros forem registrados.
+            Histórico de encontros ficará disponível quando essa funcionalidade for implementada.
           </CardContent>
         </Card>
       </DetailSection>
@@ -128,5 +138,31 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="mt-1 text-sm">{value}</div>
     </div>
+  );
+}
+
+function LeaderCard({ label, people }: { label: string; people: PersonMini[] }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+        {people.length === 0 ? (
+          <div className="mt-1 text-sm text-muted-foreground">Nenhum definido</div>
+        ) : (
+          <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+            {people.map((p) => (
+              <Link
+                key={p.id}
+                to="/app/pessoas/$id"
+                params={{ id: p.id }}
+                className="truncate text-sm font-medium hover:text-primary"
+              >
+                {p.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

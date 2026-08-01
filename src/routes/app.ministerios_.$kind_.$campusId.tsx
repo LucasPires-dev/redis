@@ -1,23 +1,37 @@
+import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
   HeartHandshake,
   Users,
   ShieldAlert,
   Mail,
-  Crown,
   UserRound,
   ClipboardList,
+  UserCheck,
+  Building2,
+  Droplet,
+  Sparkles,
+  GraduationCap,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { RoleBadge } from "@/components/detail/RoleBadge";
-import { deriveRoleLabel, useAuth } from "@/lib/api/auth";
+import { deriveRoleLabel, hasReconciliationTriageAccess, useAuth, type Me } from "@/lib/api/auth";
 import {
   MINISTRY_LABEL,
+  useCampuses,
   useMinistries,
   useMinistryGeneralLeaderships,
   useMinistryMembers,
@@ -26,6 +40,15 @@ import {
 } from "@/lib/api/ministries";
 import type { PersonMini } from "@/lib/api/people";
 import { buildRoster } from "@/lib/roster";
+import {
+  useAssignLead,
+  useDiscardLead,
+  useReconciliationLeads,
+  useReconciliations,
+  useTriageLead,
+  type Reconciliation,
+  type ReconciliationLead,
+} from "@/lib/api/reconciliation";
 
 export const Route = createFileRoute("/app/ministerios_/$kind_/$campusId")({
   head: ({ params }) => ({
@@ -75,7 +98,9 @@ function MinistryAtCampusDetail() {
     !!me &&
     (me.is_manager ||
       me.general_led_kinds.includes(k) ||
-      me.led_ministries.some((m) => m.id === ministry.id));
+      me.led_ministries.some((m) => m.id === ministry.id) ||
+      me.led_campuses.some((c) => c.id === campusId) ||
+      (k === "reconciliacao" && me.is_reconciliador));
 
   // WhatsApp-style roster: leaders first, then co-leaders, then plain members —
   // includes leaders/co-leaders even when they aren't in the `members` list.
@@ -101,13 +126,6 @@ function MinistryAtCampusDetail() {
         icon={<HeartHandshake className="h-6 w-6" />}
         title={`${ministry.name} · ${ministry.campus.name}`}
         subtitle={ministry.campus.city}
-        actions={
-          ministry.leaders.length > 0 && (
-            <Badge variant="outline" className="gap-1.5">
-              <Crown className="h-3 w-3" /> {ministry.leaders.map((l) => l.name).join(", ")}
-            </Badge>
-          )
-        }
       />
 
       {!allowed ? (
@@ -125,6 +143,11 @@ function MinistryAtCampusDetail() {
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <StatCard icon={<Users className="h-4 w-4" />} label="Membros" value={roster.length} />
+            <StatCard
+              icon={<ClipboardList className="h-4 w-4" />}
+              label="Equipes"
+              value={teams?.length ?? 0}
+            />
           </div>
 
           <DetailSection title="Liderança">
@@ -148,6 +171,37 @@ function MinistryAtCampusDetail() {
                 people={[...ministry.leaders, ...ministry.co_leaders]}
               />
             </div>
+          </DetailSection>
+
+          <DetailSection title="Equipes" count={teams?.length ?? 0}>
+            {!teams || teams.length === 0 ? (
+              <EmptyState>Nenhuma equipe cadastrada neste ministério.</EmptyState>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {teams.map((team) => (
+                  <Link
+                    key={team.id}
+                    to="/app/ministerios/$kind/$campusId/equipes/$teamId"
+                    params={{ kind: k, campusId, teamId: team.id }}
+                    className="group"
+                  >
+                    <Card className="h-full transition-colors group-hover:border-primary/40">
+                      <CardContent className="flex items-center gap-3 p-4">
+                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                          <ClipboardList className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium">{team.name}</div>
+                          <div className="truncate text-xs text-muted-foreground">
+                            {team.member_count} membro{team.member_count === 1 ? "" : "s"}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
           </DetailSection>
 
           <DetailSection title="Membros" count={roster.length}>
@@ -177,45 +231,209 @@ function MinistryAtCampusDetail() {
             )}
           </DetailSection>
 
-          <DetailSection title="Equipes" count={teams?.length ?? 0}>
-            {!teams || teams.length === 0 ? (
-              <EmptyState>Nenhuma equipe cadastrada neste ministério.</EmptyState>
-            ) : (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {teams.map((team) => (
-                  <Link
-                    key={team.id}
-                    to="/app/ministerios/$kind/$campusId/equipes/$teamId"
-                    params={{ kind: k, campusId, teamId: team.id }}
-                    className="group"
-                  >
-                    <Card className="h-full transition-colors group-hover:border-primary/40">
-                      <CardContent className="flex items-center gap-3 p-4">
-                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
-                          <ClipboardList className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">{team.name}</div>
-                          <div className="truncate text-xs text-muted-foreground">
-                            {team.member_count} membro{team.member_count === 1 ? "" : "s"}
-                          </div>
-                        </div>
-                        {[...team.leaders, ...team.co_leaders].length > 0 && (
-                          <Badge variant="outline" className="gap-1 shrink-0">
-                            <Crown className="h-3 w-3" />{" "}
-                            {[...team.leaders, ...team.co_leaders].map((l) => l.name).join(", ")}
-                          </Badge>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </DetailSection>
+          {k === "reconciliacao" && me && <ReconciliationSections me={me} campusId={campusId} />}
         </>
       )}
     </div>
+  );
+}
+
+// Reconciliação is a ministry like any other (roster/leadership above are the
+// same as Jovens/Adolescentes) — this section adds what's specific to it: each
+// reconciliador's own people em acompanhamento, and (for triage-level roles) the
+// queue of new-convert leads waiting to be assigned.
+function ReconciliationSections({ me, campusId }: { me: Me; campusId: string }) {
+  const triageAccess = hasReconciliationTriageAccess(me);
+  const { data: reconciliations, isLoading } = useReconciliations(campusId);
+  const mine = (reconciliations ?? []).filter((r) => r.reconciliador.id === me.id);
+
+  return (
+    <>
+      <DetailSection
+        title="Minhas pessoas"
+        count={mine.length}
+        action={
+          triageAccess ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/app/reconciliacao/dashboard">Ver dashboard</Link>
+            </Button>
+          ) : undefined
+        }
+      >
+        {mine.length === 0 ? (
+          <EmptyState>
+            {isLoading ? "Carregando…" : "Você ainda não tem ninguém para acompanhar."}
+          </EmptyState>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {mine.map((r) => (
+              <MinhaPessoaCard key={r.id} reconciliation={r} />
+            ))}
+          </div>
+        )}
+      </DetailSection>
+
+      {triageAccess && <TriageQueue campusId={campusId} />}
+    </>
+  );
+}
+
+function MinhaPessoaCard({ reconciliation }: { reconciliation: Reconciliation }) {
+  const { convert, baptized, in_cell, serving, jornada_completed } = reconciliation;
+
+  return (
+    <Link to="/app/pessoas/$id" params={{ id: convert.id }}>
+      <Card className="h-full transition-colors hover:border-primary/40">
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-9 w-9">
+              <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                {initials(convert.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold">{convert.name}</div>
+              <div className="truncate text-xs text-muted-foreground">{convert.email}</div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant={baptized ? "default" : "outline"} className="gap-1">
+              <Droplet className="h-3 w-3" /> {baptized ? "Batizado" : "Não batizado"}
+            </Badge>
+            <Badge variant={in_cell ? "default" : "outline"} className="gap-1">
+              <Sparkles className="h-3 w-3" /> {in_cell ? "Em um GT" : "Sem GT"}
+            </Badge>
+            <Badge variant={serving ? "default" : "outline"} className="gap-1">
+              <HeartHandshake className="h-3 w-3" /> {serving ? "Servindo" : "Não serve"}
+            </Badge>
+            <Badge variant={jornada_completed ? "default" : "outline"} className="gap-1">
+              <GraduationCap className="h-3 w-3" /> {jornada_completed ? "Jornada ok" : "Jornada pendente"}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function TriageQueue({ campusId }: { campusId: string }) {
+  const { data: leads, isLoading } = useReconciliationLeads("pending");
+  const { data: campuses } = useCampuses();
+  const { data: ministries } = useMinistries();
+  const reconciliacaoMinistries = (ministries ?? []).filter((m) => m.kind === "reconciliacao");
+  // This ministry detail page is already scoped to one campus — the triage queue
+  // shown here only needs unassigned leads plus leads already pinned here.
+  const relevantLeads = (leads ?? []).filter((l) => !l.campus || l.campus.id === campusId);
+
+  return (
+    <DetailSection title="Fila de triagem" count={relevantLeads.length}>
+      <div className="space-y-3">
+        {relevantLeads.map((lead) => (
+          <LeadRow
+            key={lead.id}
+            lead={lead}
+            campuses={campuses ?? []}
+            reconciliacaoMinistries={reconciliacaoMinistries}
+          />
+        ))}
+        {!isLoading && relevantLeads.length === 0 && (
+          <EmptyState>Nenhum lead pendente para este campus no momento.</EmptyState>
+        )}
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+      </div>
+    </DetailSection>
+  );
+}
+
+interface LeadRowProps {
+  lead: ReconciliationLead;
+  campuses: { id: string; name: string; city: string }[];
+  reconciliacaoMinistries: { id: string; campus: { id: string } }[];
+}
+
+function LeadRow({ lead, campuses, reconciliacaoMinistries }: LeadRowProps) {
+  const [campusId, setCampusId] = useState(lead.campus?.id ?? "");
+  const [reconciliadorId, setReconciliadorId] = useState("");
+  const triageLead = useTriageLead();
+  const discardLead = useDiscardLead();
+  const assignLead = useAssignLead();
+
+  const ministry = reconciliacaoMinistries.find((m) => m.campus.id === campusId);
+  const { data: members } = useMinistryMembers(ministry?.id);
+
+  const canAssign = !!campusId && !!reconciliadorId;
+
+  return (
+    <Card>
+      <CardContent className="flex flex-wrap items-center gap-4 p-5">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+          <UserCheck className="h-5 w-5" />
+        </div>
+        <div className="min-w-45 flex-1">
+          <div className="font-semibold">{lead.name}</div>
+          <div className="text-sm text-muted-foreground">{lead.phone || lead.email || "—"}</div>
+          {lead.raw_campus_label && (
+            <Badge variant="outline" className="mt-1 gap-1">
+              <Building2 className="h-3 w-3" /> {lead.raw_campus_label}
+            </Badge>
+          )}
+        </div>
+
+        <Select value={campusId} onValueChange={(v) => { setCampusId(v); setReconciliadorId(""); }}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Campus" />
+          </SelectTrigger>
+          <SelectContent>
+            {campuses.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={reconciliadorId} onValueChange={setReconciliadorId} disabled={!campusId}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Reconciliador" />
+          </SelectTrigger>
+          <SelectContent>
+            {(members ?? []).map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex gap-2">
+          {lead.campus?.id !== campusId && campusId && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={triageLead.isPending}
+              onClick={() => triageLead.mutate({ id: lead.id, campusId })}
+            >
+              Salvar campus
+            </Button>
+          )}
+          <Button
+            size="sm"
+            disabled={!canAssign || assignLead.isPending}
+            onClick={() => assignLead.mutate({ id: lead.id, reconciliadorId, campusId })}
+          >
+            Atribuir
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={discardLead.isPending}
+            onClick={() => discardLead.mutate(lead.id)}
+          >
+            Descartar
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
