@@ -95,7 +95,10 @@ export function useEvent(id: string | undefined, options: { poll?: boolean } = {
     queryKey: ["production-events", id],
     queryFn: () => apiFetch<Event>(`/api/production-events/${id}/`),
     enabled: !!id,
-    refetchInterval: options.poll ? 15_000 : undefined,
+    // Rede de segurança — o caminho primário de atualização agora é o WebSocket
+    // (useEventRealtime); esse polling só cobre uma conexão WS que caiu e ainda
+    // não reconectou.
+    refetchInterval: options.poll ? 60_000 : undefined,
   });
 }
 
