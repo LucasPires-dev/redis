@@ -10,6 +10,7 @@ export type DemandType =
   "slide" | "technical_adjustment" | "repertoire_change" | "stage_setup" | "material" | "other";
 export type DemandPriority = "urgent" | "normal" | "planning";
 export type DemandStatus = "open" | "in_progress" | "done" | "rejected";
+export type RosterStatus = "invited" | "confirmed" | "declined";
 
 export interface RundownItemStatus {
   ministry_kind: MinistryKind;
@@ -59,6 +60,26 @@ export interface Demand {
   created_by: PersonMini | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface RosterEntry {
+  id: string;
+  ministry: { id: string; name: string; kind: MinistryKind };
+  person: PersonMini;
+  function: string;
+  status: RosterStatus;
+  responded_at: string | null;
+  created_at: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  ministry_kind: MinistryKind;
+  text: string;
+  is_done: boolean;
+  done_by: PersonMini | null;
+  done_at: string | null;
+  created_at: string;
 }
 
 export function useEvents(campusId?: string) {
@@ -196,5 +217,102 @@ export function useRejectDemand() {
         body: JSON.stringify({ rejection_reason: reason ?? "" }),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["production-demands"] }),
+  });
+}
+
+export function useRosterEntries(eventId: string | undefined) {
+  return useQuery({
+    queryKey: ["production-roster-entries", eventId],
+    queryFn: () => apiList<RosterEntry>(`/api/production-roster-entries/?event=${eventId}`),
+    enabled: !!eventId,
+  });
+}
+
+export interface InviteToRosterInput {
+  event_id: string;
+  ministry_id: string;
+  person_id: string;
+  function?: string;
+}
+
+export function useInviteToRoster() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: InviteToRosterInput) =>
+      apiFetch<RosterEntry>("/api/production-roster-entries/", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["production-roster-entries", variables.event_id],
+      });
+    },
+  });
+}
+
+function useRosterResponse(action: "confirm" | "decline", eventId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (entryId: string) =>
+      apiFetch<RosterEntry>(`/api/production-roster-entries/${entryId}/${action}/`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      if (eventId)
+        queryClient.invalidateQueries({ queryKey: ["production-roster-entries", eventId] });
+    },
+  });
+}
+
+export function useConfirmRosterEntry(eventId: string | undefined) {
+  return useRosterResponse("confirm", eventId);
+}
+
+export function useDeclineRosterEntry(eventId: string | undefined) {
+  return useRosterResponse("decline", eventId);
+}
+
+export function useChecklistItems(eventId: string | undefined) {
+  return useQuery({
+    queryKey: ["production-checklist-items", eventId],
+    queryFn: () => apiList<ChecklistItem>(`/api/production-checklist-items/?event=${eventId}`),
+    enabled: !!eventId,
+  });
+}
+
+export interface CreateChecklistItemInput {
+  event_id: string;
+  ministry_kind: MinistryKind;
+  text: string;
+}
+
+export function useCreateChecklistItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateChecklistItemInput) =>
+      apiFetch<ChecklistItem>("/api/production-checklist-items/", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["production-checklist-items", variables.event_id],
+      });
+    },
+  });
+}
+
+export function useToggleChecklistItem(eventId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId: string) =>
+      apiFetch<ChecklistItem>(`/api/production-checklist-items/${itemId}/toggle/`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      if (eventId)
+        queryClient.invalidateQueries({ queryKey: ["production-checklist-items", eventId] });
+    },
   });
 }

@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { Clapperboard } from "lucide-react";
+import { Clapperboard, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -15,8 +25,25 @@ import { DetailHeader } from "@/components/detail/DetailHeader";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/api/auth";
-import { MINISTRY_LABEL, type MinistryKind } from "@/lib/api/ministries";
-import { useEvent, useSetRundownItemStatus, type ItemStatusValue } from "@/lib/api/production";
+import {
+  MINISTRY_LABEL,
+  useMinistries,
+  useMinistryMembers,
+  type MinistryKind,
+} from "@/lib/api/ministries";
+import {
+  useChecklistItems,
+  useConfirmRosterEntry,
+  useCreateChecklistItem,
+  useDeclineRosterEntry,
+  useEvent,
+  useInviteToRoster,
+  useRosterEntries,
+  useSetRundownItemStatus,
+  useToggleChecklistItem,
+  type ItemStatusValue,
+  type RosterStatus,
+} from "@/lib/api/production";
 
 export const Route = createFileRoute("/app/producao_/eventos_/$id")({
   head: () => ({ meta: [{ title: "Ordem do Culto — Redis" }] }),
@@ -43,6 +70,18 @@ function statusDot(value: ItemStatusValue) {
   return ITEM_STATUS.find((s) => s.value === value)?.dot ?? "bg-muted-foreground";
 }
 
+const ROSTER_STATUS_LABEL: Record<RosterStatus, string> = {
+  invited: "Convidado",
+  confirmed: "Confirmado",
+  declined: "Recusado",
+};
+
+const ROSTER_STATUS_VARIANT: Record<RosterStatus, "outline" | "default" | "destructive"> = {
+  invited: "outline",
+  confirmed: "default",
+  declined: "destructive",
+};
+
 function myMinistryKinds(
   me: { led_ministries: { kind: MinistryKind }[]; general_led_kinds: MinistryKind[] } | undefined,
 ) {
@@ -61,6 +100,13 @@ function EventRundown() {
   const setStatus = useSetRundownItemStatus(id);
   const myKinds = myMinistryKinds(me);
   const [reportingKind, setReportingKind] = useState<MinistryKind | "">(myKinds[0] ?? "");
+
+  const { data: rosterEntries } = useRosterEntries(id);
+  const confirmEntry = useConfirmRosterEntry(id);
+  const declineEntry = useDeclineRosterEntry(id);
+
+  const { data: checklistItems } = useChecklistItems(id);
+  const toggleChecklistItem = useToggleChecklistItem(id);
 
   if (error instanceof ApiError && [404, 403].includes(error.status)) throw notFound();
   if (isLoading || !event) {
@@ -172,6 +218,236 @@ function EventRundown() {
           </div>
         )}
       </DetailSection>
+
+      <DetailSection
+        title="Escala"
+        count={rosterEntries?.length ?? 0}
+        action={<InviteToRosterDialog eventId={event.id} campusId={event.campus?.id} />}
+      >
+        {!rosterEntries || rosterEntries.length === 0 ? (
+          <EmptyState>Ninguém escalado ainda.</EmptyState>
+        ) : (
+          <div className="space-y-2">
+            {rosterEntries.map((entry) => (
+              <Card key={entry.id}>
+                <CardContent className="flex items-center justify-between gap-3 p-4">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">{entry.person.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {entry.ministry.name}
+                      {entry.function ? ` · ${entry.function}` : ""}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {entry.status === "invited" && entry.person.id === me?.id && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={declineEntry.isPending}
+                          onClick={() => declineEntry.mutate(entry.id)}
+                        >
+                          Recusar
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={confirmEntry.isPending}
+                          onClick={() => confirmEntry.mutate(entry.id)}
+                        >
+                          Confirmar
+                        </Button>
+                      </>
+                    )}
+                    <Badge variant={ROSTER_STATUS_VARIANT[entry.status]}>
+                      {ROSTER_STATUS_LABEL[entry.status]}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </DetailSection>
+
+      <DetailSection title="Checklist" count={checklistItems?.length ?? 0}>
+        <div className="space-y-2">
+          {(checklistItems ?? []).map((item) => (
+            <Card key={item.id}>
+              <CardContent className="flex items-center gap-3 p-3">
+                <Checkbox
+                  checked={item.is_done}
+                  disabled={toggleChecklistItem.isPending}
+                  onCheckedChange={() => toggleChecklistItem.mutate(item.id)}
+                />
+                <div className="min-w-0 flex-1">
+                  <div
+                    className={`text-sm ${item.is_done ? "text-muted-foreground line-through" : ""}`}
+                  >
+                    {item.text}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {MINISTRY_LABEL[item.ministry_kind]}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {(!checklistItems || checklistItems.length === 0) && (
+            <EmptyState>Nenhum item de checklist ainda.</EmptyState>
+          )}
+        </div>
+        {myKinds.length > 0 && <AddChecklistItemForm eventId={event.id} myKinds={myKinds} />}
+      </DetailSection>
     </div>
+  );
+}
+
+function InviteToRosterDialog({
+  eventId,
+  campusId,
+}: {
+  eventId: string;
+  campusId: string | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  const { data: ministries } = useMinistries();
+  const [ministryId, setMinistryId] = useState("");
+  const { data: members } = useMinistryMembers(ministryId || undefined);
+  const [personId, setPersonId] = useState("");
+  const [fn, setFn] = useState("");
+  const [error, setError] = useState("");
+  const invite = useInviteToRoster();
+
+  const options = (ministries ?? []).filter((m) => !campusId || m.campus.id === campusId);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!ministryId || !personId) {
+      setError("Selecione o ministério e a pessoa.");
+      return;
+    }
+    try {
+      await invite.mutateAsync({
+        event_id: eventId,
+        ministry_id: ministryId,
+        person_id: personId,
+        function: fn,
+      });
+      setOpen(false);
+      setMinistryId("");
+      setPersonId("");
+      setFn("");
+    } catch {
+      setError("Não foi possível convidar. Verifique se você lidera esse ministério.");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="gap-1.5">
+          <Plus className="h-4 w-4" /> Convidar
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Convidar para a escala</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Ministério</Label>
+            <Select
+              value={ministryId}
+              onValueChange={(v) => {
+                setMinistryId(v);
+                setPersonId("");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Pessoa</Label>
+            <Select value={personId} onValueChange={setPersonId}>
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={ministryId ? "Selecione" : "Escolha o ministério primeiro"}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {(members ?? []).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Função (opcional)</Label>
+            <Input value={fn} onChange={(e) => setFn(e.target.value)} placeholder="Ex: Câmera 2" />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button type="submit" className="w-full" disabled={invite.isPending}>
+            Convidar
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddChecklistItemForm({ eventId, myKinds }: { eventId: string; myKinds: MinistryKind[] }) {
+  const [ministryKind, setMinistryKind] = useState<MinistryKind>(myKinds[0]);
+  const [text, setText] = useState("");
+  const createItem = useCreateChecklistItem();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!text.trim()) return;
+    await createItem.mutateAsync({
+      event_id: eventId,
+      ministry_kind: ministryKind,
+      text: text.trim(),
+    });
+    setText("");
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
+      {myKinds.length > 1 && (
+        <Select value={ministryKind} onValueChange={(v) => setMinistryKind(v as MinistryKind)}>
+          <SelectTrigger className="w-40 shrink-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {myKinds.map((k) => (
+              <SelectItem key={k} value={k}>
+                {MINISTRY_LABEL[k]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      <Input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Novo item do checklist"
+        className="flex-1"
+      />
+      <Button type="submit" size="sm" disabled={createItem.isPending || !text.trim()}>
+        Adicionar
+      </Button>
+    </form>
   );
 }

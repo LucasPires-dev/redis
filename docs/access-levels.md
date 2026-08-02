@@ -101,13 +101,22 @@ classifica quais kinds são "técnicos" para validar o destino de uma `Demand`).
 - **Demand** — pedido de um ministério a outro (`from_ministry_kind` → `to_ministry_kind`),
   com prioridade/prazo/status. Só pode ser endereçada a um `to_ministry_kind` técnico
   (validado no serializer). Fluxo: ministério de público cria Evento → abre Demand pro técnico
-  → técnico aceita/conclui (ou recusa) → time técnico se organiza e "fecha a escala" por fora
-  (a Escala/roster com confirmação de presença é Fase 2, ainda não implementada).
+  → técnico aceita/conclui (ou recusa) → time técnico monta a Escala do Evento (Fase 2).
+- **EventRosterEntry** (Escala, Fase 2) — quem serve num Evento, ligado a um `Ministry`
+  específico (campus-bound, não só ao `ministry_kind`) porque o convite vem da lista de
+  `Ministry.members` daquele Ministry — mesmo picker que a Reconciliação usa. Convidar exige
+  `can_manage_ministry` (reaproveitado de `apps.churches.permissions`, sem duplicar). Confirmar/
+  recusar: o próprio convidado ou quem gerencia o ministério (`can_respond_roster_entry`).
+- **EventChecklistItem** (Checklist, Fase 2) — item ad-hoc por `ministry_kind`, sem template
+  ainda (fica pra Fase 3/4). Criar/marcar feito: mesma regra do status do rundown
+  (`_can_act_for_ministry_on_event`, fatorada e reaproveitada por `can_report_item_status` e
+  `can_manage_checklist_item`).
 - Visibilidade (`scope_events`/`scope_demands` em `apps/production/permissions.py`): além do
   padrão líder geral/local/campus, ministérios **técnicos** enxergam todos os eventos do
   próprio campus (não só os do seu kind) — eles apoiam a produção de qualquer evento ali, não
-  só os que criaram.
-- App dedicado: `apps.production`. Frontend: `/app/producao` (resumo do dia),
-  `/app/producao/eventos/:id` (ordem do culto, com status por ministério — poll a cada 15s
-  como substituto simples de tempo real nesta fase) e `/app/producao/demandas` (abas
-  Recebidas/Enviadas + criação de demanda).
+  só os que criaram. `EventRosterEntry`/`EventChecklistItem` reaproveitam essa mesma
+  visibilidade via `event__in=scope_events(...)`, sem função de scope própria.
+- App dedicado: `apps.production`. Frontend: `/app/producao` (resumo do dia) e
+  `/app/producao/eventos/:id` (ordem do culto com status por ministério — poll a cada 15s como
+  substituto simples de tempo real nesta fase — mais as seções de Escala e Checklist) e
+  `/app/producao/demandas` (abas Recebidas/Enviadas + criação de demanda).
