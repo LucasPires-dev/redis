@@ -44,6 +44,7 @@ import {
   type ItemStatusValue,
   type RosterStatus,
 } from "@/lib/api/production";
+import { useEventRealtime } from "@/lib/api/realtime";
 
 export const Route = createFileRoute("/app/producao_/eventos_/$id")({
   head: () => ({ meta: [{ title: "Ordem do Culto — Redis" }] }),
@@ -96,6 +97,7 @@ function myMinistryKinds(
 function EventRundown() {
   const { id } = Route.useParams();
   const { me } = useAuth();
+  useEventRealtime(id);
   const { data: event, isLoading, error } = useEvent(id, { poll: true });
   const setStatus = useSetRundownItemStatus(id);
   const myKinds = myMinistryKinds(me);

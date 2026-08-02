@@ -117,6 +117,32 @@ classifica quais kinds são "técnicos" para validar o destino de uma `Demand`).
   só os que criaram. `EventRosterEntry`/`EventChecklistItem` reaproveitam essa mesma
   visibilidade via `event__in=scope_events(...)`, sem função de scope própria.
 - App dedicado: `apps.production`. Frontend: `/app/producao` (resumo do dia) e
-  `/app/producao/eventos/:id` (ordem do culto com status por ministério — poll a cada 15s como
-  substituto simples de tempo real nesta fase — mais as seções de Escala e Checklist) e
-  `/app/producao/demandas` (abas Recebidas/Enviadas + criação de demanda).
+  `/app/producao/eventos/:id` (ordem do culto com status por ministério, mais as seções de
+  Escala e Checklist) e `/app/producao/demandas` (abas Recebidas/Enviadas + criação de demanda).
+
+## Tempo real (Fase 3) — WebSocket via Django Channels
+
+`/app/producao/eventos/:id` recebe atualizações ao vivo por WebSocket em vez de só polling.
+
+- **Backend**: `apps/production/consumers.py` (`EventConsumer`, um group por evento —
+  `production-event-{id}`) + `apps/production/routing.py` +
+  `apps/people/ws_auth.py` (`JWTAuthMiddleware` — o WS não manda header `Authorization`, o
+  token vai por query string `?token=`, reaproveitando `JWTAuthentication` da API REST pra
+  validar). `config/asgi.py` roteia HTTP pro Django normal e WebSocket pro Channels
+  (`ProtocolTypeRouter`). Visibilidade da conexão reaproveita `scope_events` — nenhuma regra de
+  permissão duplicada pro WS.
+- **Broadcast**: `apps/production/realtime.py` (`broadcast_event_update`) é chamado nos pontos
+  que já existiam (`set-status`, criar/aceitar/concluir/recusar Demand, convidar/confirmar/
+  recusar Escala, criar/marcar Checklist). Payload enxuto (só `kind`) — o cliente invalida a
+  query certa e refetcha via REST, sem tentar sincronizar o shape completo por dois caminhos.
+- **Frontend**: `src/lib/api/realtime.ts` (`useEventRealtime`) abre o WebSocket, invalida a
+  `queryKey` correspondente ao `kind` recebido, reconecta com backoff. O polling do `useEvent`
+  continua como rede de segurança, só que alongado (60s).
+- **Infra nova** (`redis-api`): Redis vira peça de infraestrutura obrigatória — camada de
+  canais do Channels e broker/result backend do Celery (índices de DB diferentes). Celery
+  também substitui o `sync_reconciliation_leads` manual por uma task periódica
+  (`apps/reconciliation/tasks.py`, agendada via `CELERY_BEAT_SCHEDULE`). `Dockerfile` (multi-
+  stage, Daphne), `docker-compose.yml` (dev), `swarm-stack.yml` (produção, Traefik) e
+  `Makefile` seguem o mesmo padrão já validado em produção pelo `nicodemus-adm` da
+  organização — domínio/rede Traefik compartilhada ficam com `# TODO` marcado no
+  `swarm-stack.yml` (específicos do ambiente de deploy).

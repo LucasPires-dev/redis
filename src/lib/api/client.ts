@@ -3,6 +3,12 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
 const TOKEN_KEY = "redis-auth-v1";
 
+// Same host/port as the REST API, just ws(s):// instead of http(s):// — Daphne
+// serves both HTTP and WebSocket from the same ASGI process.
+export function wsUrl(path: string): string {
+  return `${BASE_URL.replace(/^http/, "ws")}${path}`;
+}
+
 interface Tokens {
   access: string;
   refresh: string;
