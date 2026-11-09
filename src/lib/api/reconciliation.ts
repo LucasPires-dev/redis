@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiList } from "./client";
+import type { MeetingDay } from "./cells";
 import type { CampusMini, MinistryKind } from "./ministries";
 import type { PersonMini } from "./people";
 
@@ -10,7 +11,8 @@ import type { PersonMini } from "./people";
 export interface AvailableCell {
   id: string;
   name: string;
-  weekday: string;
+  meeting_day: MeetingDay | null;
+  meeting_time: string | null;
 }
 
 export interface AvailableMinistry {

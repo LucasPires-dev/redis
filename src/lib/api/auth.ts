@@ -39,6 +39,10 @@ export interface Me {
   led_teams: LedTeam[];
   led_cells: LedCell[];
   led_campuses: LedCampus[];
+  // Responsável geral pelas células: defines seasons, manages every cell.
+  is_cells_general_leader: boolean;
+  // Campuses whose cells the person is in charge of (responsável pelas células do campus).
+  led_campuses_cells: LedCampus[];
   is_reconciliador: boolean;
   total_points: number;
 }
@@ -85,6 +89,10 @@ export function useAuth() {
 export function deriveRoleLabel(me: Me | undefined): string {
   if (!me) return "";
   if (me.is_manager) return "Gestor da Mega Igreja";
+  if (me.is_cells_general_leader) return "Responsável Geral pelas Células";
+  if (me.led_campuses_cells.length > 0) {
+    return `Responsável pelas Células (${me.led_campuses_cells.map((c) => c.name).join(", ")})`;
+  }
   if (me.led_campuses.length > 0) {
     return `Líder de Campus (${me.led_campuses.map((c) => c.name).join(", ")})`;
   }
@@ -119,7 +127,9 @@ export function hasAnyLeadership(me: Me | undefined): boolean {
       me.general_led_kinds.length > 0 ||
       me.led_campuses.length > 0 ||
       me.led_teams.length > 0 ||
-      me.led_cells.length > 0)
+      me.led_cells.length > 0 ||
+      me.led_campuses_cells.length > 0 ||
+      me.is_cells_general_leader)
   );
 }
 
@@ -132,7 +142,32 @@ export function isReconciliadorOnly(me: Me | undefined): boolean {
 }
 
 export function hasCellLeadership(me: Me | undefined): boolean {
-  return !!me && me.led_cells.length > 0;
+  return (
+    !!me &&
+    (me.led_cells.length > 0 || me.is_cells_general_leader || me.led_campuses_cells.length > 0)
+  );
+}
+
+// Church-wide cell powers: define seasons, manage every cell. Mirrors the
+// backend's can_coordinate_cells.
+export function canCoordinateCells(me: Me | undefined): boolean {
+  return !!me && (me.is_manager || me.is_cells_general_leader);
+}
+
+// Campuses where the user may create cells (backend: can_coordinate_campus_cells).
+// `null` means "every campus".
+export function cellCampusIds(me: Me | undefined): Set<string> | null {
+  if (!me) return new Set();
+  if (canCoordinateCells(me)) return null;
+  return new Set([...me.led_campuses, ...me.led_campuses_cells].map((c) => c.id));
+}
+
+// Campuses where the user may define the cells leader (backend:
+// can_assign_campus_cells_leader). `null` means "every campus".
+export function campusCellsLeaderAssignableIds(me: Me | undefined): Set<string> | null {
+  if (!me) return new Set();
+  if (canCoordinateCells(me)) return null;
+  return new Set(me.led_campuses.map((c) => c.id));
 }
 
 // Triage authority (assigning leads, reassigning converts) — distinct from simply

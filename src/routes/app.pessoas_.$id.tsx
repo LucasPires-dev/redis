@@ -16,6 +16,7 @@ import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection } from "@/components/detail/DetailSection";
 import { useAuth } from "@/lib/api/auth";
+import { formatSchedule } from "@/lib/api/cells";
 import { MINISTRY_LABEL } from "@/lib/api/ministries";
 import { usePerson, useUpdatePerson } from "@/lib/api/people";
 import {
@@ -247,6 +248,11 @@ function ReconciliationActions({
               {(campusCells ?? []).map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
+                  {(c.meeting_day || c.meeting_time) && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {formatSchedule(c.meeting_day, c.meeting_time)}
+                    </span>
+                  )}
                 </SelectItem>
               ))}
             </SelectContent>
