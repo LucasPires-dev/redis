@@ -54,13 +54,17 @@ import {
   useRejectDemand,
 } from "@/lib/api/production";
 import { useEventRealtime } from "@/lib/api/realtime";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   useCancelRegistration,
+  useCreateTicketConfig,
   useMyRegistration,
   useRegisterForEvent,
   useRegistrationStats,
   useRegistrations,
   useTicketConfig,
+  useUpdateTicketConfig,
   PAYMENT_STATUS_LABEL,
 } from "@/lib/api/payments";
 
@@ -320,6 +324,8 @@ function EventRundown() {
       </DetailSection>
 
       <DelegationSection eventId={event.id} campusId={event.campus?.id} isManager={!!me?.is_manager || !!me?.is_event_producer} />
+
+      <TicketConfigSection eventId={event.id} isManager={!!me?.is_manager || !!me?.is_event_producer} />
 
       <RegistrationSection eventId={event.id} isManager={!!me?.is_manager || !!me?.is_event_producer} />
     </div>
@@ -661,6 +667,156 @@ function CreateDelegationDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function TicketConfigSection({ eventId, isManager }: { eventId: string; isManager: boolean }) {
+  const { data: config, isLoading } = useTicketConfig(eventId);
+  const createConfig = useCreateTicketConfig();
+  const updateConfig = useUpdateTicketConfig();
+  const [open, setOpen] = useState(false);
+  const [priceCents, setPriceCents] = useState(0);
+  const [maxCapacity, setMaxCapacity] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [description, setDescription] = useState("");
+
+  if (!isManager) return null;
+
+  function openEdit() {
+    if (config) {
+      setPriceCents(config.price_cents);
+      setMaxCapacity(config.max_capacity != null ? String(config.max_capacity) : "");
+      setDeadline(config.registration_deadline?.slice(0, 16) ?? "");
+      setDescription(config.description ?? "");
+    } else {
+      setPriceCents(0);
+      setMaxCapacity("");
+      setDeadline("");
+      setDescription("");
+    }
+    setOpen(true);
+  }
+
+  async function handleSave() {
+    const payload = {
+      event_id: eventId,
+      price_cents: priceCents,
+      max_capacity: maxCapacity ? Number(maxCapacity) : null,
+      registration_deadline: deadline ? new Date(deadline).toISOString() : null,
+      description,
+    };
+    try {
+      if (config) {
+        await updateConfig.mutateAsync({ id: config.id, ...payload });
+      } else {
+        await createConfig.mutateAsync(payload);
+      }
+      setOpen(false);
+      toast.success(config ? "Ingresso atualizado" : "Ingresso configurado");
+    } catch {
+      toast.error("Não foi possível salvar a configuração.");
+    }
+  }
+
+  const priceFmt = config?.price_cents
+    ? `R$ ${(config.price_cents / 100).toFixed(2).replace(".", ",")}`
+    : "Gratuito";
+
+  return (
+    <DetailSection
+      title="Configuração de Ingresso"
+      action={
+        <Button size="sm" variant="outline" onClick={openEdit}>
+          {config ? "Editar" : "Configurar"}
+        </Button>
+      }
+    >
+      {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+      {!isLoading && !config && (
+        <EmptyState>Nenhum ingresso configurado. Configure para habilitar inscrições.</EmptyState>
+      )}
+      {config && (
+        <Card>
+          <CardContent className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
+            <div>
+              <div className="text-xs text-muted-foreground">Preço</div>
+              <div className="text-sm font-medium">{priceFmt}</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Capacidade</div>
+              <div className="text-sm font-medium">{config.max_capacity ?? "Ilimitada"}</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Prazo</div>
+              <div className="text-sm font-medium">
+                {config.registration_deadline
+                  ? new Date(config.registration_deadline).toLocaleDateString("pt-BR")
+                  : "Sem prazo"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Descrição</div>
+              <div className="text-sm font-medium">{config.description || "—"}</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{config ? "Editar ingresso" : "Configurar ingresso"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Preço (R$)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={(priceCents / 100).toFixed(2)}
+                onChange={(e) => setPriceCents(Math.round(Number(e.target.value) * 100))}
+              />
+              <p className="text-xs text-muted-foreground">0 = gratuito com inscrição</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Capacidade máxima (opcional)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={maxCapacity}
+                onChange={(e) => setMaxCapacity(e.target.value)}
+                placeholder="Ilimitada"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Prazo de inscrição (opcional)</Label>
+              <Input
+                type="datetime-local"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Descrição (opcional)</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                placeholder="O que o ingresso inclui"
+              />
+            </div>
+          </div>
+          <Button
+            className="mt-2 w-full"
+            onClick={handleSave}
+            disabled={createConfig.isPending || updateConfig.isPending}
+          >
+            Salvar
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </DetailSection>
   );
 }
 
