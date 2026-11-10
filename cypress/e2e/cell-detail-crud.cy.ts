@@ -183,15 +183,16 @@ describe("Cell detail — Assign leader/co-leader", () => {
       .find("button[role='combobox']")
       .click();
     cy.get("[role='option']").contains("Colíder").click();
+    // Wait for the Radix Select to close: while its portal is open it keeps
+    // focus, and typing would go nowhere.
+    cy.get("[role='listbox']").should("not.exist");
 
     // Search and assign — use Isabela who is not a leader anywhere
-    cy.contains("Adicionar liderança")
-      .closest("[class*='p-4']")
-      .find("input")
-      .type("Isabela");
+    cy.get("input[placeholder^='Buscar pessoas do campus']").click().type("Isabela");
 
-    cy.contains("button", "Isabela Santos", { timeout: 5000 }).click();
-    cy.contains(/agora é colíder/i, { timeout: 5000 }).should("be.visible");
+    // Search is debounced and hits the API: allow for a slow local backend.
+    cy.contains("button", "Isabela Santos", { timeout: 10000 }).click();
+    cy.contains(/agora é colíder/i, { timeout: 10000 }).should("be.visible");
 
     // Verify Isabela appears in Colíderes
     cy.contains(".text-xs", /Col[íi]deres/i)
@@ -202,7 +203,7 @@ describe("Cell detail — Assign leader/co-leader", () => {
     cy.get(
       "button[aria-label='Remover Isabela Santos da liderança']",
     ).click();
-    cy.contains("Liderança removida", { timeout: 5000 }).should("be.visible");
+    cy.contains("Liderança removida", { timeout: 10000 }).should("be.visible");
   });
 });
 
