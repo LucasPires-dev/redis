@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/api/auth";
+import { RouteError } from "@/components/RouteError";
 import { MINISTRY_LABEL, PRODUCTION_MINISTRY_KINDS, type MinistryKind } from "@/lib/api/ministries";
 import {
   useAcceptDemand,
@@ -39,6 +40,7 @@ import {
 export const Route = createFileRoute("/app/producao_/demandas")({
   head: () => ({ meta: [{ title: "Demandas — Redis" }] }),
   component: DemandsPage,
+  errorComponent: RouteError,
 });
 
 const DEMAND_TYPE_LABEL: Record<DemandType, string> = {

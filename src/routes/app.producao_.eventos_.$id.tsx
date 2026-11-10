@@ -22,6 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DetailHeader } from "@/components/detail/DetailHeader";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/api/auth";
@@ -71,6 +73,7 @@ import {
 export const Route = createFileRoute("/app/producao_/eventos_/$id")({
   head: () => ({ meta: [{ title: "Ordem do Culto — Redis" }] }),
   component: EventRundown,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">Evento não encontrado.</div>
   ),
@@ -134,7 +137,7 @@ function EventRundown() {
 
   if (error instanceof ApiError && [404, 403].includes(error.status)) throw notFound();
   if (isLoading || !event) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+    return <DetailSkeleton />;
   }
 
   return (

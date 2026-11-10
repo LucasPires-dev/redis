@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DetailHeader } from "@/components/detail/DetailHeader";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { LessonFormDialog } from "@/components/courses/LessonFormDialog";
@@ -35,6 +37,7 @@ import {
 export const Route = createFileRoute("/app/cursos_/$id_/turma/$classId")({
   head: () => ({ meta: [{ title: "Turma — Redis" }] }),
   component: ClassDetail,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">Turma não encontrada.</div>
   ),
@@ -51,7 +54,7 @@ function ClassDetail() {
   const [showAddEnrollment, setShowAddEnrollment] = useState(false);
 
   if (isLoading) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+    return <DetailSkeleton />;
   }
   if (!cc) throw notFound();
 

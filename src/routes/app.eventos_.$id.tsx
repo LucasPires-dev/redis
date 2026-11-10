@@ -18,10 +18,13 @@ import {
   useTicketConfig,
   PAYMENT_STATUS_LABEL,
 } from "@/lib/api/payments";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/app/eventos_/$id")({
   head: () => ({ meta: [{ title: "Evento — Redis" }] }),
   component: EventDetail,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">Evento não encontrado.</div>
   ),
@@ -41,7 +44,7 @@ function EventDetail() {
 
   if (error instanceof ApiError && [404, 403].includes(error.status)) throw notFound();
   if (isLoading || !event) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando...</div>;
+    return <DetailSkeleton />;
   }
 
   const dateStr = new Date(event.starts_at).toLocaleDateString("pt-BR", {

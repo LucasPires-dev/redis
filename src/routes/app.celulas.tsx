@@ -27,6 +27,8 @@ import {
   useCells,
   type MeetingDay,
 } from "@/lib/api/cells";
+import { RouteError } from "@/components/RouteError";
+import { CardGridSkeleton } from "@/components/skeletons";
 import { formatDate, useCurrentSeason, useSeasons } from "@/lib/api/seasons";
 
 const ALL_DAYS = "all";
@@ -35,6 +37,7 @@ const CURRENT_SEASON = "current";
 export const Route = createFileRoute("/app/celulas")({
   head: () => ({ meta: [{ title: "Células — Redis" }] }),
   component: CellsPage,
+  errorComponent: RouteError,
 });
 
 function CellsPage() {
@@ -170,7 +173,7 @@ function CellsPage() {
         {!isLoading && (cells ?? []).length === 0 && (
           <p className="text-sm text-muted-foreground">Nenhuma célula visível para seu perfil.</p>
         )}
-        {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+        {isLoading && <CardGridSkeleton />}
       </div>
     </div>
   );

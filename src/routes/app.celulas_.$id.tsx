@@ -28,6 +28,8 @@ import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { RoleBadge } from "@/components/detail/RoleBadge";
 import { CellFormDialog } from "@/components/cells/CellFormDialog";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 import { CellMeetingsSection } from "@/components/cells/CellMeetingsSection";
 import { PersonSearch } from "@/components/cells/PersonSearch";
 import { RenewCellDialog } from "@/components/cells/RenewCellDialog";
@@ -51,6 +53,7 @@ import { buildRoster } from "@/lib/roster";
 export const Route = createFileRoute("/app/celulas_/$id")({
   head: () => ({ meta: [{ title: "Célula — Redis" }] }),
   component: CellDetail,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">Célula não encontrada.</div>
   ),
@@ -73,7 +76,7 @@ function CellDetail() {
 
   if (error instanceof ApiError && [404, 403].includes(error.status)) throw notFound();
   if (isLoading || !cell) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+    return <DetailSkeleton />;
   }
 
   const roster = buildRoster(cell.leaders, cell.co_leaders, members ?? []);

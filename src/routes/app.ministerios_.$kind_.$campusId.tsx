@@ -28,6 +28,8 @@ import {
 import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 import { RoleBadge } from "@/components/detail/RoleBadge";
 import { MinistryLeadersDialog } from "@/components/responsibilities/MinistryLeadersDialog";
 import {
@@ -63,6 +65,7 @@ export const Route = createFileRoute("/app/ministerios_/$kind_/$campusId")({
     meta: [{ title: `${MINISTRY_LABEL[params.kind as MinistryKind] ?? "Ministério"} — Redis` }],
   }),
   component: MinistryAtCampusDetail,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">
       Ministério não encontrado neste campus.
@@ -94,7 +97,7 @@ function MinistryAtCampusDetail() {
 
   if (!isLoading && !ministry) throw notFound();
   if (!ministry) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+    return <DetailSkeleton />;
   }
 
   const generalLeaders = generalLeaderships?.find((g) => g.kind === k)?.leaders ?? [];

@@ -1,29 +1,50 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RouteError } from "@/components/RouteError";
+import { StatGridSkeleton } from "@/components/skeletons";
 import { Users, Building2, HeartHandshake, Sparkles, Calendar, Droplet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useDB, visiblePeople, MINISTRY_LABEL } from "@/lib/mock-store";
+import { usePeople } from "@/lib/api/people";
+import { useCampuses, useMinistries, MINISTRY_LABEL, type MinistryKind } from "@/lib/api/ministries";
+import { useCells } from "@/lib/api/cells";
 import { useEvents, EVENT_TYPE_LABEL } from "@/lib/api/production";
 
 export const Route = createFileRoute("/app/")({
   component: Dashboard,
+  errorComponent: RouteError,
 });
 
 function Dashboard() {
-  const db = useDB((d) => d);
-  const people = visiblePeople(db);
+  const { data: people, isLoading: peopleLoading } = usePeople();
+  const { data: campuses } = useCampuses();
+  const { data: ministries } = useMinistries();
+  const { data: cells } = useCells({ season: "current" });
   const { data: realEvents } = useEvents();
-  const events = realEvents ?? [];
-  const baptized = people.filter((p) => p.baptized).length;
-  const inCell = people.filter((p) => !!p.cellId).length;
-  const attendanceRecent = db.attendance.filter((a) => people.some((p) => p.id === a.personId));
 
-  const perMinistry = (Object.keys(MINISTRY_LABEL) as (keyof typeof MINISTRY_LABEL)[]).map((k) => ({
+  const personList = people ?? [];
+  const events = realEvents ?? [];
+  const baptized = personList.filter((p) => p.baptized).length;
+  const inCell = (cells ?? []).reduce((sum, c) => sum + c.member_count, 0);
+
+  const kinds = Object.keys(MINISTRY_LABEL) as MinistryKind[];
+  const perMinistry = kinds.map((k) => ({
     kind: k,
-    count: people.filter((p) =>
-      p.ministryIds.some((mid) => db.ministries.find((m) => m.id === mid)?.kind === k),
-    ).length,
+    count: personList.filter((p) => p.ministries.some((m) => m.kind === k)).length,
   }));
+
+  if (peopleLoading) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Visão geral</h1>
+          <p className="text-sm text-muted-foreground">
+            Dados filtrados pelo seu perfil e escopo atual.
+          </p>
+        </div>
+        <StatGridSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -35,9 +56,19 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat icon={Users} label="Pessoas" value={people.length} hint={`${db.people.length} total`} />
-        <Stat icon={Droplet} label="Batizados" value={baptized} hint={`${Math.round((baptized / Math.max(people.length, 1)) * 100)}%`} />
-        <Stat icon={Sparkles} label="Em célula" value={inCell} hint={`${Math.round((inCell / Math.max(people.length, 1)) * 100)}%`} />
+        <Stat icon={Users} label="Pessoas" value={personList.length} />
+        <Stat
+          icon={Droplet}
+          label="Batizados"
+          value={baptized}
+          hint={`${Math.round((baptized / Math.max(personList.length, 1)) * 100)}%`}
+        />
+        <Stat
+          icon={Sparkles}
+          label="Em célula"
+          value={inCell}
+          hint={`${Math.round((inCell / Math.max(personList.length, 1)) * 100)}%`}
+        />
         <Stat icon={Calendar} label="Eventos visíveis" value={events.length} />
       </div>
 
@@ -48,7 +79,7 @@ function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-3">
             {perMinistry.map((m) => {
-              const pct = people.length ? (m.count / people.length) * 100 : 0;
+              const pct = personList.length ? (m.count / personList.length) * 100 : 0;
               return (
                 <div key={m.kind}>
                   <div className="mb-1 flex items-center justify-between text-sm">
@@ -94,9 +125,9 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <MiniStat icon={Building2} label="Campus" value={db.campuses.length} />
-        <MiniStat icon={HeartHandshake} label="Ministérios" value={db.ministries.length} />
-        <MiniStat icon={Sparkles} label="Presenças registradas" value={attendanceRecent.length} />
+        <MiniStat icon={Building2} label="Campus" value={(campuses ?? []).length} />
+        <MiniStat icon={HeartHandshake} label="Ministérios" value={(ministries ?? []).length} />
+        <MiniStat icon={Sparkles} label="Células ativas" value={(cells ?? []).length} />
       </div>
     </div>
   );

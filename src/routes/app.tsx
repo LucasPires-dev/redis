@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { hasAccessToken } from "@/lib/api/client";
+import { RouteError } from "@/components/RouteError";
 import {
   canCoordinateCells,
   canManageResponsibles,

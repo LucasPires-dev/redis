@@ -5,11 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CourseFormDialog } from "@/components/courses/CourseFormDialog";
+import { RouteError } from "@/components/RouteError";
+import { CardGridSkeleton } from "@/components/skeletons";
 import { useCourses } from "@/lib/api/courses";
 
 export const Route = createFileRoute("/app/cursos")({
   head: () => ({ meta: [{ title: "Cursos — Redis" }] }),
   component: CoursesPage,
+  errorComponent: RouteError,
 });
 
 function CoursesPage() {
@@ -30,9 +33,7 @@ function CoursesPage() {
 
       <CourseFormDialog open={showNew} onOpenChange={setShowNew} />
 
-      {isLoading && (
-        <p className="text-sm text-muted-foreground">Carregando…</p>
-      )}
+      {isLoading && <CardGridSkeleton />}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {(courses ?? []).map((c) => (

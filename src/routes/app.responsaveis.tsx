@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DetailHeader } from "@/components/detail/DetailHeader";
+import { RouteError } from "@/components/RouteError";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { ResponsiblesEditor } from "@/components/responsibilities/ResponsiblesEditor";
 import {
@@ -50,6 +51,7 @@ import { useChurches } from "@/lib/api/seasons";
 export const Route = createFileRoute("/app/responsaveis")({
   head: () => ({ meta: [{ title: "Responsáveis — Redis" }] }),
   component: ResponsiblesPage,
+  errorComponent: RouteError,
 });
 
 const MINISTRY_KINDS = Object.keys(MINISTRY_LABEL) as MinistryKind[];

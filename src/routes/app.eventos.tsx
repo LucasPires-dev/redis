@@ -31,11 +31,14 @@ import {
   PRODUCER_EVENT_TYPES,
   type EventType,
 } from "@/lib/api/production";
+import { RouteError } from "@/components/RouteError";
+import { CardGridSkeleton } from "@/components/skeletons";
 import { MINISTRY_LABEL, useCampuses, type MinistryKind } from "@/lib/api/ministries";
 
 export const Route = createFileRoute("/app/eventos")({
   head: () => ({ meta: [{ title: "Eventos — Redis" }] }),
   component: EventsPage,
+  errorComponent: RouteError,
 });
 
 const EVENT_STATUS_LABEL: Record<string, string> = {
@@ -66,7 +69,7 @@ function EventsPage() {
         {canCreate && <CreateEventDialog />}
       </div>
 
-      {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+      {isLoading && <CardGridSkeleton />}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {sorted.map((e) => (
@@ -190,7 +193,7 @@ function CreateEventDialog() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Início</Label>
               <Input

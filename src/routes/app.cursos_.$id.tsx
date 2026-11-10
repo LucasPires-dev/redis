@@ -14,10 +14,13 @@ import {
   WEEKDAY_LABEL,
   TEACHER_ROLE_LABEL,
 } from "@/lib/api/courses";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/app/cursos_/$id")({
   head: () => ({ meta: [{ title: "Curso — Redis" }] }),
   component: CourseDetail,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">Curso não encontrado.</div>
   ),
@@ -30,7 +33,7 @@ function CourseDetail() {
   const [showNewClass, setShowNewClass] = useState(false);
 
   if (isLoading) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+    return <DetailSkeleton />;
   }
   if (!course) throw notFound();
 
