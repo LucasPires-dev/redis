@@ -25,7 +25,7 @@ import { DetailHeader } from "@/components/detail/DetailHeader";
 import { RouteError } from "@/components/RouteError";
 import { DetailSkeleton } from "@/components/skeletons";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, apiErrorMessage } from "@/lib/api/client";
 import { useAuth } from "@/lib/api/auth";
 import {
   MINISTRY_LABEL,
@@ -62,6 +62,7 @@ import {
   useCancelRegistration,
   useCreateTicketConfig,
   useMyRegistration,
+  canSelfCancel,
   useRegisterForEvent,
   useRegistrationStats,
   useRegistrations,
@@ -326,11 +327,21 @@ function EventRundown() {
         {myKinds.length > 0 && <AddChecklistItemForm eventId={event.id} myKinds={myKinds} />}
       </DetailSection>
 
-      <DelegationSection eventId={event.id} campusId={event.campus?.id} isManager={!!me?.is_manager || !!me?.is_event_producer} />
+      <DelegationSection
+        eventId={event.id}
+        campusId={event.campus?.id}
+        isManager={!!me?.is_manager || !!me?.is_event_producer}
+      />
 
-      <TicketConfigSection eventId={event.id} isManager={!!me?.is_manager || !!me?.is_event_producer} />
+      <TicketConfigSection
+        eventId={event.id}
+        isManager={!!me?.is_manager || !!me?.is_event_producer}
+      />
 
-      <RegistrationSection eventId={event.id} isManager={!!me?.is_manager || !!me?.is_event_producer} />
+      <RegistrationSection
+        eventId={event.id}
+        isManager={!!me?.is_manager || !!me?.is_event_producer}
+      />
     </div>
   );
 }
@@ -456,7 +467,10 @@ const DEMAND_STATUS_LABEL: Record<DemandStatus, string> = {
   rejected: "Rejeitada",
 };
 
-const DEMAND_STATUS_VARIANT: Record<DemandStatus, "outline" | "default" | "destructive" | "secondary"> = {
+const DEMAND_STATUS_VARIANT: Record<
+  DemandStatus,
+  "outline" | "default" | "destructive" | "secondary"
+> = {
   open: "outline",
   in_progress: "secondary",
   done: "default",
@@ -493,9 +507,7 @@ function DelegationSection({
       title="Delegações"
       count={demands?.length ?? 0}
       action={
-        isManager ? (
-          <CreateDelegationDialog eventId={eventId} campusId={campusId} />
-        ) : undefined
+        isManager ? <CreateDelegationDialog eventId={eventId} campusId={campusId} /> : undefined
       }
     >
       {!demands || demands.length === 0 ? (
@@ -883,7 +895,19 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
         <Button
           className="mt-3 w-full gap-1.5"
           disabled={register.isPending}
-          onClick={() => register.mutate(eventId)}
+          onClick={() =>
+            register.mutate(eventId, {
+              onSuccess: (reg) => {
+                toast.success(
+                  reg.payment_url
+                    ? "Inscrição feita! Conclua o pagamento."
+                    : "Inscrição confirmada!",
+                );
+              },
+              onError: (e) =>
+                toast.error(apiErrorMessage(e, "Não foi possível fazer a inscrição.")),
+            })
+          }
         >
           <Users className="h-4 w-4" /> Inscrever-se
         </Button>
@@ -904,12 +928,18 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
                   </a>
                 </Button>
               )}
-              {myReg.payment_status !== "cancelled" && (
+              {canSelfCancel(myReg) && (
                 <Button
                   size="sm"
                   variant="destructive"
                   disabled={cancel.isPending}
-                  onClick={() => cancel.mutate(myReg.id)}
+                  onClick={() =>
+                    cancel.mutate(myReg.id, {
+                      onSuccess: () => toast.success("Inscrição cancelada."),
+                      onError: (e) =>
+                        toast.error(apiErrorMessage(e, "Não foi possível cancelar a inscrição.")),
+                    })
+                  }
                 >
                   Cancelar
                 </Button>

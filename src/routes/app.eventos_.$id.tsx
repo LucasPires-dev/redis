@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Calendar, Building2, Clapperboard, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, apiErrorMessage } from "@/lib/api/client";
 import { useAuth, isEventProducer } from "@/lib/api/auth";
 import { useEvent, EVENT_TYPE_LABEL } from "@/lib/api/production";
 import { MINISTRY_LABEL } from "@/lib/api/ministries";
 import {
   useMyRegistration,
+  canSelfCancel,
   useRegisterForEvent,
   useCancelRegistration,
   useRegistrationStats,
@@ -189,7 +191,19 @@ function RegistrationSection({ eventId }: { eventId: string }) {
             <Button
               className="w-full"
               disabled={register.isPending}
-              onClick={() => register.mutate(eventId)}
+              onClick={() =>
+                register.mutate(eventId, {
+                  onSuccess: (reg) => {
+                    toast.success(
+                      reg.payment_url
+                        ? "Inscrição feita! Conclua o pagamento."
+                        : "Inscrição confirmada!",
+                    );
+                  },
+                  onError: (e) =>
+                    toast.error(apiErrorMessage(e, "Não foi possível fazer a inscrição.")),
+                })
+              }
             >
               Inscrever-se
             </Button>
@@ -209,12 +223,18 @@ function RegistrationSection({ eventId }: { eventId: string }) {
                     </a>
                   </Button>
                 )}
-                {myReg.payment_status !== "cancelled" && (
+                {canSelfCancel(myReg) && (
                   <Button
                     size="sm"
                     variant="destructive"
                     disabled={cancel.isPending}
-                    onClick={() => cancel.mutate(myReg.id)}
+                    onClick={() =>
+                      cancel.mutate(myReg.id, {
+                        onSuccess: () => toast.success("Inscrição cancelada."),
+                        onError: (e) =>
+                          toast.error(apiErrorMessage(e, "Não foi possível cancelar a inscrição.")),
+                      })
+                    }
                   >
                     Cancelar
                   </Button>

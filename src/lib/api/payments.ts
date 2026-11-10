@@ -16,6 +16,8 @@ export interface EventRegistration {
   id: string;
   person: PersonMini;
   payment_status: "pending" | "confirmed" | "cancelled" | "refunded";
+  /** What this registration was charged, frozen at registration time. */
+  amount_cents: number;
   payment_url: string;
   paid_at: string | null;
   created_at: string;
@@ -42,9 +44,9 @@ export function useTicketConfig(eventId: string | undefined) {
   return useQuery({
     queryKey: ["ticket-config", eventId],
     queryFn: () =>
-      apiFetch<EventTicketConfig[]>(
-        `/api/payments/ticket-configs/?event=${eventId}`,
-      ).then((list) => (Array.isArray(list) ? list[0] ?? null : null)),
+      apiFetch<EventTicketConfig[]>(`/api/payments/ticket-configs/?event=${eventId}`).then(
+        (list) => (Array.isArray(list) ? (list[0] ?? null) : null),
+      ),
     enabled: !!eventId,
   });
 }
@@ -88,13 +90,23 @@ export function useRegistrations(eventId: string | undefined) {
   });
 }
 
+/**
+ * The caller's current (pending or confirmed) registration, or null.
+ * `mine=1` keeps event managers from getting someone else's; cancelled and
+ * refunded ones are history, so the person can register again.
+ */
 export function useMyRegistration(eventId: string | undefined) {
   return useQuery({
     queryKey: ["my-registration", eventId],
     queryFn: () =>
       apiFetch<{ results: EventRegistration[] }>(
-        `/api/payments/registrations/?event=${eventId}`,
-      ).then((page) => page.results[0] ?? null),
+        `/api/payments/registrations/?event=${eventId}&mine=1`,
+      ).then(
+        (page) =>
+          page.results.find(
+            (r) => r.payment_status === "pending" || r.payment_status === "confirmed",
+          ) ?? null,
+      ),
     enabled: !!eventId,
   });
 }
@@ -119,11 +131,10 @@ export function useCancelRegistration() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (registrationId: string) =>
-      apiFetch<EventRegistration>(
-        `/api/payments/registrations/${registrationId}/cancel/`,
-        { method: "POST" },
-      ),
-    onSuccess: (data) => {
+      apiFetch<EventRegistration>(`/api/payments/registrations/${registrationId}/cancel/`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["registrations"] });
       qc.invalidateQueries({ queryKey: ["my-registration"] });
       qc.invalidateQueries({ queryKey: ["registration-stats"] });
@@ -135,9 +146,7 @@ export function useRegistrationStats(eventId: string | undefined) {
   return useQuery({
     queryKey: ["registration-stats", eventId],
     queryFn: () =>
-      apiFetch<RegistrationStats>(
-        `/api/payments/registrations/stats/?event=${eventId}`,
-      ),
+      apiFetch<RegistrationStats>(`/api/payments/registrations/stats/?event=${eventId}`),
     enabled: !!eventId,
   });
 }
@@ -148,3 +157,11 @@ export const PAYMENT_STATUS_LABEL: Record<EventRegistration["payment_status"], s
   cancelled: "Cancelado",
   refunded: "Reembolsado",
 };
+
+/** A paid registration can't be self-cancelled (it needs a refund). */
+export function canSelfCancel(reg: EventRegistration): boolean {
+  return (
+    reg.payment_status === "pending" ||
+    (reg.payment_status === "confirmed" && reg.amount_cents === 0)
+  );
+}

@@ -196,7 +196,7 @@ describe("Delegation flow (event → production ministry)", () => {
   it("creates a demand from event (null from_ministry_kind)", () => {
     cy.request({
       method: "POST",
-      url: `${API}/api/demands/`,
+      url: `${API}/api/production-demands/`,
       headers: authHeaders(managerToken),
       body: {
         from_ministry_kind: null,
@@ -216,7 +216,7 @@ describe("Delegation flow (event → production ministry)", () => {
   it("lists demands for the event", () => {
     cy.request({
       method: "GET",
-      url: `${API}/api/demands/?event=${eventId}`,
+      url: `${API}/api/production-demands/?event=${eventId}`,
       headers: authHeaders(managerToken),
     }).then((res) => {
       expect(res.status).to.eq(200);
