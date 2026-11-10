@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DetailHeader } from "@/components/detail/DetailHeader";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { CellFormDialog } from "@/components/cells/CellFormDialog";
@@ -47,6 +49,7 @@ const CURRENT_SEASON = "current";
 export const Route = createFileRoute("/app/celulas_/coordination")({
   head: () => ({ meta: [{ title: "Coordenação de Células — Redis" }] }),
   component: CellCoordinationPage,
+  errorComponent: RouteError,
 });
 
 function CellCoordinationPage() {
@@ -97,7 +100,7 @@ function CellCoordinationPage() {
   const leaderlessCount = cellList.filter((c) => c.leaders.length === 0).length;
 
   if (meLoading || !hasAccess) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+    return <DetailSkeleton />;
   }
 
   return (
@@ -266,9 +269,9 @@ function CellCard({ cell }: { cell: ReturnType<typeof useCells>["data"] extends 
             </div>
           </div>
           <h3 className="mt-4 text-lg font-semibold tracking-tight">{cell.name}</h3>
-          {cell.leaders.length > 0 && (
+          {(cell.leaders.length > 0 || cell.co_leaders.length > 0) && (
             <p className="text-sm text-muted-foreground">
-              {cell.leaders.map((l) => l.name).join(", ")}
+              {[...cell.leaders, ...cell.co_leaders].map((l) => l.name).join(", ")}
             </p>
           )}
           <div className="mt-3 text-sm">
