@@ -12,6 +12,7 @@ import {
   Droplet,
   Sparkles,
   GraduationCap,
+  UserCog,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -28,7 +29,14 @@ import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { RoleBadge } from "@/components/detail/RoleBadge";
-import { deriveRoleLabel, hasReconciliationTriageAccess, useAuth, type Me } from "@/lib/api/auth";
+import { MinistryLeadersDialog } from "@/components/responsibilities/MinistryLeadersDialog";
+import {
+  canAppointMinistryLeaders,
+  deriveRoleLabel,
+  hasReconciliationTriageAccess,
+  useAuth,
+  type Me,
+} from "@/lib/api/auth";
 import {
   MINISTRY_LABEL,
   useCampuses,
@@ -76,6 +84,7 @@ function MinistryAtCampusDetail() {
   const k = kind as MinistryKind;
 
   const { me } = useAuth();
+  const [isLeadersOpen, setIsLeadersOpen] = useState(false);
   const { data: ministries, isLoading } = useMinistries();
   const { data: generalLeaderships } = useMinistryGeneralLeaderships();
 
@@ -150,7 +159,25 @@ function MinistryAtCampusDetail() {
             />
           </div>
 
-          <DetailSection title="Liderança">
+          <DetailSection
+            title="Liderança"
+            action={
+              // Appointed by the levels above: manager, campus leader or general leader.
+              canAppointMinistryLeaders(me, k, campusId) && (
+                <Button size="sm" variant="outline" onClick={() => setIsLeadersOpen(true)}>
+                  <UserCog className="mr-1.5 h-4 w-4" /> Gerenciar liderança
+                </Button>
+              )
+            }
+          >
+            <MinistryLeadersDialog
+              open={isLeadersOpen}
+              onOpenChange={setIsLeadersOpen}
+              ministryId={ministry.id}
+              ministryName={ministry.name}
+              campusId={campusId}
+              campusName={ministry.campus.name}
+            />
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <LeaderCard
                 label="Líder geral do ministério"

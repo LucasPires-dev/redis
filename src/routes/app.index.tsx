@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Users, Building2, HeartHandshake, Sparkles, Calendar, Droplet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useDB, visibleEvents, visiblePeople, MINISTRY_LABEL } from "@/lib/mock-store";
+import { useDB, visiblePeople, MINISTRY_LABEL } from "@/lib/mock-store";
+import { useEvents, EVENT_TYPE_LABEL } from "@/lib/api/production";
 
 export const Route = createFileRoute("/app/")({
   component: Dashboard,
@@ -11,7 +12,8 @@ export const Route = createFileRoute("/app/")({
 function Dashboard() {
   const db = useDB((d) => d);
   const people = visiblePeople(db);
-  const events = visibleEvents(db);
+  const { data: realEvents } = useEvents();
+  const events = realEvents ?? [];
   const baptized = people.filter((p) => p.baptized).length;
   const inCell = people.filter((p) => !!p.cellId).length;
   const attendanceRecent = db.attendance.filter((a) => people.some((p) => p.id === a.personId));
@@ -72,15 +74,15 @@ function Dashboard() {
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium">{e.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {new Date(e.date).toLocaleDateString("pt-BR", {
+                    {new Date(e.starts_at).toLocaleDateString("pt-BR", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
                     })}
                   </div>
                 </div>
-                <Badge variant="secondary" className="capitalize">
-                  {e.scope}
+                <Badge variant="secondary">
+                  {EVENT_TYPE_LABEL[e.event_type]}
                 </Badge>
               </div>
             ))}

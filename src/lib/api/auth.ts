@@ -44,6 +44,13 @@ export interface Me {
   // Campuses whose cells the person is in charge of (responsável pelas células do campus).
   led_campuses_cells: LedCampus[];
   is_reconciliador: boolean;
+  is_event_producer: boolean;
+  // null = church-wide (all campuses); empty array = not a producer
+  producer_campuses: LedCampus[] | null;
+  // Responsável geral pelos cursos: manages every course on every campus.
+  is_courses_general_leader: boolean;
+  // Campuses whose courses the person is in charge of (responsável pelos cursos do campus).
+  led_campuses_courses: LedCampus[];
   total_points: number;
 }
 
@@ -93,6 +100,7 @@ export function deriveRoleLabel(me: Me | undefined): string {
   if (me.led_campuses_cells.length > 0) {
     return `Responsável pelas Células (${me.led_campuses_cells.map((c) => c.name).join(", ")})`;
   }
+  if (me.is_event_producer) return "Produtor de Eventos";
   if (me.led_campuses.length > 0) {
     return `Líder de Campus (${me.led_campuses.map((c) => c.name).join(", ")})`;
   }
@@ -120,6 +128,10 @@ export function isMinistryLeaderOnly(me: Me | undefined): boolean {
   );
 }
 
+export function isEventProducer(me: Me | undefined): boolean {
+  return !!me && me.is_event_producer;
+}
+
 export function hasAnyLeadership(me: Me | undefined): boolean {
   return (
     !!me &&
@@ -129,7 +141,8 @@ export function hasAnyLeadership(me: Me | undefined): boolean {
       me.led_teams.length > 0 ||
       me.led_cells.length > 0 ||
       me.led_campuses_cells.length > 0 ||
-      me.is_cells_general_leader)
+      me.is_cells_general_leader ||
+      me.is_event_producer)
   );
 }
 
@@ -181,5 +194,54 @@ export function hasReconciliationTriageAccess(me: Me | undefined): boolean {
       me.led_campuses.length > 0 ||
       me.general_led_kinds.includes("reconciliacao") ||
       me.led_ministries.some((m) => m.kind === "reconciliacao"))
+  );
+}
+
+// --- Appointing responsibles (access hierarchy) -----------------------------------------
+// Each level appoints the level below: the manager chooses general leaders; the campus
+// leader or the area's general leader appoints that area's leaders at a campus. These
+// mirror the backend checks (can_appoint_ministry_leaders, can_assign_campus_*).
+
+export function isGeneralEventProducer(me: Me | undefined): boolean {
+  return !!me && me.producer_campuses === null;
+}
+
+// Who may appoint the leaders of one ministry at one campus.
+export function canAppointMinistryLeaders(
+  me: Me | undefined,
+  kind: MinistryKind,
+  campusId: string,
+): boolean {
+  return (
+    !!me &&
+    (me.is_manager ||
+      me.led_campuses.some((c) => c.id === campusId) ||
+      me.general_led_kinds.includes(kind))
+  );
+}
+
+// Campuses where the user may define the courses leader. `null` means "every campus".
+export function campusCoursesLeaderAssignableIds(me: Me | undefined): Set<string> | null {
+  if (!me) return new Set();
+  if (me.is_manager || me.is_courses_general_leader) return null;
+  return new Set(me.led_campuses.map((c) => c.id));
+}
+
+// Campuses where the user may define event producers. `null` means "every campus".
+export function campusEventProducerAssignableIds(me: Me | undefined): Set<string> | null {
+  if (!me) return new Set();
+  if (me.is_manager || isGeneralEventProducer(me)) return null;
+  return new Set(me.led_campuses.map((c) => c.id));
+}
+
+// Shows the "Responsáveis" screen: anyone who can appoint someone, anywhere.
+export function canManageResponsibles(me: Me | undefined): boolean {
+  return (
+    !!me &&
+    (me.is_manager ||
+      me.led_campuses.length > 0 ||
+      me.is_cells_general_leader ||
+      me.is_courses_general_leader ||
+      isGeneralEventProducer(me))
   );
 }

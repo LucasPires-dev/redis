@@ -1,13 +1,23 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Calendar, Globe, Building2, HeartHandshake, Users, MapPin } from "lucide-react";
+import { Calendar, Building2, Clapperboard, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
-import { DetailSection } from "@/components/detail/DetailSection";
-import { useDB, MINISTRY_LABEL, ROLE_LABEL } from "@/lib/mock-store";
-
-const scopeIcon = { geral: Globe, campus: Building2, ministerio: HeartHandshake } as const;
+import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
+import { ApiError } from "@/lib/api/client";
+import { useAuth, isEventProducer } from "@/lib/api/auth";
+import { useEvent, EVENT_TYPE_LABEL } from "@/lib/api/production";
+import { MINISTRY_LABEL } from "@/lib/api/ministries";
+import {
+  useMyRegistration,
+  useRegisterForEvent,
+  useCancelRegistration,
+  useRegistrationStats,
+  useTicketConfig,
+  PAYMENT_STATUS_LABEL,
+} from "@/lib/api/payments";
 
 export const Route = createFileRoute("/app/eventos_/$id")({
   head: () => ({ meta: [{ title: "Evento — Redis" }] }),
@@ -17,149 +27,200 @@ export const Route = createFileRoute("/app/eventos_/$id")({
   ),
 });
 
+const EVENT_STATUS_LABEL: Record<string, string> = {
+  planning: "Planejamento",
+  confirmed: "Confirmado",
+  in_progress: "Em andamento",
+  closed: "Encerrado",
+};
+
 function EventDetail() {
   const { id } = Route.useParams();
-  const db = useDB((d) => d);
-  const ev = db.events.find((e) => e.id === id);
-  if (!ev) throw notFound();
+  const { me } = useAuth();
+  const { data: event, isLoading, error } = useEvent(id);
 
-  const Icon = scopeIcon[ev.scope];
-  const campus = ev.campusId ? db.campuses.find((c) => c.id === ev.campusId) : null;
-  const ministry = ev.ministryId ? db.ministries.find((m) => m.id === ev.ministryId) : null;
-  const dateStr = new Date(ev.date).toLocaleDateString("pt-BR", {
+  if (error instanceof ApiError && [404, 403].includes(error.status)) throw notFound();
+  if (isLoading || !event) {
+    return <div className="p-10 text-sm text-muted-foreground">Carregando...</div>;
+  }
+
+  const dateStr = new Date(event.starts_at).toLocaleDateString("pt-BR", {
+    weekday: "long",
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
+  const timeStr = new Date(event.starts_at).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-  // "Compartilhado com" — quantos campus/ministérios veem
-  let sharedCampus = 0;
-  let sharedMinistries = 0;
-  if (ev.scope === "geral") {
-    sharedCampus = db.campuses.length;
-    sharedMinistries = db.ministries.length;
-  } else if (ev.scope === "campus") {
-    sharedCampus = 1;
-    sharedMinistries = db.ministries.filter((m) => m.campusId === ev.campusId).length;
-  } else {
-    sharedCampus = 1;
-    sharedMinistries = 1;
-  }
+  const canManage = !!me && (me.is_manager || isEventProducer(me));
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div className="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
       <DetailHeader
         backTo="/app/eventos"
         backLabel="Eventos"
-        icon={<Icon className="h-6 w-6" />}
-        title={ev.title}
+        icon={<Clapperboard className="h-6 w-6" />}
+        title={event.title}
         subtitle={
           <span className="inline-flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" /> {dateStr}
+            <Calendar className="h-3.5 w-3.5" /> {dateStr} · {timeStr}
           </span>
         }
         actions={
-          <Badge variant="secondary" className="capitalize">
-            {ev.scope}
-          </Badge>
+          <div className="flex gap-2">
+            <Badge variant="outline">{EVENT_TYPE_LABEL[event.event_type]}</Badge>
+            <Badge variant="secondary">{EVENT_STATUS_LABEL[event.status] ?? event.status}</Badge>
+          </div>
         }
       />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard icon={<Calendar className="h-4 w-4" />} label="Data" value={dateStr} />
         <StatCard
-          icon={<Icon className="h-4 w-4" />}
-          label="Escopo"
-          value={<span className="capitalize">{ev.scope}</span>}
+          icon={<Calendar className="h-4 w-4" />}
+          label="Data"
+          value={new Date(event.starts_at).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+          })}
+        />
+        <StatCard
+          icon={<Clapperboard className="h-4 w-4" />}
+          label="Tipo"
+          value={EVENT_TYPE_LABEL[event.event_type]}
         />
         <StatCard
           icon={<Building2 className="h-4 w-4" />}
           label="Campus"
-          value={campus?.name ?? "Todos"}
+          value={event.campus?.name ?? "Todos"}
         />
         <StatCard
           icon={<Users className="h-4 w-4" />}
-          label="Público estimado"
-          value="—"
-          hint="a definir"
+          label="Ministério"
+          value={event.ministry_kind ? MINISTRY_LABEL[event.ministry_kind] : "—"}
         />
       </div>
 
-      <DetailSection title="Detalhes">
-        <Card>
-          <CardContent className="grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
-            <Info
-              label="Local"
-              value={
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> {campus?.city ?? "A definir"}
-                </span>
-              }
-            />
-            <Info label="Organizador" value={ROLE_LABEL[ev.creatorRole]} />
-            <Info
-              label="Ministério"
-              value={
-                ministry ? (
-                  <Link
-                    to="/app/ministerios/$kind"
-                    params={{ kind: ministry.kind }}
-                    className="hover:text-foreground"
-                  >
-                    {MINISTRY_LABEL[ministry.kind]}
-                  </Link>
-                ) : (
-                  "—"
-                )
-              }
-            />
-          </CardContent>
-        </Card>
-      </DetailSection>
-
-      <DetailSection title="Compartilhado com">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {event.description && (
+        <DetailSection title="Descrição">
           <Card>
-            <CardContent className="p-5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Campus</div>
-              <div className="mt-1 text-2xl font-semibold tabular-nums">{sharedCampus}</div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {ev.scope === "geral"
-                  ? "Cascata geral: todos os campus recebem."
-                  : ev.scope === "campus"
-                    ? "Compartilhado com o campus e seus ministérios."
-                    : "Escopo ministerial dentro do campus."}
-              </p>
+            <CardContent className="p-5 text-sm whitespace-pre-wrap">
+              {event.description}
             </CardContent>
           </Card>
+        </DetailSection>
+      )}
+
+      {event.producer && (
+        <DetailSection title="Produtor">
+          <Card>
+            <CardContent className="p-5 text-sm">{event.producer.name}</CardContent>
+          </Card>
+        </DetailSection>
+      )}
+
+      {canManage && (
+        <DetailSection title="Produção">
           <Card>
             <CardContent className="p-5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Ministérios</div>
-              <div className="mt-1 text-2xl font-semibold tabular-nums">{sharedMinistries}</div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Líderes gerais do mesmo tipo também visualizam o evento.
-              </p>
+              <Link
+                to="/app/producao/eventos/$id"
+                params={{ id: event.id }}
+                className="text-sm text-primary hover:underline"
+              >
+                Abrir painel completo de produção (ordem do culto, escala, delegações)
+              </Link>
             </CardContent>
           </Card>
-        </div>
-      </DetailSection>
+        </DetailSection>
+      )}
 
-      <DetailSection title="Presenças">
-        <Card>
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Registro de presença ficará disponível no dia do evento.
-          </CardContent>
-        </Card>
-      </DetailSection>
+      <RegistrationSection eventId={event.id} />
     </div>
   );
 }
 
-function Info({ label, value }: { label: string; value: React.ReactNode }) {
+function RegistrationSection({ eventId }: { eventId: string }) {
+  const { data: config, isLoading } = useTicketConfig(eventId);
+  const { data: stats } = useRegistrationStats(eventId);
+  const { data: myReg } = useMyRegistration(eventId);
+  const register = useRegisterForEvent();
+  const cancel = useCancelRegistration();
+
+  if (isLoading || !config) return null;
+
+  const priceFmt = config.price_cents
+    ? `R$ ${(config.price_cents / 100).toFixed(2).replace(".", ",")}`
+    : "Gratuito";
+
   return (
-    <div>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm">{value}</div>
-    </div>
+    <DetailSection title="Inscrição">
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">{priceFmt}</div>
+            {stats && (
+              <div className="text-xs text-muted-foreground">
+                {stats.confirmed} confirmado{stats.confirmed !== 1 ? "s" : ""}
+                {stats.capacity != null && ` de ${stats.capacity} vagas`}
+              </div>
+            )}
+          </div>
+
+          {stats?.capacity != null && (
+            <div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{
+                    width: `${Math.min(100, (stats.total / stats.capacity) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {!myReg && (
+            <Button
+              className="w-full"
+              disabled={register.isPending}
+              onClick={() => register.mutate(eventId)}
+            >
+              Inscrever-se
+            </Button>
+          )}
+
+          {myReg && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Sua inscrição</p>
+                <Badge variant="outline">{PAYMENT_STATUS_LABEL[myReg.payment_status]}</Badge>
+              </div>
+              <div className="flex gap-2">
+                {myReg.payment_url && myReg.payment_status === "pending" && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={myReg.payment_url} target="_blank" rel="noreferrer">
+                      Pagar
+                    </a>
+                  </Button>
+                )}
+                {myReg.payment_status !== "cancelled" && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={cancel.isPending}
+                    onClick={() => cancel.mutate(myReg.id)}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </DetailSection>
   );
 }

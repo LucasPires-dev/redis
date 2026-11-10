@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { Clapperboard, Plus } from "lucide-react";
+import { Clapperboard, Plus, Send, Ticket, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/api/auth";
 import {
   MINISTRY_LABEL,
+  PRODUCTION_MINISTRY_KINDS,
   useMinistries,
   useMinistryMembers,
   type MinistryKind,
@@ -43,8 +44,25 @@ import {
   useToggleChecklistItem,
   type ItemStatusValue,
   type RosterStatus,
+  type DemandType,
+  type DemandPriority,
+  type DemandStatus,
+  useEventDemands,
+  useCreateDemand,
+  useAcceptDemand,
+  useCompleteDemand,
+  useRejectDemand,
 } from "@/lib/api/production";
 import { useEventRealtime } from "@/lib/api/realtime";
+import {
+  useCancelRegistration,
+  useMyRegistration,
+  useRegisterForEvent,
+  useRegistrationStats,
+  useRegistrations,
+  useTicketConfig,
+  PAYMENT_STATUS_LABEL,
+} from "@/lib/api/payments";
 
 export const Route = createFileRoute("/app/producao_/eventos_/$id")({
   head: () => ({ meta: [{ title: "Ordem do Culto — Redis" }] }),
@@ -300,6 +318,10 @@ function EventRundown() {
         </div>
         {myKinds.length > 0 && <AddChecklistItemForm eventId={event.id} myKinds={myKinds} />}
       </DetailSection>
+
+      <DelegationSection eventId={event.id} campusId={event.campus?.id} isManager={!!me?.is_manager || !!me?.is_event_producer} />
+
+      <RegistrationSection eventId={event.id} isManager={!!me?.is_manager || !!me?.is_event_producer} />
     </div>
   );
 }
@@ -406,6 +428,361 @@ function InviteToRosterDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const DEMAND_TYPE_LABEL: Record<DemandType, string> = {
+  slide: "Pedido de slide",
+  technical_adjustment: "Ajuste técnico",
+  repertoire_change: "Mudança de repertório",
+  stage_setup: "Montagem de palco",
+  material: "Material",
+  other: "Outro",
+};
+
+const DEMAND_STATUS_LABEL: Record<DemandStatus, string> = {
+  open: "Aberta",
+  in_progress: "Em andamento",
+  done: "Concluída",
+  rejected: "Rejeitada",
+};
+
+const DEMAND_STATUS_VARIANT: Record<DemandStatus, "outline" | "default" | "destructive" | "secondary"> = {
+  open: "outline",
+  in_progress: "secondary",
+  done: "default",
+  rejected: "destructive",
+};
+
+function DelegationSection({
+  eventId,
+  campusId,
+  isManager,
+}: {
+  eventId: string;
+  campusId: string | undefined;
+  isManager: boolean;
+}) {
+  const { data: demands } = useEventDemands(eventId);
+  const accept = useAcceptDemand();
+  const complete = useCompleteDemand();
+
+  if (!isManager && (!demands || demands.length === 0)) return null;
+
+  const grouped = (demands ?? []).reduce(
+    (acc, d) => {
+      const key = d.to_ministry_kind;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(d);
+      return acc;
+    },
+    {} as Record<MinistryKind, typeof demands>,
+  );
+
+  return (
+    <DetailSection
+      title="Delegações"
+      count={demands?.length ?? 0}
+      action={
+        isManager ? (
+          <CreateDelegationDialog eventId={eventId} campusId={campusId} />
+        ) : undefined
+      }
+    >
+      {!demands || demands.length === 0 ? (
+        <EmptyState>Nenhuma delegação criada ainda.</EmptyState>
+      ) : (
+        <div className="space-y-4">
+          {Object.entries(grouped).map(([kind, items]) => (
+            <div key={kind}>
+              <h4 className="mb-2 text-sm font-medium text-muted-foreground">
+                {MINISTRY_LABEL[kind as MinistryKind]}
+              </h4>
+              <div className="space-y-2">
+                {(items ?? []).map((d) => (
+                  <Card key={d.id}>
+                    <CardContent className="flex items-center justify-between gap-3 p-4">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium">
+                          {DEMAND_TYPE_LABEL[d.demand_type]}
+                        </div>
+                        {d.description && (
+                          <div className="text-xs text-muted-foreground line-clamp-2">
+                            {d.description}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {d.status === "open" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={accept.isPending}
+                            onClick={() => accept.mutate(d.id)}
+                          >
+                            Aceitar
+                          </Button>
+                        )}
+                        {d.status === "in_progress" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={complete.isPending}
+                            onClick={() => complete.mutate(d.id)}
+                          >
+                            Concluir
+                          </Button>
+                        )}
+                        <Badge variant={DEMAND_STATUS_VARIANT[d.status]}>
+                          {DEMAND_STATUS_LABEL[d.status]}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </DetailSection>
+  );
+}
+
+function CreateDelegationDialog({
+  eventId,
+  campusId,
+}: {
+  eventId: string;
+  campusId: string | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  const [toKind, setToKind] = useState<MinistryKind>(PRODUCTION_MINISTRY_KINDS[0]);
+  const [demandType, setDemandType] = useState<DemandType>("other");
+  const [priority, setPriority] = useState<DemandPriority>("normal");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [error, setError] = useState("");
+  const createDemand = useCreateDemand();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    try {
+      await createDemand.mutateAsync({
+        event_id: eventId,
+        from_ministry_kind: null,
+        to_ministry_kind: toKind,
+        to_campus_id: campusId ?? null,
+        demand_type: demandType,
+        priority,
+        description,
+        due_date: dueDate || null,
+      });
+      setOpen(false);
+      setDescription("");
+      setDueDate("");
+    } catch {
+      setError("Não foi possível criar a delegação.");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="gap-1.5">
+          <Send className="h-4 w-4" /> Delegar
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delegar para ministério</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Ministério destino</Label>
+            <Select value={toKind} onValueChange={(v) => setToKind(v as MinistryKind)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PRODUCTION_MINISTRY_KINDS.map((k) => (
+                  <SelectItem key={k} value={k}>
+                    {MINISTRY_LABEL[k]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Tipo</Label>
+            <Select value={demandType} onValueChange={(v) => setDemandType(v as DemandType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(DEMAND_TYPE_LABEL).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Prioridade</Label>
+            <Select value={priority} onValueChange={(v) => setPriority(v as DemandPriority)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="urgent">Urgente</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="planning">Planejamento</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Descrição</Label>
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="O que precisa ser feito"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Prazo (opcional)</Label>
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button type="submit" className="w-full" disabled={createDemand.isPending}>
+            Criar delegação
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RegistrationSection({ eventId, isManager }: { eventId: string; isManager: boolean }) {
+  const { data: config, isLoading: configLoading } = useTicketConfig(eventId);
+  const { data: stats } = useRegistrationStats(eventId);
+  const { data: myReg } = useMyRegistration(eventId);
+  const { data: allRegs } = useRegistrations(isManager ? eventId : undefined);
+  const register = useRegisterForEvent();
+  const cancel = useCancelRegistration();
+
+  if (configLoading || !config) return null;
+
+  const priceFmt = config.price_cents
+    ? `R$ ${(config.price_cents / 100).toFixed(2).replace(".", ",")}`
+    : "Gratuito";
+
+  return (
+    <DetailSection
+      title="Inscrições"
+      count={stats?.total ?? 0}
+      action={
+        <Badge variant="outline" className="gap-1.5">
+          <Ticket className="h-3.5 w-3.5" />
+          {priceFmt}
+        </Badge>
+      }
+    >
+      {stats && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Confirmados" value={stats.confirmed} />
+          <StatCard label="Pendentes" value={stats.pending} />
+          <StatCard
+            label="Capacidade"
+            value={stats.capacity != null ? `${stats.total}/${stats.capacity}` : stats.total}
+          />
+          {config.price_cents > 0 && (
+            <StatCard
+              label="Receita"
+              value={`R$ ${(stats.revenue_cents / 100).toFixed(2).replace(".", ",")}`}
+            />
+          )}
+        </div>
+      )}
+
+      {stats?.capacity != null && (
+        <div className="mt-3">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${Math.min(100, (stats.total / stats.capacity) * 100)}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {stats.total} de {stats.capacity} vagas preenchidas
+          </p>
+        </div>
+      )}
+
+      {!myReg && (
+        <Button
+          className="mt-3 w-full gap-1.5"
+          disabled={register.isPending}
+          onClick={() => register.mutate(eventId)}
+        >
+          <Users className="h-4 w-4" /> Inscrever-se
+        </Button>
+      )}
+
+      {myReg && (
+        <Card className="mt-3">
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm font-medium">Sua inscrição</p>
+              <Badge variant="outline">{PAYMENT_STATUS_LABEL[myReg.payment_status]}</Badge>
+            </div>
+            <div className="flex gap-2">
+              {myReg.payment_url && myReg.payment_status === "pending" && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={myReg.payment_url} target="_blank" rel="noreferrer">
+                    Pagar
+                  </a>
+                </Button>
+              )}
+              {myReg.payment_status !== "cancelled" && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={cancel.isPending}
+                  onClick={() => cancel.mutate(myReg.id)}
+                >
+                  Cancelar
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isManager && allRegs && allRegs.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <h4 className="text-sm font-medium text-muted-foreground">Todos os inscritos</h4>
+          {allRegs.map((r) => (
+            <Card key={r.id}>
+              <CardContent className="flex items-center justify-between p-3">
+                <div className="text-sm">{r.person.name}</div>
+                <Badge variant="outline">{PAYMENT_STATUS_LABEL[r.payment_status]}</Badge>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </DetailSection>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border p-3 text-center">
+      <div className="text-lg font-semibold">{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+    </div>
   );
 }
 
