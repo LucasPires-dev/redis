@@ -80,6 +80,7 @@ describe("Cell meeting calendar", () => {
             name: CELL_NAME,
             meeting_day: TODAY_WEEKDAY,
             meeting_time: "19:30",
+            target_audience: "todos",
           },
         }),
       )

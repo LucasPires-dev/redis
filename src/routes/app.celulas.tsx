@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CampusCellsLeadersDialog } from "@/components/cells/CampusCellsLeadersDialog";
 import { CellFormDialog } from "@/components/cells/CellFormDialog";
+import { CellIncompleteBadge } from "@/components/cells/CellIncompleteBadge";
 import { SeasonsDialog } from "@/components/cells/SeasonsDialog";
 import {
   campusCellsLeaderAssignableIds,
@@ -153,11 +154,14 @@ function CellsPage() {
                     <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground">
                       <Sparkles className="h-5 w-5" />
                     </div>
-                    {schedule && (
-                      <Badge variant="outline" className="gap-1">
-                        <CalIcon className="h-3 w-3" /> {schedule}
-                      </Badge>
-                    )}
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      {schedule && (
+                        <Badge variant="outline" className="gap-1">
+                          <CalIcon className="h-3 w-3" /> {schedule}
+                        </Badge>
+                      )}
+                      <CellIncompleteBadge cell={c} />
+                    </div>
                   </div>
                   <h3 className="mt-4 text-lg font-semibold tracking-tight">{c.name}</h3>
                   <p className="text-sm text-muted-foreground">{c.campus.name}</p>

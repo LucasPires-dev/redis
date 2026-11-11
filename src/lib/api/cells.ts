@@ -27,6 +27,40 @@ export function formatSchedule(day: MeetingDay | null, time: string | null): str
     .join(" · ");
 }
 
+// Who a cell is for: the audience-facing ministry kinds, plus an explicit "todos".
+export type CellAudience =
+  | Extract<MinistryKind, "jovens" | "criancas" | "adolescentes" | "mulheres" | "homens" | "casais">
+  | "todos";
+
+export const CELL_AUDIENCE_LABEL: Record<CellAudience, string> = {
+  todos: "Todos",
+  jovens: "Jovens",
+  criancas: "Crianças",
+  adolescentes: "Adolescentes",
+  mulheres: "Mulheres",
+  homens: "Homens",
+  casais: "Casais",
+};
+
+export const CELL_AUDIENCES = Object.keys(CELL_AUDIENCE_LABEL) as CellAudience[];
+
+// Fields a cell needs before it can run (backend Cell.REQUIRED_FIELDS).
+export type CellRequiredField = "meeting_day" | "meeting_time" | "target_audience";
+
+export const CELL_REQUIRED_FIELD_LABEL: Record<CellRequiredField, string> = {
+  meeting_day: "dia do encontro",
+  meeting_time: "horário",
+  target_audience: "público-alvo",
+};
+
+// "dia do encontro, horário e público-alvo"
+export function describeMissingFields(fields: CellRequiredField[]): string {
+  const labels = fields.map((f) => CELL_REQUIRED_FIELD_LABEL[f]);
+  return labels.length > 1
+    ? `${labels.slice(0, -1).join(", ")} e ${labels[labels.length - 1]}`
+    : (labels[0] ?? "");
+}
+
 export interface Cell {
   id: string;
   campus: CampusMini;
@@ -34,7 +68,11 @@ export interface Cell {
   meeting_day: MeetingDay | null;
   meeting_day_display: string;
   meeting_time: string | null;
-  target_audience: MinistryKind | "";
+  // Empty only on cells created before it was required.
+  target_audience: CellAudience | "";
+  // Required fields still empty; while any is missing the cell isn't active
+  // (no meetings, no renewal, not offered to new converts).
+  missing_fields: CellRequiredField[];
   address: string;
   description: string;
   season: Season | null;
@@ -191,7 +229,8 @@ export interface CellInput {
   name: string;
   meeting_day: MeetingDay | null;
   meeting_time: string | null;
-  target_audience: MinistryKind | "";
+  // Day, time and audience are required by the API; the form starts them empty.
+  target_audience: CellAudience | "";
   address: string;
   description: string;
   start_date: string | null;

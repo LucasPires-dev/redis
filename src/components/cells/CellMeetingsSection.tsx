@@ -31,6 +31,7 @@ import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { RoleBadge } from "@/components/detail/RoleBadge";
 import { apiErrorMessage } from "@/lib/api/client";
 import {
+  describeMissingFields,
   useCellCalendar,
   useDeleteCellMeeting,
   useSaveCellMeeting,
@@ -101,6 +102,8 @@ export function CellMeetingsSection({ cell, roster }: Props) {
   const deleteMeeting = useDeleteCellMeeting(cell.id);
   const [form, setForm] = useState<FormState | null>(null);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  // An incomplete cell isn't active: no new records (the API rejects them too).
+  const canRegister = cell.can_manage && cell.missing_fields.length === 0;
 
   const blankForm = (date: string, scheduled: boolean, held: boolean): FormState => ({
     scheduled,
@@ -219,7 +222,7 @@ export function CellMeetingsSection({ cell, roster }: Props) {
             {meeting?.notes && <p className="whitespace-pre-line text-sm">{meeting.notes}</p>}
           </div>
 
-          {cell.can_manage && (
+          {cell.can_manage && (meeting || canRegister) && (
             <div className="flex shrink-0 flex-wrap gap-1">
               {meeting ? (
                 <>
@@ -270,7 +273,7 @@ export function CellMeetingsSection({ cell, roster }: Props) {
     <DetailSection
       title="Encontros"
       action={
-        cell.can_manage ? (
+        canRegister ? (
           <Button
             size="sm"
             variant="outline"
@@ -286,10 +289,10 @@ export function CellMeetingsSection({ cell, roster }: Props) {
         <EmptyState>Carregando…</EmptyState>
       ) : (
         <div className="space-y-3">
-          {!cell.meeting_day && (
+          {cell.missing_fields.length > 0 && (
             <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-              Esta célula não tem dia de encontro definido. Defina o dia na edição da célula para
-              ver todas as datas da temporada.
+              Os encontros poderão ser registrados quando a célula tiver{" "}
+              {describeMissingFields(cell.missing_fields)} definidos.
             </p>
           )}
 

@@ -26,6 +26,7 @@ import { DetailSkeleton } from "@/components/skeletons";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { CellFormDialog } from "@/components/cells/CellFormDialog";
+import { CellIncompleteBadge } from "@/components/cells/CellIncompleteBadge";
 import { CampusCellsLeadersDialog } from "@/components/cells/CampusCellsLeadersDialog";
 import { SeasonsDialog } from "@/components/cells/SeasonsDialog";
 import {
@@ -281,6 +282,7 @@ function CellCard({
                   <CalendarX className="h-3 w-3" /> {cell.pending_meetings} sem registro
                 </Badge>
               )}
+              <CellIncompleteBadge cell={cell} />
             </div>
           </div>
           <h3 className="mt-4 text-lg font-semibold tracking-tight">{cell.name}</h3>
