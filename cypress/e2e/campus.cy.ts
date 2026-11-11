@@ -15,7 +15,8 @@ describe("Campus pages", () => {
     cy.contains(CAMPUS_NAME, { timeout: 15000 }).click();
 
     cy.location("pathname").should("match", /^\/app\/campus\/[0-9a-f-]{36}$/);
-    cy.contains("h1, h2", CAMPUS_NAME).should("be.visible");
+    // First visit may wait for Vite to compile the route (first spec of a full run).
+    cy.contains("h1, h2", CAMPUS_NAME, { timeout: 15000 }).should("be.visible");
 
     // Sections come from the API (ministries, cells, events), not mock data.
     cy.contains("Ministérios").should("be.visible");

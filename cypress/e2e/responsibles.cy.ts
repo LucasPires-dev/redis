@@ -83,6 +83,7 @@ function cleanUp(ids: Ids) {
 function pickOption(trigger: string, option: string) {
   cy.get(`[aria-label="${trigger}"]`).click();
   cy.contains('[role="option"]', option).click();
+  cy.get('[role="listbox"]').should("not.exist");
 }
 
 // Types in the card's person search and picks the first match.
@@ -187,6 +188,9 @@ describe("Responsáveis — access hierarchy", () => {
       });
       // The options render in a portal, outside the dialog's DOM subtree.
       cy.contains('[role="option"]', "Colíder").click();
+      // Wait for the Select to close: while its listbox is open it keeps focus,
+      // and typing in the search would go nowhere (flaky under load).
+      cy.get('[role="listbox"]').should("not.exist");
       cy.get('[role="dialog"]').within(() => {
         appoint(TARGET_EMAIL, TARGET_NAME);
         cy.contains(TARGET_NAME).closest("div.rounded-md").should("contain.text", "Colíder");
