@@ -39,7 +39,7 @@ function Login() {
 
   return (
     <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
-      <div className="flex flex-col justify-between border-r border-border bg-muted/40 p-10">
+      <div className="hidden flex-col justify-between border-r border-border bg-muted/40 p-6 lg:flex lg:p-10">
         <Link to="/" className="inline-flex">
           <RedisLogo withWordmark withTagline className="text-lg" />
         </Link>
@@ -51,7 +51,7 @@ function Login() {
         <div className="text-xs text-muted-foreground">© Redis 2026</div>
       </div>
 
-      <div className="flex items-center justify-center p-10">
+      <div className="flex items-center justify-center p-6 lg:p-10">
         <form onSubmit={submit} className="w-full max-w-sm space-y-6">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Entrar</h1>

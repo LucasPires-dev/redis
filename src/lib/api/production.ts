@@ -3,8 +3,18 @@ import { apiFetch, apiList } from "./client";
 import type { CampusMini, MinistryKind } from "./ministries";
 import type { PersonMini } from "./people";
 
-export type EventType = "culto" | "ministry_event";
+export type EventType = "culto" | "ministry_event" | "training" | "conference" | "special_service";
 export type EventStatus = "planning" | "confirmed" | "in_progress" | "closed";
+
+export const EVENT_TYPE_LABEL: Record<EventType, string> = {
+  culto: "Culto",
+  ministry_event: "Evento de Ministério",
+  training: "Treinamento",
+  conference: "Conferência",
+  special_service: "Culto Especial",
+};
+
+export const PRODUCER_EVENT_TYPES: EventType[] = ["conference", "special_service", "training"];
 export type ItemStatusValue = "ok" | "attention" | "problem";
 export type DemandType =
   "slide" | "technical_adjustment" | "repertoire_change" | "stage_setup" | "material" | "other";
@@ -32,13 +42,33 @@ export interface RundownItem {
 export interface Event {
   id: string;
   title: string;
+  description: string;
   event_type: EventType;
   campus: CampusMini | null;
   ministry_kind: MinistryKind | null;
   starts_at: string;
+  ends_at: string | null;
   status: EventStatus;
+  producer: PersonMini | null;
   rundown_items: RundownItem[];
+  /** Registration summary; null when the event has no registration. */
+  ticket_config: EventTicketSummary | null;
   created_at: string;
+}
+
+export interface EventTicketSummary {
+  id: string;
+  price_cents: number;
+  max_capacity: number | null;
+  registration_deadline: string | null;
+}
+
+/** Ticket sent together with a new event; both are created in one transaction. */
+export interface CreateEventTicketInput {
+  price_cents: number;
+  max_capacity?: number | null;
+  registration_deadline?: string | null;
+  description?: string;
 }
 
 export interface Demand {
@@ -47,7 +77,7 @@ export interface Demand {
     Event,
     "id" | "title" | "event_type" | "campus" | "ministry_kind" | "starts_at" | "status"
   > | null;
-  from_ministry_kind: MinistryKind;
+  from_ministry_kind: MinistryKind | null;
   from_campus: CampusMini | null;
   to_ministry_kind: MinistryKind;
   to_campus: CampusMini | null;
@@ -104,10 +134,13 @@ export function useEvent(id: string | undefined, options: { poll?: boolean } = {
 
 export interface CreateEventInput {
   title: string;
+  description?: string;
   event_type: EventType;
   campus_id?: string | null;
   ministry_kind?: MinistryKind | null;
   starts_at: string;
+  ends_at?: string | null;
+  ticket?: CreateEventTicketInput | null;
 }
 
 export function useCreateEvent() {
@@ -175,7 +208,7 @@ export function useDemands(direction?: "sent" | "received") {
 
 export interface CreateDemandInput {
   event_id?: string | null;
-  from_ministry_kind: MinistryKind;
+  from_ministry_kind?: MinistryKind | null;
   from_campus_id?: string | null;
   to_ministry_kind: MinistryKind;
   to_campus_id?: string | null;
@@ -183,6 +216,14 @@ export interface CreateDemandInput {
   priority: DemandPriority;
   description?: string;
   due_date?: string | null;
+}
+
+export function useEventDemands(eventId: string | undefined) {
+  return useQuery({
+    queryKey: ["production-demands", { event: eventId }],
+    queryFn: () => apiList<Demand>(`/api/production-demands/?event=${eventId}`),
+    enabled: !!eventId,
+  });
 }
 
 export function useCreateDemand() {

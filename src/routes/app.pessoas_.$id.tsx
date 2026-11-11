@@ -16,7 +16,10 @@ import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection } from "@/components/detail/DetailSection";
 import { useAuth } from "@/lib/api/auth";
+import { formatSchedule } from "@/lib/api/cells";
 import { MINISTRY_LABEL } from "@/lib/api/ministries";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 import { usePerson, useUpdatePerson } from "@/lib/api/people";
 import {
   useAddReconciliationToCell,
@@ -30,6 +33,7 @@ import {
 export const Route = createFileRoute("/app/pessoas_/$id")({
   head: () => ({ meta: [{ title: "Pessoa — Redis" }] }),
   component: PersonDetail,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">Pessoa não encontrada.</div>
   ),
@@ -43,7 +47,7 @@ function PersonDetail() {
 
   if (isError) throw notFound();
   if (!person) {
-    return <div className="p-10 text-sm text-muted-foreground">{isLoading ? "Carregando…" : ""}</div>;
+    return isLoading ? <DetailSkeleton /> : null;
   }
 
   const canManageReconciliation =
@@ -216,7 +220,7 @@ function ReconciliationActions({
   const { data: campusMinistries } = useAvailableMinistries(reconciliationId);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+    <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
       {!baptized && (
         <Button
           variant="outline"
@@ -238,15 +242,20 @@ function ReconciliationActions({
         </Button>
       )}
       {!inCell && (
-        <div className="flex items-center gap-1">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
           <Select value={cellId} onValueChange={setCellId}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="GT" />
             </SelectTrigger>
             <SelectContent>
               {(campusCells ?? []).map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
+                  {(c.meeting_day || c.meeting_time) && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {formatSchedule(c.meeting_day, c.meeting_time)}
+                    </span>
+                  )}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -262,9 +271,9 @@ function ReconciliationActions({
         </div>
       )}
       {!serving && (
-        <div className="flex items-center gap-1">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
           <Select value={ministryId} onValueChange={setMinistryId}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Ministério" />
             </SelectTrigger>
             <SelectContent>

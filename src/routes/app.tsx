@@ -11,6 +11,7 @@ import {
   Clapperboard,
   ChevronsUpDown,
   LogOut,
+  UserCog,
 } from "lucide-react";
 import { RedisLogo } from "@/components/brand/RedisLogo";
 import {
@@ -37,7 +38,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { hasAccessToken } from "@/lib/api/client";
+import { RouteError } from "@/components/RouteError";
 import {
+  canCoordinateCells,
+  canManageResponsibles,
   deriveRoleLabel,
   hasCellLeadership,
   isMinistryLeaderOnly,
@@ -56,6 +60,8 @@ const NAV: {
   icon: typeof LayoutDashboard;
   exact?: boolean;
   hideForMinistryLeader?: boolean;
+  /** Show only when this predicate returns true (checked in AppSidebar). */
+  visibleWhen?: "cellCoordinator" | "responsibleManager";
 }[] = [
   {
     to: "/app",
@@ -69,10 +75,23 @@ const NAV: {
   { to: "/app/producao", label: "Produção", icon: Clapperboard },
   { to: "/app/pessoas", label: "Pessoas", icon: Users, hideForMinistryLeader: true },
   { to: "/app/celulas", label: "Células", icon: Sparkles, hideForMinistryLeader: true },
+  {
+    to: "/app/celulas/coordination",
+    label: "Coord. Células",
+    icon: Sparkles,
+    hideForMinistryLeader: true,
+    visibleWhen: "cellCoordinator",
+  },
   { to: "/app/eventos", label: "Eventos", icon: Calendar, hideForMinistryLeader: true },
   { to: "/app/cursos", label: "Cursos", icon: GraduationCap, hideForMinistryLeader: true },
+  // Appointing responsibles: manager, campus leaders and general area responsibles.
+  {
+    to: "/app/responsaveis",
+    label: "Responsáveis",
+    icon: UserCog,
+    visibleWhen: "responsibleManager",
+  },
 ];
-
 
 function AppShell() {
   const navigate = useNavigate();
@@ -117,7 +136,10 @@ function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { me } = useAuth();
   const restrictedNav = isMinistryLeaderOnly(me) || isReconciliadorOnly(me);
+  const isCellCoordinator = canCoordinateCells(me) || (me?.led_campuses_cells ?? []).length > 0;
   const items = NAV.filter((item) => {
+    if (item.visibleWhen === "cellCoordinator" && !isCellCoordinator) return false;
+    if (item.visibleWhen === "responsibleManager" && !canManageResponsibles(me)) return false;
     if (!item.hideForMinistryLeader || !restrictedNav) return true;
     return item.to === "/app/celulas" && hasCellLeadership(me);
   });
@@ -130,9 +152,14 @@ function AppSidebar() {
           </div>
           <div className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
             <div className="truncate text-sm font-semibold tracking-tight">redis</div>
-            <div className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Mega Igreja Vida
-            </div>
+            {me?.church && (
+              <div
+                className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
+                title={me.church.name}
+              >
+                {me.church.name}
+              </div>
+            )}
           </div>
         </div>
       </SidebarHeader>

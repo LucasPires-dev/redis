@@ -10,9 +10,12 @@ import { ApiError } from "@/lib/api/client";
 import { MINISTRY_LABEL, useTeam, useTeamMembers, type MinistryKind } from "@/lib/api/ministries";
 import type { PersonMini } from "@/lib/api/people";
 import { buildRoster } from "@/lib/roster";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/app/ministerios_/$kind_/$campusId_/equipes/$teamId")({
   component: TeamDetail,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">Equipe não encontrada.</div>
   ),
@@ -35,7 +38,7 @@ function TeamDetail() {
 
   if (error instanceof ApiError && [404, 403].includes(error.status)) throw notFound();
   if (isLoading || !team) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+    return <DetailSkeleton />;
   }
 
   const roster = buildRoster(team.leaders, team.co_leaders, members ?? []);

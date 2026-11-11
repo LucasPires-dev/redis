@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 interface Props {
   backTo: string;
+  backParams?: Record<string, string>;
   backLabel: string;
   icon: ReactNode;
   title: string;
@@ -11,11 +12,12 @@ interface Props {
   actions?: ReactNode;
 }
 
-export function DetailHeader({ backTo, backLabel, icon, title, subtitle, actions }: Props) {
+export function DetailHeader({ backTo, backParams, backLabel, icon, title, subtitle, actions }: Props) {
   return (
     <div className="space-y-4">
       <Link
         to={backTo}
+        params={backParams}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" /> {backLabel}

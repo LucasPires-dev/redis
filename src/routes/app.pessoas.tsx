@@ -23,6 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RouteError } from "@/components/RouteError";
+import { TableSkeleton } from "@/components/skeletons";
 import { useCampuses, MINISTRY_LABEL } from "@/lib/api/ministries";
 import { usePeople, useCreatePerson } from "@/lib/api/people";
 import { toast } from "sonner";
@@ -30,6 +32,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/app/pessoas")({
   head: () => ({ meta: [{ title: "Pessoas — Redis" }] }),
   component: PeoplePage,
+  errorComponent: RouteError,
 });
 
 const emptyForm = { name: "", email: "", password: "", campusId: "", baptized: false };
@@ -85,14 +88,14 @@ function PeoplePage() {
             {isLoading ? "Carregando…" : `${filtered.length} pessoas visíveis no seu escopo.`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar por nome ou email"
-              className="h-9 w-64 pl-8"
+              className="h-9 w-full pl-8 sm:w-64"
             />
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
@@ -155,13 +158,13 @@ function PeoplePage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      {isLoading ? <TableSkeleton /> : <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Campus</TableHead>
-              <TableHead>Ministérios</TableHead>
+              <TableHead className="hidden md:table-cell">Campus</TableHead>
+              <TableHead className="hidden lg:table-cell">Ministérios</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -176,7 +179,15 @@ function PeoplePage() {
                 <TableRow
                   key={p.id}
                   className="cursor-pointer"
+                  tabIndex={0}
+                  role="link"
                   onClick={() => navigate({ to: "/app/pessoas/$id", params: { id: p.id } })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate({ to: "/app/pessoas/$id", params: { id: p.id } });
+                    }
+                  }}
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -188,11 +199,14 @@ function PeoplePage() {
                       <div>
                         <div className="font-medium">{p.name}</div>
                         <div className="text-xs text-muted-foreground">{p.email}</div>
+                        {p.campus && (
+                          <div className="text-xs text-muted-foreground md:hidden">{p.campus.name}</div>
+                        )}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{p.campus?.name ?? "—"}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden text-sm text-muted-foreground md:table-cell">{p.campus?.name ?? "—"}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <div className="flex flex-wrap gap-1">
                       {p.ministries.map((m) => (
                         <Badge key={m.id} variant="secondary" className="capitalize">
@@ -218,7 +232,7 @@ function PeoplePage() {
         {!isLoading && filtered.length === 0 && (
           <div className="p-8 text-center text-sm text-muted-foreground">Sem resultados.</div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

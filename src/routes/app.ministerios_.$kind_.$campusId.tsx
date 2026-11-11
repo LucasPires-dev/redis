@@ -12,6 +12,7 @@ import {
   Droplet,
   Sparkles,
   GraduationCap,
+  UserCog,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -27,8 +28,17 @@ import {
 import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 import { RoleBadge } from "@/components/detail/RoleBadge";
-import { deriveRoleLabel, hasReconciliationTriageAccess, useAuth, type Me } from "@/lib/api/auth";
+import { MinistryLeadersDialog } from "@/components/responsibilities/MinistryLeadersDialog";
+import {
+  canAppointMinistryLeaders,
+  deriveRoleLabel,
+  hasReconciliationTriageAccess,
+  useAuth,
+  type Me,
+} from "@/lib/api/auth";
 import {
   MINISTRY_LABEL,
   useCampuses,
@@ -55,6 +65,7 @@ export const Route = createFileRoute("/app/ministerios_/$kind_/$campusId")({
     meta: [{ title: `${MINISTRY_LABEL[params.kind as MinistryKind] ?? "Ministério"} — Redis` }],
   }),
   component: MinistryAtCampusDetail,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">
       Ministério não encontrado neste campus.
@@ -76,6 +87,7 @@ function MinistryAtCampusDetail() {
   const k = kind as MinistryKind;
 
   const { me } = useAuth();
+  const [isLeadersOpen, setIsLeadersOpen] = useState(false);
   const { data: ministries, isLoading } = useMinistries();
   const { data: generalLeaderships } = useMinistryGeneralLeaderships();
 
@@ -85,7 +97,7 @@ function MinistryAtCampusDetail() {
 
   if (!isLoading && !ministry) throw notFound();
   if (!ministry) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+    return <DetailSkeleton />;
   }
 
   const generalLeaders = generalLeaderships?.find((g) => g.kind === k)?.leaders ?? [];
@@ -150,7 +162,25 @@ function MinistryAtCampusDetail() {
             />
           </div>
 
-          <DetailSection title="Liderança">
+          <DetailSection
+            title="Liderança"
+            action={
+              // Appointed by the levels above: manager, campus leader or general leader.
+              canAppointMinistryLeaders(me, k, campusId) && (
+                <Button size="sm" variant="outline" onClick={() => setIsLeadersOpen(true)}>
+                  <UserCog className="mr-1.5 h-4 w-4" /> Gerenciar liderança
+                </Button>
+              )
+            }
+          >
+            <MinistryLeadersDialog
+              open={isLeadersOpen}
+              onOpenChange={setIsLeadersOpen}
+              ministryId={ministry.id}
+              ministryName={ministry.name}
+              campusId={campusId}
+              campusName={ministry.campus.name}
+            />
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <LeaderCard
                 label="Líder geral do ministério"
