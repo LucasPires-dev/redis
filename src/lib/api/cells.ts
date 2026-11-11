@@ -48,6 +48,8 @@ export interface Cell {
   leaders: PersonMini[];
   co_leaders: PersonMini[];
   member_count: number;
+  // Past scheduled meetings nobody registered yet.
+  pending_meetings: number;
   // Whether the logged-in user may edit the cell, its members and meetings.
   can_manage: boolean;
   // Whether the logged-in user may assign its leaders and renew it.
@@ -92,6 +94,9 @@ export interface CellMeeting {
   id: string;
   cell: string;
   date: string; // YYYY-MM-DD
+  // false: the meeting didn't happen on this date (holiday, cancelled).
+  held: boolean;
+  cancel_reason: string;
   notes: string;
   attendees: PersonMini[];
   visitors_count: number;
@@ -101,19 +106,54 @@ export interface CellMeeting {
   created_at: string;
 }
 
-export function useCellMeetings(cellId: string | undefined) {
+export type CalendarStatus = "registered" | "not_held" | "pending" | "today" | "upcoming";
+
+export interface CalendarEntry {
+  // The meeting's date when there is one, else the scheduled date.
+  date: string;
+  // null for an extra meeting outside the cell's schedule.
+  scheduled_date: string | null;
+  status: CalendarStatus;
+  meeting: CellMeeting | null;
+}
+
+export interface CalendarSummary {
+  scheduled: number;
+  registered: number;
+  not_held: number;
+  pending: number;
+  upcoming: number;
+  average_attendance: number | null;
+  total_visitors: number;
+}
+
+export interface CellCalendar {
+  entries: CalendarEntry[]; // newest first
+  summary: CalendarSummary;
+}
+
+// Every scheduled date of the cell's season (from its meeting day) with its status.
+export function useCellCalendar(cellId: string | undefined) {
   return useQuery({
-    queryKey: ["cell-meetings", cellId],
-    queryFn: () => apiList<CellMeeting>(`/api/cell-meetings/?cell=${cellId}`),
+    queryKey: ["cell-meetings", cellId, "calendar"],
+    queryFn: () => apiFetch<CellCalendar>(`/api/cells/${cellId}/calendar/`),
     enabled: !!cellId,
   });
 }
 
 export interface CellMeetingInput {
   date: string;
+  held: boolean;
+  cancel_reason: string;
   notes: string;
   attendee_ids: string[];
   visitors_count: number;
+}
+
+// Meeting data changes the calendar and the cells' pending counts.
+function invalidateMeetings(queryClient: ReturnType<typeof useQueryClient>, cellId: string) {
+  queryClient.invalidateQueries({ queryKey: ["cell-meetings", cellId] });
+  queryClient.invalidateQueries({ queryKey: ["cells"] });
 }
 
 // Creates a meeting, or updates it when `meetingId` is given.
@@ -130,7 +170,7 @@ export function useSaveCellMeeting(cellId: string) {
             method: "POST",
             body: JSON.stringify({ ...input, cell_id: cellId }),
           }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cell-meetings", cellId] }),
+    onSuccess: () => invalidateMeetings(queryClient, cellId),
   });
 }
 
@@ -139,7 +179,7 @@ export function useDeleteCellMeeting(cellId: string) {
   return useMutation({
     mutationFn: (meetingId: string) =>
       apiFetch<void>(`/api/cell-meetings/${meetingId}/`, { method: "DELETE" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cell-meetings", cellId] }),
+    onSuccess: () => invalidateMeetings(queryClient, cellId),
   });
 }
 

@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Calendar as CalIcon,
   CalendarRange,
+  CalendarX,
   Plus,
   UserCog,
 } from "lucide-react";
@@ -68,7 +69,7 @@ function CellCoordinationPage() {
   }, [meLoading, hasAccess, navigate]);
 
   const campusOptions = isCoordinator
-    ? campuses ?? []
+    ? (campuses ?? [])
     : (campuses ?? []).filter((c) => ledCampusCells.some((lc) => lc.id === c.id));
 
   const [selectedCampusId, setSelectedCampusId] = useState<string>("");
@@ -98,6 +99,8 @@ function CellCoordinationPage() {
   const cellList = cells ?? [];
   const totalMembers = cellList.reduce((sum, c) => sum + c.member_count, 0);
   const leaderlessCount = cellList.filter((c) => c.leaders.length === 0).length;
+  const pendingMeetings = cellList.reduce((sum, c) => sum + c.pending_meetings, 0);
+  const cellsWithPending = cellList.filter((c) => c.pending_meetings > 0).length;
 
   if (meLoading || !hasAccess) {
     return <DetailSkeleton />;
@@ -143,9 +146,7 @@ function CellCoordinationPage() {
       />
 
       {canCreate && <CellFormDialog open={isCreating} onOpenChange={setIsCreating} />}
-      {isCoordinator && (
-        <SeasonsDialog open={isSeasonsOpen} onOpenChange={setIsSeasonsOpen} />
-      )}
+      {isCoordinator && <SeasonsDialog open={isSeasonsOpen} onOpenChange={setIsSeasonsOpen} />}
       {canAssignLeaders && (
         <CampusCellsLeadersDialog open={isLeadersOpen} onOpenChange={setIsLeadersOpen} />
       )}
@@ -207,22 +208,24 @@ function CellCoordinationPage() {
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        <StatCard
-          icon={<Sparkles className="h-4 w-4" />}
-          label="Células"
-          value={cellList.length}
-        />
-        <StatCard
-          icon={<Users className="h-4 w-4" />}
-          label="Membros"
-          value={totalMembers}
-        />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard icon={<Sparkles className="h-4 w-4" />} label="Células" value={cellList.length} />
+        <StatCard icon={<Users className="h-4 w-4" />} label="Membros" value={totalMembers} />
         <StatCard
           icon={<AlertTriangle className="h-4 w-4" />}
           label="Sem líder"
           value={leaderlessCount}
           hint={leaderlessCount > 0 ? "Atenção" : undefined}
+        />
+        <StatCard
+          icon={<CalendarX className="h-4 w-4" />}
+          label="Encontros sem registro"
+          value={pendingMeetings}
+          hint={
+            cellsWithPending > 0
+              ? `${cellsWithPending} ${cellsWithPending === 1 ? "célula" : "células"}`
+              : undefined
+          }
         />
       </div>
 
@@ -243,7 +246,11 @@ function CellCoordinationPage() {
   );
 }
 
-function CellCard({ cell }: { cell: ReturnType<typeof useCells>["data"] extends (infer T)[] | undefined ? T : never }) {
+function CellCard({
+  cell,
+}: {
+  cell: ReturnType<typeof useCells>["data"] extends (infer T)[] | undefined ? T : never;
+}) {
   const schedule = formatSchedule(cell.meeting_day, cell.meeting_time);
   const hasNoLeader = cell.leaders.length === 0;
 
@@ -264,6 +271,14 @@ function CellCard({ cell }: { cell: ReturnType<typeof useCells>["data"] extends 
               {hasNoLeader && (
                 <Badge variant="destructive" className="gap-1">
                   <AlertTriangle className="h-3 w-3" /> Sem líder
+                </Badge>
+              )}
+              {cell.pending_meetings > 0 && (
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                >
+                  <CalendarX className="h-3 w-3" /> {cell.pending_meetings} sem registro
                 </Badge>
               )}
             </div>

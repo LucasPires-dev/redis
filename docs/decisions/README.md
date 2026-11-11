@@ -44,3 +44,4 @@ O que fica mais fácil, o que fica mais difícil, o que ficou para depois.
 | [0004](0004-campus-de-membros-e-lideres.md) | Membros de qualquer campus, líderes só do campus da célula | Aceito |
 | [0005](0005-registro-de-encontros-e-presenca.md) | Registro de encontros e presença | Aceito |
 | [0006](0006-dia-e-horario-estruturados.md) | Dia e horário do encontro estruturados | Aceito |
+| [0007](0007-calendario-de-encontros.md) | Calendário de encontros calculado a partir da temporada | Aceito |
