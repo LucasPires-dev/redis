@@ -8,7 +8,6 @@ import {
   Sparkles,
   Calendar,
   GraduationCap,
-  Clapperboard,
   ChevronsUpDown,
   LogOut,
   UserCog,
@@ -72,7 +71,6 @@ const NAV: {
   },
   { to: "/app/campus", label: "Campus", icon: Building2, hideForMinistryLeader: true },
   { to: "/app/ministerios", label: "Ministérios", icon: HeartHandshake },
-  { to: "/app/producao", label: "Produção", icon: Clapperboard },
   { to: "/app/pessoas", label: "Pessoas", icon: Users, hideForMinistryLeader: true },
   { to: "/app/celulas", label: "Células", icon: Sparkles, hideForMinistryLeader: true },
   {
@@ -82,7 +80,9 @@ const NAV: {
     hideForMinistryLeader: true,
     visibleWhen: "cellCoordinator",
   },
-  { to: "/app/eventos", label: "Eventos", icon: Calendar, hideForMinistryLeader: true },
+  // Everyone: upcoming events and own registrations; producers and ministry
+  // people get the Produção and Demandas tabs inside (see app.eventos.tsx).
+  { to: "/app/eventos", label: "Eventos", icon: Calendar },
   // Everyone: open classes and own enrollments; teachers and coordinators get
   // extra tabs inside (see app.cursos.tsx).
   { to: "/app/cursos", label: "Cursos", icon: GraduationCap },

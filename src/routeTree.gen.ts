@@ -30,11 +30,16 @@ import { Route as AppCursosGestaoRouteImport } from './routes/app.cursos.gestao'
 import { Route as AppCursosMatriculasRouteImport } from './routes/app.cursos.matriculas'
 import { Route as AppCursosTurmasRouteImport } from './routes/app.cursos.turmas'
 import { Route as AppCursosIdRouteImport } from './routes/app.cursos_.$id'
+import { Route as AppEventosIndexRouteImport } from './routes/app.eventos.index'
+import { Route as AppEventosDemandasRouteImport } from './routes/app.eventos.demandas'
+import { Route as AppEventosInscricoesRouteImport } from './routes/app.eventos.inscricoes'
+import { Route as AppEventosProducaoRouteImport } from './routes/app.eventos.producao'
 import { Route as AppEventosIdRouteImport } from './routes/app.eventos_.$id'
 import { Route as AppMinisteriosKindRouteImport } from './routes/app.ministerios_.$kind'
 import { Route as AppPessoasIdRouteImport } from './routes/app.pessoas_.$id'
 import { Route as AppProducaoDemandasRouteImport } from './routes/app.producao_.demandas'
 import { Route as AppReconciliacaoDashboardRouteImport } from './routes/app.reconciliacao_.dashboard'
+import { Route as AppEventosIdProducaoRouteImport } from './routes/app.eventos_.$id_.producao'
 import { Route as AppMinisteriosKindCampusIdRouteImport } from './routes/app.ministerios_.$kind_.$campusId'
 import { Route as AppProducaoEventosIdRouteImport } from './routes/app.producao_.eventos_.$id'
 import { Route as AppCursosIdTurmaClassIdRouteImport } from './routes/app.cursos_.$id_.turma.$classId'
@@ -145,6 +150,26 @@ const AppCursosIdRoute = AppCursosIdRouteImport.update({
   path: '/cursos/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEventosIndexRoute = AppEventosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppEventosRoute,
+} as any)
+const AppEventosDemandasRoute = AppEventosDemandasRouteImport.update({
+  id: '/demandas',
+  path: '/demandas',
+  getParentRoute: () => AppEventosRoute,
+} as any)
+const AppEventosInscricoesRoute = AppEventosInscricoesRouteImport.update({
+  id: '/inscricoes',
+  path: '/inscricoes',
+  getParentRoute: () => AppEventosRoute,
+} as any)
+const AppEventosProducaoRoute = AppEventosProducaoRouteImport.update({
+  id: '/producao',
+  path: '/producao',
+  getParentRoute: () => AppEventosRoute,
+} as any)
 const AppEventosIdRoute = AppEventosIdRouteImport.update({
   id: '/eventos_/$id',
   path: '/eventos/$id',
@@ -171,6 +196,11 @@ const AppReconciliacaoDashboardRoute =
     path: '/reconciliacao/dashboard',
     getParentRoute: () => AppRoute,
   } as any)
+const AppEventosIdProducaoRoute = AppEventosIdProducaoRouteImport.update({
+  id: '/eventos_/$id_/producao',
+  path: '/eventos/$id/producao',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMinisteriosKindCampusIdRoute =
   AppMinisteriosKindCampusIdRouteImport.update({
     id: '/ministerios_/$kind_/$campusId',
@@ -201,7 +231,7 @@ export interface FileRoutesByFullPath {
   '/app/campus': typeof AppCampusRoute
   '/app/celulas': typeof AppCelulasRoute
   '/app/cursos': typeof AppCursosRouteWithChildren
-  '/app/eventos': typeof AppEventosRoute
+  '/app/eventos': typeof AppEventosRouteWithChildren
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
@@ -215,12 +245,17 @@ export interface FileRoutesByFullPath {
   '/app/cursos/matriculas': typeof AppCursosMatriculasRoute
   '/app/cursos/turmas': typeof AppCursosTurmasRoute
   '/app/cursos/$id': typeof AppCursosIdRoute
+  '/app/eventos/demandas': typeof AppEventosDemandasRoute
+  '/app/eventos/inscricoes': typeof AppEventosInscricoesRoute
+  '/app/eventos/producao': typeof AppEventosProducaoRoute
   '/app/eventos/$id': typeof AppEventosIdRoute
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
   '/app/producao/demandas': typeof AppProducaoDemandasRoute
   '/app/reconciliacao/dashboard': typeof AppReconciliacaoDashboardRoute
   '/app/cursos/': typeof AppCursosIndexRoute
+  '/app/eventos/': typeof AppEventosIndexRoute
+  '/app/eventos/$id/producao': typeof AppEventosIdProducaoRoute
   '/app/ministerios/$kind/$campusId': typeof AppMinisteriosKindCampusIdRoute
   '/app/producao/eventos/$id': typeof AppProducaoEventosIdRoute
   '/app/cursos/$id/turma/$classId': typeof AppCursosIdTurmaClassIdRoute
@@ -231,7 +266,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/app/campus': typeof AppCampusRoute
   '/app/celulas': typeof AppCelulasRoute
-  '/app/eventos': typeof AppEventosRoute
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
@@ -245,12 +279,17 @@ export interface FileRoutesByTo {
   '/app/cursos/matriculas': typeof AppCursosMatriculasRoute
   '/app/cursos/turmas': typeof AppCursosTurmasRoute
   '/app/cursos/$id': typeof AppCursosIdRoute
+  '/app/eventos/demandas': typeof AppEventosDemandasRoute
+  '/app/eventos/inscricoes': typeof AppEventosInscricoesRoute
+  '/app/eventos/producao': typeof AppEventosProducaoRoute
   '/app/eventos/$id': typeof AppEventosIdRoute
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
   '/app/producao/demandas': typeof AppProducaoDemandasRoute
   '/app/reconciliacao/dashboard': typeof AppReconciliacaoDashboardRoute
   '/app/cursos': typeof AppCursosIndexRoute
+  '/app/eventos': typeof AppEventosIndexRoute
+  '/app/eventos/$id/producao': typeof AppEventosIdProducaoRoute
   '/app/ministerios/$kind/$campusId': typeof AppMinisteriosKindCampusIdRoute
   '/app/producao/eventos/$id': typeof AppProducaoEventosIdRoute
   '/app/cursos/$id/turma/$classId': typeof AppCursosIdTurmaClassIdRoute
@@ -264,7 +303,7 @@ export interface FileRoutesById {
   '/app/campus': typeof AppCampusRoute
   '/app/celulas': typeof AppCelulasRoute
   '/app/cursos': typeof AppCursosRouteWithChildren
-  '/app/eventos': typeof AppEventosRoute
+  '/app/eventos': typeof AppEventosRouteWithChildren
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
@@ -278,12 +317,17 @@ export interface FileRoutesById {
   '/app/cursos/matriculas': typeof AppCursosMatriculasRoute
   '/app/cursos/turmas': typeof AppCursosTurmasRoute
   '/app/cursos_/$id': typeof AppCursosIdRoute
+  '/app/eventos/demandas': typeof AppEventosDemandasRoute
+  '/app/eventos/inscricoes': typeof AppEventosInscricoesRoute
+  '/app/eventos/producao': typeof AppEventosProducaoRoute
   '/app/eventos_/$id': typeof AppEventosIdRoute
   '/app/ministerios_/$kind': typeof AppMinisteriosKindRoute
   '/app/pessoas_/$id': typeof AppPessoasIdRoute
   '/app/producao_/demandas': typeof AppProducaoDemandasRoute
   '/app/reconciliacao_/dashboard': typeof AppReconciliacaoDashboardRoute
   '/app/cursos/': typeof AppCursosIndexRoute
+  '/app/eventos/': typeof AppEventosIndexRoute
+  '/app/eventos_/$id_/producao': typeof AppEventosIdProducaoRoute
   '/app/ministerios_/$kind_/$campusId': typeof AppMinisteriosKindCampusIdRoute
   '/app/producao_/eventos_/$id': typeof AppProducaoEventosIdRoute
   '/app/cursos_/$id_/turma/$classId': typeof AppCursosIdTurmaClassIdRoute
@@ -312,12 +356,17 @@ export interface FileRouteTypes {
     | '/app/cursos/matriculas'
     | '/app/cursos/turmas'
     | '/app/cursos/$id'
+    | '/app/eventos/demandas'
+    | '/app/eventos/inscricoes'
+    | '/app/eventos/producao'
     | '/app/eventos/$id'
     | '/app/ministerios/$kind'
     | '/app/pessoas/$id'
     | '/app/producao/demandas'
     | '/app/reconciliacao/dashboard'
     | '/app/cursos/'
+    | '/app/eventos/'
+    | '/app/eventos/$id/producao'
     | '/app/ministerios/$kind/$campusId'
     | '/app/producao/eventos/$id'
     | '/app/cursos/$id/turma/$classId'
@@ -328,7 +377,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/campus'
     | '/app/celulas'
-    | '/app/eventos'
     | '/app/meus-cursos'
     | '/app/ministerios'
     | '/app/pessoas'
@@ -342,12 +390,17 @@ export interface FileRouteTypes {
     | '/app/cursos/matriculas'
     | '/app/cursos/turmas'
     | '/app/cursos/$id'
+    | '/app/eventos/demandas'
+    | '/app/eventos/inscricoes'
+    | '/app/eventos/producao'
     | '/app/eventos/$id'
     | '/app/ministerios/$kind'
     | '/app/pessoas/$id'
     | '/app/producao/demandas'
     | '/app/reconciliacao/dashboard'
     | '/app/cursos'
+    | '/app/eventos'
+    | '/app/eventos/$id/producao'
     | '/app/ministerios/$kind/$campusId'
     | '/app/producao/eventos/$id'
     | '/app/cursos/$id/turma/$classId'
@@ -374,12 +427,17 @@ export interface FileRouteTypes {
     | '/app/cursos/matriculas'
     | '/app/cursos/turmas'
     | '/app/cursos_/$id'
+    | '/app/eventos/demandas'
+    | '/app/eventos/inscricoes'
+    | '/app/eventos/producao'
     | '/app/eventos_/$id'
     | '/app/ministerios_/$kind'
     | '/app/pessoas_/$id'
     | '/app/producao_/demandas'
     | '/app/reconciliacao_/dashboard'
     | '/app/cursos/'
+    | '/app/eventos/'
+    | '/app/eventos_/$id_/producao'
     | '/app/ministerios_/$kind_/$campusId'
     | '/app/producao_/eventos_/$id'
     | '/app/cursos_/$id_/turma/$classId'
@@ -541,6 +599,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCursosIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/eventos/': {
+      id: '/app/eventos/'
+      path: '/'
+      fullPath: '/app/eventos/'
+      preLoaderRoute: typeof AppEventosIndexRouteImport
+      parentRoute: typeof AppEventosRoute
+    }
+    '/app/eventos/demandas': {
+      id: '/app/eventos/demandas'
+      path: '/demandas'
+      fullPath: '/app/eventos/demandas'
+      preLoaderRoute: typeof AppEventosDemandasRouteImport
+      parentRoute: typeof AppEventosRoute
+    }
+    '/app/eventos/inscricoes': {
+      id: '/app/eventos/inscricoes'
+      path: '/inscricoes'
+      fullPath: '/app/eventos/inscricoes'
+      preLoaderRoute: typeof AppEventosInscricoesRouteImport
+      parentRoute: typeof AppEventosRoute
+    }
+    '/app/eventos/producao': {
+      id: '/app/eventos/producao'
+      path: '/producao'
+      fullPath: '/app/eventos/producao'
+      preLoaderRoute: typeof AppEventosProducaoRouteImport
+      parentRoute: typeof AppEventosRoute
+    }
     '/app/eventos_/$id': {
       id: '/app/eventos_/$id'
       path: '/eventos/$id'
@@ -574,6 +660,13 @@ declare module '@tanstack/react-router' {
       path: '/reconciliacao/dashboard'
       fullPath: '/app/reconciliacao/dashboard'
       preLoaderRoute: typeof AppReconciliacaoDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/eventos_/$id_/producao': {
+      id: '/app/eventos_/$id_/producao'
+      path: '/eventos/$id/producao'
+      fullPath: '/app/eventos/$id/producao'
+      preLoaderRoute: typeof AppEventosIdProducaoRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/ministerios_/$kind_/$campusId': {
@@ -625,11 +718,29 @@ const AppCursosRouteWithChildren = AppCursosRoute._addFileChildren(
   AppCursosRouteChildren,
 )
 
+interface AppEventosRouteChildren {
+  AppEventosDemandasRoute: typeof AppEventosDemandasRoute
+  AppEventosInscricoesRoute: typeof AppEventosInscricoesRoute
+  AppEventosProducaoRoute: typeof AppEventosProducaoRoute
+  AppEventosIndexRoute: typeof AppEventosIndexRoute
+}
+
+const AppEventosRouteChildren: AppEventosRouteChildren = {
+  AppEventosDemandasRoute: AppEventosDemandasRoute,
+  AppEventosInscricoesRoute: AppEventosInscricoesRoute,
+  AppEventosProducaoRoute: AppEventosProducaoRoute,
+  AppEventosIndexRoute: AppEventosIndexRoute,
+}
+
+const AppEventosRouteWithChildren = AppEventosRoute._addFileChildren(
+  AppEventosRouteChildren,
+)
+
 interface AppRouteChildren {
   AppCampusRoute: typeof AppCampusRoute
   AppCelulasRoute: typeof AppCelulasRoute
   AppCursosRoute: typeof AppCursosRouteWithChildren
-  AppEventosRoute: typeof AppEventosRoute
+  AppEventosRoute: typeof AppEventosRouteWithChildren
   AppMeusCursosRoute: typeof AppMeusCursosRoute
   AppMinisteriosRoute: typeof AppMinisteriosRoute
   AppPessoasRoute: typeof AppPessoasRoute
@@ -645,6 +756,7 @@ interface AppRouteChildren {
   AppPessoasIdRoute: typeof AppPessoasIdRoute
   AppProducaoDemandasRoute: typeof AppProducaoDemandasRoute
   AppReconciliacaoDashboardRoute: typeof AppReconciliacaoDashboardRoute
+  AppEventosIdProducaoRoute: typeof AppEventosIdProducaoRoute
   AppMinisteriosKindCampusIdRoute: typeof AppMinisteriosKindCampusIdRoute
   AppProducaoEventosIdRoute: typeof AppProducaoEventosIdRoute
   AppCursosIdTurmaClassIdRoute: typeof AppCursosIdTurmaClassIdRoute
@@ -655,7 +767,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCampusRoute: AppCampusRoute,
   AppCelulasRoute: AppCelulasRoute,
   AppCursosRoute: AppCursosRouteWithChildren,
-  AppEventosRoute: AppEventosRoute,
+  AppEventosRoute: AppEventosRouteWithChildren,
   AppMeusCursosRoute: AppMeusCursosRoute,
   AppMinisteriosRoute: AppMinisteriosRoute,
   AppPessoasRoute: AppPessoasRoute,
@@ -671,6 +783,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPessoasIdRoute: AppPessoasIdRoute,
   AppProducaoDemandasRoute: AppProducaoDemandasRoute,
   AppReconciliacaoDashboardRoute: AppReconciliacaoDashboardRoute,
+  AppEventosIdProducaoRoute: AppEventosIdProducaoRoute,
   AppMinisteriosKindCampusIdRoute: AppMinisteriosKindCampusIdRoute,
   AppProducaoEventosIdRoute: AppProducaoEventosIdRoute,
   AppCursosIdTurmaClassIdRoute: AppCursosIdTurmaClassIdRoute,

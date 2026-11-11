@@ -1,12 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import {
-  Building2,
-  Users,
-  HeartHandshake,
-  Sparkles,
-  Droplet,
-  Calendar,
-} from "lucide-react";
+import { Building2, Users, HeartHandshake, Sparkles, Droplet, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DetailHeader } from "@/components/detail/DetailHeader";
@@ -62,7 +55,11 @@ function CampusDetail() {
         <StatCard icon={<Users className="h-4 w-4" />} label="Pessoas" value={people.length} />
         <StatCard icon={<Droplet className="h-4 w-4" />} label="Batizados" value={baptized} />
         <StatCard icon={<Sparkles className="h-4 w-4" />} label="Em célula" value={inCell} />
-        <StatCard icon={<Calendar className="h-4 w-4" />} label="Eventos" value={eventList.length} />
+        <StatCard
+          icon={<Calendar className="h-4 w-4" />}
+          label="Eventos"
+          value={eventList.length}
+        />
       </div>
 
       <DetailSection title="Ministérios" count={ministries.length}>
@@ -117,7 +114,7 @@ function CampusDetail() {
       <DetailSection title="Próximos eventos">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {eventList.slice(0, 6).map((e) => (
-            <Link key={e.id} to="/app/producao/eventos/$id" params={{ id: e.id }}>
+            <Link key={e.id} to="/app/eventos/$id/producao" params={{ id: e.id }}>
               <Card className="transition-colors hover:border-primary/40">
                 <CardContent className="flex items-center justify-between p-4">
                   <div>
