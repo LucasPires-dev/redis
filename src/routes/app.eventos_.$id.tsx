@@ -14,6 +14,7 @@ import { MINISTRY_LABEL } from "@/lib/api/ministries";
 import {
   useMyRegistration,
   canSelfCancel,
+  formatTicketPrice,
   useRegisterForEvent,
   useCancelRegistration,
   useRegistrationStats,
@@ -156,9 +157,7 @@ function RegistrationSection({ eventId }: { eventId: string }) {
 
   if (isLoading || !config) return null;
 
-  const priceFmt = config.price_cents
-    ? `R$ ${(config.price_cents / 100).toFixed(2).replace(".", ",")}`
-    : "Gratuito";
+  const priceFmt = formatTicketPrice(config.price_cents);
 
   return (
     <DetailSection title="Inscrição">

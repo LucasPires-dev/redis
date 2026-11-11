@@ -51,7 +51,24 @@ export interface Event {
   status: EventStatus;
   producer: PersonMini | null;
   rundown_items: RundownItem[];
+  /** Registration summary; null when the event has no registration. */
+  ticket_config: EventTicketSummary | null;
   created_at: string;
+}
+
+export interface EventTicketSummary {
+  id: string;
+  price_cents: number;
+  max_capacity: number | null;
+  registration_deadline: string | null;
+}
+
+/** Ticket sent together with a new event; both are created in one transaction. */
+export interface CreateEventTicketInput {
+  price_cents: number;
+  max_capacity?: number | null;
+  registration_deadline?: string | null;
+  description?: string;
 }
 
 export interface Demand {
@@ -123,6 +140,7 @@ export interface CreateEventInput {
   ministry_kind?: MinistryKind | null;
   starts_at: string;
   ends_at?: string | null;
+  ticket?: CreateEventTicketInput | null;
 }
 
 export function useCreateEvent() {
@@ -203,8 +221,7 @@ export interface CreateDemandInput {
 export function useEventDemands(eventId: string | undefined) {
   return useQuery({
     queryKey: ["production-demands", { event: eventId }],
-    queryFn: () =>
-      apiList<Demand>(`/api/production-demands/?event=${eventId}`),
+    queryFn: () => apiList<Demand>(`/api/production-demands/?event=${eventId}`),
     enabled: !!eventId,
   });
 }

@@ -58,11 +58,21 @@ import {
 import { useEventRealtime } from "@/lib/api/realtime";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { TicketFields } from "@/components/events/TicketFields";
+import {
+  EMPTY_TICKET,
+  ticketDraftFromConfig,
+  ticketDraftToPayload,
+  validateTicketDraft,
+  type TicketDraft,
+} from "@/components/events/ticket-draft";
 import {
   useCancelRegistration,
   useCreateTicketConfig,
   useMyRegistration,
   canSelfCancel,
+  formatBRL,
+  formatTicketPrice,
   useRegisterForEvent,
   useRegistrationStats,
   useRegistrations,
@@ -335,6 +345,7 @@ function EventRundown() {
 
       <TicketConfigSection
         eventId={event.id}
+        eventStartsAt={event.starts_at}
         isManager={!!me?.is_manager || !!me?.is_event_producer}
       />
 
@@ -685,41 +696,36 @@ function CreateDelegationDialog({
   );
 }
 
-function TicketConfigSection({ eventId, isManager }: { eventId: string; isManager: boolean }) {
+function TicketConfigSection({
+  eventId,
+  eventStartsAt,
+  isManager,
+}: {
+  eventId: string;
+  eventStartsAt: string;
+  isManager: boolean;
+}) {
   const { data: config, isLoading } = useTicketConfig(eventId);
   const createConfig = useCreateTicketConfig();
   const updateConfig = useUpdateTicketConfig();
   const [open, setOpen] = useState(false);
-  const [priceCents, setPriceCents] = useState(0);
-  const [maxCapacity, setMaxCapacity] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [description, setDescription] = useState("");
+  const [draft, setDraft] = useState<TicketDraft>(EMPTY_TICKET);
+  const [submitted, setSubmitted] = useState(false);
 
   if (!isManager) return null;
 
+  const errors = validateTicketDraft(draft, eventStartsAt);
+
   function openEdit() {
-    if (config) {
-      setPriceCents(config.price_cents);
-      setMaxCapacity(config.max_capacity != null ? String(config.max_capacity) : "");
-      setDeadline(config.registration_deadline?.slice(0, 16) ?? "");
-      setDescription(config.description ?? "");
-    } else {
-      setPriceCents(0);
-      setMaxCapacity("");
-      setDeadline("");
-      setDescription("");
-    }
+    setDraft(config ? ticketDraftFromConfig(config) : EMPTY_TICKET);
+    setSubmitted(false);
     setOpen(true);
   }
 
   async function handleSave() {
-    const payload = {
-      event_id: eventId,
-      price_cents: priceCents,
-      max_capacity: maxCapacity ? Number(maxCapacity) : null,
-      registration_deadline: deadline ? new Date(deadline).toISOString() : null,
-      description,
-    };
+    setSubmitted(true);
+    if (Object.values(errors).some(Boolean)) return;
+    const payload = { event_id: eventId, ...ticketDraftToPayload(draft) };
     try {
       if (config) {
         await updateConfig.mutateAsync({ id: config.id, ...payload });
@@ -727,15 +733,13 @@ function TicketConfigSection({ eventId, isManager }: { eventId: string; isManage
         await createConfig.mutateAsync(payload);
       }
       setOpen(false);
-      toast.success(config ? "Ingresso atualizado" : "Ingresso configurado");
-    } catch {
-      toast.error("Não foi possível salvar a configuração.");
+      toast.success(config ? "Ingresso atualizado." : "Inscrições abertas.");
+    } catch (e) {
+      toast.error(apiErrorMessage(e, "Não foi possível salvar o ingresso."));
     }
   }
 
-  const priceFmt = config?.price_cents
-    ? `R$ ${(config.price_cents / 100).toFixed(2).replace(".", ",")}`
-    : "Gratuito";
+  const priceFmt = formatTicketPrice(config?.price_cents ?? 0);
 
   return (
     <DetailSection
@@ -780,48 +784,14 @@ function TicketConfigSection({ eventId, isManager }: { eventId: string; isManage
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{config ? "Editar ingresso" : "Configurar ingresso"}</DialogTitle>
+            <DialogTitle>{config ? "Editar ingresso" : "Abrir inscrições"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>Preço (R$)</Label>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                value={(priceCents / 100).toFixed(2)}
-                onChange={(e) => setPriceCents(Math.round(Number(e.target.value) * 100))}
-              />
-              <p className="text-xs text-muted-foreground">0 = gratuito com inscrição</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Capacidade máxima (opcional)</Label>
-              <Input
-                type="number"
-                min={1}
-                value={maxCapacity}
-                onChange={(e) => setMaxCapacity(e.target.value)}
-                placeholder="Ilimitada"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Prazo de inscrição (opcional)</Label>
-              <Input
-                type="datetime-local"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Descrição (opcional)</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={2}
-                placeholder="O que o ingresso inclui"
-              />
-            </div>
-          </div>
+          <TicketFields
+            idPrefix="edit-ticket"
+            value={draft}
+            onChange={setDraft}
+            errors={submitted ? errors : {}}
+          />
           <Button
             className="mt-2 w-full"
             onClick={handleSave}
@@ -845,9 +815,7 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
 
   if (configLoading || !config) return null;
 
-  const priceFmt = config.price_cents
-    ? `R$ ${(config.price_cents / 100).toFixed(2).replace(".", ",")}`
-    : "Gratuito";
+  const priceFmt = formatTicketPrice(config.price_cents);
 
   return (
     <DetailSection
@@ -869,10 +837,7 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
             value={stats.capacity != null ? `${stats.total}/${stats.capacity}` : stats.total}
           />
           {config.price_cents > 0 && (
-            <StatCard
-              label="Receita"
-              value={`R$ ${(stats.revenue_cents / 100).toFixed(2).replace(".", ",")}`}
-            />
+            <StatCard label="Receita" value={formatBRL(stats.revenue_cents)} />
           )}
         </div>
       )}

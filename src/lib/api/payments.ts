@@ -165,3 +165,16 @@ export function canSelfCancel(reg: EventRegistration): boolean {
     (reg.payment_status === "confirmed" && reg.amount_cents === 0)
   );
 }
+
+/** Asaas refuses charges under R$ 5,00 (mirrors the backend rule). */
+export const MIN_PAID_PRICE_CENTS = 500;
+
+/** 15000 → "R$ 150,00". */
+export function formatBRL(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+/** Like formatBRL, but a 0 price reads "Gratuito". */
+export function formatTicketPrice(cents: number): string {
+  return cents ? formatBRL(cents) : "Gratuito";
+}
