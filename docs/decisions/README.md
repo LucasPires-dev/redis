@@ -46,3 +46,4 @@ O que fica mais fácil, o que fica mais difícil, o que ficou para depois.
 | [0006](0006-dia-e-horario-estruturados.md) | Dia e horário do encontro estruturados | Aceito |
 | [0007](0007-calendario-de-encontros.md) | Calendário de encontros calculado a partir da temporada | Aceito |
 | [0008](0008-dia-horario-e-publico-obrigatorios.md) | Dia, horário e público-alvo obrigatórios na célula | Aceito |
+| [0009](0009-matriculas-pagas-em-cursos.md) | Matrículas pagas em cursos | Aceito |
