@@ -48,6 +48,10 @@ import {
   type OpenClass,
 } from "@/lib/api/courses";
 import { apiErrorMessage } from "@/lib/api/client";
+import { useMe } from "@/lib/api/auth";
+import { cpfDigits, isValidCpf } from "@/lib/cpf";
+import { CpfInput } from "@/components/CpfInput";
+import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { formatBRL, MIN_PAID_PRICE_CENTS } from "@/lib/api/payments";
 
 export const Route = createFileRoute("/app/meus-cursos")({
@@ -200,14 +204,23 @@ function EnrollDialog({
   onEnrolled: () => void;
 }) {
   const enroll = useSelfEnroll();
+  const { data: me } = useMe();
   const [selection, setSelection] = useState<FeeSelection>(() => initialSelection(c.fee_items));
   const [installments, setInstallments] = useState(1);
+  const [cpf, setCpf] = useState("");
   const total = selectionTotal(c.fee_items, selection);
   const tooLow = total > 0 && total < MIN_PAID_PRICE_CENTS;
+  // Asaas needs a CPF to charge: asked once, then kept on the person.
+  const askCpf = total > 0 && me?.has_cpf === false;
 
   const submit = () =>
     enroll.mutate(
-      { classId: c.id, items: toChoices(selection), installments },
+      {
+        classId: c.id,
+        items: toChoices(selection),
+        installments,
+        ...(askCpf ? { cpf: cpfDigits(cpf) } : {}),
+      },
       {
         onSuccess: (enrollment) => {
           if (enrollment.payment_url) {
@@ -261,6 +274,7 @@ function EnrollDialog({
             </li>
           </ul>
         )}
+        {askCpf && <CpfInput value={cpf} onChange={setCpf} />}
         {tooLow && (
           <p className="text-sm text-destructive">
             O valor mínimo para pagamento online é {formatBRL(MIN_PAID_PRICE_CENTS)}.
@@ -273,7 +287,12 @@ function EnrollDialog({
           </Button>
           <Button
             onClick={submit}
-            disabled={enroll.isPending || tooLow || !selectionComplete(c.fee_items, selection)}
+            disabled={
+              enroll.isPending ||
+              tooLow ||
+              !selectionComplete(c.fee_items, selection) ||
+              (askCpf && !isValidCpf(cpf))
+            }
           >
             {enroll.isPending
               ? "Inscrevendo…"
@@ -303,6 +322,7 @@ function MyEnrollments() {
 function MyEnrollmentCard({ enrollment: e }: { enrollment: MyEnrollment }) {
   const pay = usePayEnrollment();
   const cancel = useCancelEnrollment();
+  const cpfPrompt = useCpfPrompt();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const owes = isOpenPayment(e.payment_status);
@@ -318,18 +338,19 @@ function MyEnrollmentCard({ enrollment: e }: { enrollment: MyEnrollment }) {
     ? Math.max(0, Math.round((new Date(e.expires_at).getTime() - now) / 3_600_000))
     : null;
 
-  const openPayment = () => {
+  const openPayment = (cpf?: string) => {
     if (e.payment_url) {
       window.open(e.payment_url, "_blank", "noopener");
       return;
     }
     pay.mutate(
-      { id: e.id, body: {} },
+      { id: e.id, body: cpf ? { cpf } : {} },
       {
         onSuccess: (updated) => {
           if (updated.payment_url) window.open(updated.payment_url, "_blank", "noopener");
         },
-        onError: (err) => toast.error(apiErrorMessage(err, "Não foi possível gerar o pagamento.")),
+        onError: (err) =>
+          cpfPrompt.handleError(err, "Não foi possível gerar o pagamento.", (c) => openPayment(c)),
       },
     );
   };
@@ -401,7 +422,7 @@ function MyEnrollmentCard({ enrollment: e }: { enrollment: MyEnrollment }) {
 
         <div className="flex flex-wrap gap-2">
           {owes && e.balance_cents >= MIN_PAID_PRICE_CENTS && (
-            <Button size="sm" onClick={openPayment} disabled={pay.isPending}>
+            <Button size="sm" onClick={() => openPayment()} disabled={pay.isPending}>
               <ExternalLink className="mr-1.5 h-4 w-4" />
               {e.payment_status === "partial" ? "Pagar restante" : "Pagar agora"}
             </Button>
@@ -455,6 +476,7 @@ function MyEnrollmentCard({ enrollment: e }: { enrollment: MyEnrollment }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {cpfPrompt.dialog}
     </Card>
   );
 }

@@ -2,8 +2,8 @@
 // coordinators' "Financeiro" tab (scholarship, in-person payment, expenses,
 // material, cancellation with refund).
 // Runs against the real backend seeded with `manage.py seed_initial_church`.
-// Local dev has no Asaas key, so online charges fail: that path is checked as
-// an error that leaves no enrollment behind.
+// The online charge itself is stubbed (Asaas is covered by the API tests and the
+// sandbox check), so the member never gets a CPF saved and the run repeats.
 
 const API = "http://127.0.0.1:8000";
 const PASSWORD = "TrocarSenha123!";
@@ -154,7 +154,7 @@ describe("Courses — paid enrollments", () => {
     cy.contains("[data-testid=my-enrollment]", FREE_CLASS).should("contain", "Gratuita");
   });
 
-  it("member picks paid items; without the payment provider nothing is kept", () => {
+  it("member picks paid items and gives the CPF; a failed charge keeps nothing", () => {
     cy.login(MEMBER, PASSWORD);
     cy.visit("/app/meus-cursos");
     cy.contains("[data-testid=open-class]", PAID_CLASS, { timeout: 15000 })
@@ -170,7 +170,23 @@ describe("Courses — paid enrollments", () => {
     });
     pick("Opção de Camiseta", "M");
     pick("Parcelas", "3x");
+    // Asaas needs a CPF: asked because the member has none on file.
+    cy.get("[role=dialog]").within(() => {
+      cy.get("#cpf").type("11144477700");
+      cy.contains("CPF inválido").should("be.visible");
+      cy.contains("button", "Inscrever e pagar").should("be.disabled");
+      cy.get("#cpf").clear().type("11144477735").should("have.value", "111.444.777-35");
+    });
+    cy.intercept("POST", "**/api/course-classes/*/enroll/", {
+      statusCode: 503,
+      body: {
+        detail: "Não foi possível gerar a cobrança agora. Tente novamente em alguns minutos.",
+      },
+    }).as("enroll");
     cy.get("[role=dialog]").contains("button", "Inscrever e pagar R$ 65,00").click();
+    cy.wait("@enroll")
+      .its("request.body")
+      .should("deep.include", { installments: 3, cpf: "11144477735" });
     cy.contains("Não foi possível gerar a cobrança").should("be.visible");
     cy.request({
       url: `${API}/api/course-enrollments/?mine=1`,
@@ -264,11 +280,31 @@ describe("Courses — paid enrollments", () => {
     cy.contains("[role=tab]", "Financeiro", { timeout: 15000 }).click();
     cy.get(`[aria-label="Ações de ${memberName}"]`).click();
     cy.contains("[role=menuitem]", "Cancelar e reembolsar").click();
+    // First answer stubbed as Asaas refusing a boleto refund: the coordinator
+    // confirms the money was returned by hand, and the retry goes through.
+    cy.intercept(
+      { method: "POST", url: "**/api/course-enrollments/*/cancel/", times: 1 },
+      {
+        statusCode: 400,
+        body: {
+          detail:
+            "O Asaas não estorna este pagamento (só cartão e Pix são estornados; boleto não).",
+          code: "manual_refund_required",
+        },
+      },
+    ).as("refused");
     cy.get("[role=dialog]").within(() => {
       cy.contains("R$ 20,00 pagos presencialmente").should("be.visible");
       cy.get("#cancel-note").type("Devolvido em dinheiro");
       cy.contains("button", "Cancelar e reembolsar").click();
     });
+    cy.wait("@refused");
+    cy.get("[data-testid=manual-refund]").should("contain", "boleto não");
+    cy.get("[role=dialog]").contains("button", "Cancelar e reembolsar").should("be.disabled");
+    cy.intercept("POST", "**/api/course-enrollments/*/cancel/").as("cancel");
+    cy.get('[aria-label="Já devolvi o valor por fora"]').click();
+    cy.get("[role=dialog]").contains("button", "Cancelar e reembolsar").click();
+    cy.wait("@cancel").its("request.body.manual_refund").should("eq", true);
     cy.contains("Matrícula cancelada e reembolsada").should("be.visible");
     cy.contains("Mostrar canceladas").click();
     cy.contains("[data-testid=finance-enrollment]", memberName).should("contain", "Reembolsada");

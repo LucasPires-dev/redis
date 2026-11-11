@@ -54,7 +54,8 @@ import {
   type EnrollmentFinance,
   type PaymentStatus,
 } from "@/lib/api/courses";
-import { apiErrorMessage } from "@/lib/api/client";
+import { ApiError, apiErrorMessage } from "@/lib/api/client";
+import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { formatBRL, MIN_PAID_PRICE_CENTS } from "@/lib/api/payments";
 import { centsToInput, parseCents } from "@/lib/money";
 
@@ -236,6 +237,7 @@ function EnrollmentRow({
   const [open, setOpen] = useState(false);
   const pay = usePayEnrollment();
   const material = useMarkMaterial();
+  const cpfPrompt = useCpfPrompt(e.person.name);
   const owes = isOpenPayment(e.payment_status);
   const closed = !holdsSeat(e);
   const canScholarship =
@@ -252,15 +254,16 @@ function EnrollmentRow({
     }
   };
 
-  const newLink = () =>
+  const newLink = (cpf?: string) =>
     pay.mutate(
-      { id: e.id, classId: courseClass.id, body: {} },
+      { id: e.id, classId: courseClass.id, body: cpf ? { cpf } : {} },
       {
         onSuccess: (updated) => {
           toast.success("Link de pagamento gerado");
           if (updated.payment_url) void copyLink(updated.payment_url);
         },
-        onError: (err) => toast.error(apiErrorMessage(err, "Não foi possível gerar o link.")),
+        onError: (err) =>
+          cpfPrompt.handleError(err, "Não foi possível gerar o link.", (c) => newLink(c)),
       },
     );
 
@@ -331,7 +334,7 @@ function EnrollmentRow({
                     </DropdownMenuItem>
                   )}
                   {owes && !e.payment_url && e.balance_cents >= MIN_PAID_PRICE_CENTS && (
-                    <DropdownMenuItem onSelect={newLink} disabled={pay.isPending}>
+                    <DropdownMenuItem onSelect={() => newLink()} disabled={pay.isPending}>
                       <Link2 className="mr-2 h-4 w-4" /> Gerar link de pagamento
                     </DropdownMenuItem>
                   )}
@@ -384,6 +387,7 @@ function EnrollmentRow({
           </div>
         )}
       </CardContent>
+      {cpfPrompt.dialog}
     </Card>
   );
 }
@@ -570,6 +574,9 @@ function CancelDialog({
   const cancel = useCancelEnrollment();
   const [note, setNote] = useState("");
   const [force, setForce] = useState(false);
+  // Asaas refused the refund for good (a boleto): set from the API's answer.
+  const [manualRefund, setManualRefund] = useState<string | null>(null);
+  const [returnedByHand, setReturnedByHand] = useState(false);
   const paid = e.paid_cents > 0;
   const needsOverride = paid && !refundAllowed(courseClass);
   const online = e.payments.filter((p) => !p.refunded_at && p.method === "asaas");
@@ -578,13 +585,21 @@ function CancelDialog({
 
   const submit = () =>
     cancel.mutate(
-      { id: e.id, classId: courseClass.id, body: { force, note: note.trim() } },
+      {
+        id: e.id,
+        classId: courseClass.id,
+        body: { force, note: note.trim(), manual_refund: returnedByHand },
+      },
       {
         onSuccess: () => {
           toast.success(paid ? "Matrícula cancelada e reembolsada" : "Matrícula cancelada");
           onClose();
         },
-        onError: (err) => toast.error(apiErrorMessage(err, "Não foi possível cancelar.")),
+        onError: (err) => {
+          const message = manualRefundMessage(err);
+          if (message) setManualRefund(message);
+          else toast.error(apiErrorMessage(err, "Não foi possível cancelar."));
+        },
       },
     );
 
@@ -628,6 +643,23 @@ function CancelDialog({
               </span>
             </label>
           )}
+          {manualRefund && (
+            <div
+              data-testid="manual-refund"
+              className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950"
+            >
+              <p>{manualRefund}</p>
+              <label className="flex items-start gap-2">
+                <Checkbox
+                  checked={returnedByHand}
+                  onCheckedChange={(v) => setReturnedByHand(v === true)}
+                  className="mt-0.5"
+                  aria-label="Já devolvi o valor por fora"
+                />
+                <span>Já devolvi o valor por fora</span>
+              </label>
+            </div>
+          )}
           {paid && (
             <div className="space-y-1.5">
               <Label htmlFor="cancel-note">Observação</Label>
@@ -647,7 +679,9 @@ function CancelDialog({
           <Button
             variant="destructive"
             onClick={submit}
-            disabled={cancel.isPending || (needsOverride && !force)}
+            disabled={
+              cancel.isPending || (needsOverride && !force) || (!!manualRefund && !returnedByHand)
+            }
           >
             {cancel.isPending
               ? "Cancelando…"
@@ -748,4 +782,12 @@ function ExpensesSection({ classId }: { classId: string }) {
       </Card>
     </DetailSection>
   );
+}
+
+/** The API's message when Asaas can't refund a payment (a boleto), else null. */
+function manualRefundMessage(err: unknown): string | null {
+  if (!(err instanceof ApiError) || !err.detail || typeof err.detail !== "object") return null;
+  const body = err.detail as Record<string, unknown>;
+  const first = (v: unknown) => String(Array.isArray(v) ? v[0] : (v ?? ""));
+  return first(body.code) === "manual_refund_required" ? first(body.detail) : null;
 }

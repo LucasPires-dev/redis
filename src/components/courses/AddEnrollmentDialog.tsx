@@ -20,7 +20,7 @@ import {
 } from "@/lib/fee-selection";
 import { FeeChoicesPicker } from "@/components/courses/FeeChoicesPicker";
 import { holdsSeat, useAddEnrollment, type CourseClass, type Enrollment } from "@/lib/api/courses";
-import { apiErrorMessage } from "@/lib/api/client";
+import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import type { PersonMini } from "@/lib/api/people";
 
 interface Props {
@@ -42,6 +42,7 @@ export function AddEnrollmentDialog({
   const [installments, setInstallments] = useState(1);
   const [sendCharge, setSendCharge] = useState(false);
   const paid = courseClass.fee_items.length > 0;
+  const cpfPrompt = useCpfPrompt(selected?.name);
 
   // People who already hold a seat can't be enrolled again (cancelled ones can).
   const excludeIds = new Set(existingEnrollments.filter(holdsSeat).map((e) => e.person.id));
@@ -54,20 +55,22 @@ export function AddEnrollmentDialog({
     setSendCharge(false);
   }, [open, courseClass.fee_items]);
 
-  const submit = () => {
+  const submit = (cpf?: string) => {
     if (!selected) return;
     addEnrollment.mutate(
       {
         classId: courseClass.id,
         person_id: selected.id,
         ...(paid ? { items: toChoices(selection), installments, send_charge: sendCharge } : {}),
+        ...(cpf ? { cpf } : {}),
       },
       {
         onSuccess: () => {
           toast.success(`${selected.name} inscrito na turma`);
           onOpenChange(false);
         },
-        onError: (e) => toast.error(apiErrorMessage(e, "Não foi possível inscrever o aluno.")),
+        onError: (e) =>
+          cpfPrompt.handleError(e, "Não foi possível inscrever o aluno.", (c) => submit(c)),
       },
     );
   };
@@ -141,7 +144,7 @@ export function AddEnrollmentDialog({
             Cancelar
           </Button>
           <Button
-            onClick={submit}
+            onClick={() => submit()}
             disabled={
               !selected ||
               addEnrollment.isPending ||
@@ -151,6 +154,7 @@ export function AddEnrollmentDialog({
             {addEnrollment.isPending ? "Salvando…" : "Inscrever"}
           </Button>
         </DialogFooter>
+        {cpfPrompt.dialog}
       </DialogContent>
     </Dialog>
   );

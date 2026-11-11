@@ -62,6 +62,16 @@ prestação de contas, e só a coordenação conseguia matricular alguém.
   são ignorados. A confirmação é conferida de novo na API do Asaas, como já acontecia nos
   eventos.
 
+### CPF
+
+- O Asaas só cria cobrança para cliente com CPF. A pessoa ganhou um campo `cpf`, guardado só
+  com os dígitos e validado pelos dígitos verificadores.
+- O CPF é pedido na primeira vez que a pessoa paga online, em cursos e em eventos. Depois fica
+  guardado e é enviado ao Asaas.
+- Quando a coordenação gera um link para alguém sem CPF, ela mesma digita o CPF da pessoa.
+- Pagamento presencial e turma ou evento gratuitos não pedem CPF.
+- É dado pessoal: a API nunca devolve o CPF, só `has_cpf` em `/api/auth/me/`.
+
 ### Bolsa
 
 - Desconto parcial ou integral, sempre com motivo. Fica registrado quem concedeu.
@@ -74,6 +84,9 @@ prestação de contas, e só a coordenação conseguia matricular alguém.
 - Uma matrícula com pagamento só é cancelada pela coordenação, com reembolso:
   - pagamentos online são estornados pelo Asaas;
   - pagamentos presenciais ficam marcados como devolvidos.
+- O Asaas só estorna **cartão e Pix**. Um pagamento por boleto precisa ser devolvido por fora
+  (por exemplo, com um Pix da igreja). Nesse caso a coordenação vê um aviso, confirma que
+  devolveu, e o pagamento fica marcado como "Devolvido por fora".
 - A regra padrão da turma é **reembolso até o início das aulas**. Depois disso, a coordenação só
   reembolsa marcando a exceção.
 - O histórico fica guardado: a matrícula cancelada continua no banco, e a pessoa pode se
@@ -108,9 +121,12 @@ prestação de contas, e só a coordenação conseguia matricular alguém.
 
 - Migration `courses.0003_paid_enrollments`. Ela precisa ser aplicada em cada ambiente no
   deploy. As matrículas existentes ficam como "gratuitas".
-- Dois pontos do parcelamento no Asaas precisam ser **validados no sandbox** antes de cobrar de
-  verdade:
-  - a cobrança com `installmentCount` e `billingType=UNDEFINED`;
-  - o cancelamento do parcelamento com `DELETE /installments/{id}`.
+- Migration `people.0004_person_cpf`, também aplicada em cada ambiente no deploy.
+- O fluxo foi **validado no sandbox do Asaas**: parcelamento, webhook, bolsa, cancelamento,
+  estorno de cartão e CPF. Dois comportamentos do Asaas mudaram o desenho:
+  - um parcelamento com parcela paga não pode ser removido com `DELETE /installments/{id}`.
+    Por isso só as parcelas em aberto são apagadas, uma a uma;
+  - uma cobrança paga não pode ser apagada. Por isso, quando a matrícula fica paga, a
+    referência à cobrança aberta é limpa.
 - Por segurança, a listagem e a criação de aulas passaram a respeitar o escopo das turmas que a
   pessoa pode ver. Antes, qualquer usuário autenticado listava e criava aulas de qualquer turma.

@@ -422,6 +422,8 @@ export function useAddEnrollment() {
       items?: FeeChoice[];
       installments?: number;
       send_charge?: boolean;
+      /** The person's CPF, when they have none on file and a link is wanted. */
+      cpf?: string;
     }) =>
       apiFetch<Enrollment>(`/api/course-classes/${classId}/enrollments/`, {
         method: "POST",
@@ -539,12 +541,21 @@ export function useMyEnrollments() {
 export function useSelfEnroll() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { classId: string; items: FeeChoice[]; installments: number }) =>
-      apiFetch<MyEnrollment>(`/api/course-classes/${data.classId}/enroll/`, {
+    mutationFn: ({
+      classId,
+      ...body
+    }: {
+      classId: string;
+      items: FeeChoice[];
+      installments: number;
+      cpf?: string;
+    }) =>
+      apiFetch<MyEnrollment>(`/api/course-classes/${classId}/enroll/`, {
         method: "POST",
-        body: JSON.stringify({ items: data.items, installments: data.installments }),
+        body: JSON.stringify(body),
       }),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
+      if (vars.cpf) qc.invalidateQueries({ queryKey: ["me"] });
       qc.invalidateQueries({ queryKey: ["open-classes"] });
       qc.invalidateQueries({ queryKey: ["my-enrollments"] });
     },
@@ -565,6 +576,7 @@ function enrollmentAction<TBody>(action: string) {
           body: JSON.stringify(body),
         }),
       onSuccess: (_, vars) => {
+        qc.invalidateQueries({ queryKey: ["me"] }); // a CPF may have been saved
         qc.invalidateQueries({ queryKey: ["my-enrollments"] });
         qc.invalidateQueries({ queryKey: ["open-classes"] });
         if (vars.classId) {
@@ -578,8 +590,13 @@ function enrollmentAction<TBody>(action: string) {
 }
 
 /** New payment link for what is still owed (optionally in installments). */
-export const usePayEnrollment = enrollmentAction<{ installments?: number }>("pay");
-export const useCancelEnrollment = enrollmentAction<{ force?: boolean; note?: string }>("cancel");
+export const usePayEnrollment = enrollmentAction<{ installments?: number; cpf?: string }>("pay");
+/** `manual_refund`: the coordinator returned by hand what Asaas can't refund (a boleto). */
+export const useCancelEnrollment = enrollmentAction<{
+  force?: boolean;
+  note?: string;
+  manual_refund?: boolean;
+}>("cancel");
 export const useGrantScholarship = enrollmentAction<{ discount_cents: number; reason: string }>(
   "scholarship",
 );
