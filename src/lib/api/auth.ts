@@ -151,10 +151,9 @@ export function deriveRoleLabel(me: Me | undefined): string {
   return "Membro";
 }
 
-// A "ministry leader" account (local or general, not the mega-church manager) only
-// has Ministérios to manage — the other areas (Campus, Pessoas, Eventos...) are out
-// of their scope. Células is the one exception: it stays visible for a ministry
-// leader who also leads/co-leads a célula, so they can reach the GT they run.
+// A "ministry leader" account (local or general, not the mega-church manager)
+// doesn't get the managerial areas (Dashboard, Campus, Pessoas). The personal
+// areas — Células, Eventos, Cursos — are never hidden: their tabs adapt instead.
 export function isMinistryLeaderOnly(me: Me | undefined): boolean {
   return (
     !!me && !me.is_manager && (me.led_ministries.length > 0 || me.general_led_kinds.length > 0)
@@ -185,13 +184,6 @@ export function hasAnyLeadership(me: Me | undefined): boolean {
 // managerial areas aren't in their scope.
 export function isReconciliadorOnly(me: Me | undefined): boolean {
   return !!me && !me.is_manager && me.is_reconciliador && !hasAnyLeadership(me);
-}
-
-export function hasCellLeadership(me: Me | undefined): boolean {
-  return (
-    !!me &&
-    (me.led_cells.length > 0 || me.is_cells_general_leader || me.led_campuses_cells.length > 0)
-  );
 }
 
 // Church-wide cell powers: define seasons, manage every cell. Mirrors the

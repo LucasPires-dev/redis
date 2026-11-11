@@ -23,6 +23,8 @@ import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
 import { Route as AppProducaoRouteImport } from './routes/app.producao'
 import { Route as AppResponsaveisRouteImport } from './routes/app.responsaveis'
 import { Route as AppCampusIdRouteImport } from './routes/app.campus_.$id'
+import { Route as AppCelulasIndexRouteImport } from './routes/app.celulas.index'
+import { Route as AppCelulasCoordenacaoRouteImport } from './routes/app.celulas.coordenacao'
 import { Route as AppCelulasIdRouteImport } from './routes/app.celulas_.$id'
 import { Route as AppCelulasCoordinationRouteImport } from './routes/app.celulas_.coordination'
 import { Route as AppCursosIndexRouteImport } from './routes/app.cursos.index'
@@ -114,6 +116,16 @@ const AppCampusIdRoute = AppCampusIdRouteImport.update({
   id: '/campus_/$id',
   path: '/campus/$id',
   getParentRoute: () => AppRoute,
+} as any)
+const AppCelulasIndexRoute = AppCelulasIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppCelulasRoute,
+} as any)
+const AppCelulasCoordenacaoRoute = AppCelulasCoordenacaoRouteImport.update({
+  id: '/coordenacao',
+  path: '/coordenacao',
+  getParentRoute: () => AppCelulasRoute,
 } as any)
 const AppCelulasIdRoute = AppCelulasIdRouteImport.update({
   id: '/celulas_/$id',
@@ -229,7 +241,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/app/campus': typeof AppCampusRoute
-  '/app/celulas': typeof AppCelulasRoute
+  '/app/celulas': typeof AppCelulasRouteWithChildren
   '/app/cursos': typeof AppCursosRouteWithChildren
   '/app/eventos': typeof AppEventosRouteWithChildren
   '/app/meus-cursos': typeof AppMeusCursosRoute
@@ -239,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/app/responsaveis': typeof AppResponsaveisRoute
   '/app/': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
+  '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
   '/app/celulas/$id': typeof AppCelulasIdRoute
   '/app/celulas/coordination': typeof AppCelulasCoordinationRoute
   '/app/cursos/gestao': typeof AppCursosGestaoRoute
@@ -253,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/app/pessoas/$id': typeof AppPessoasIdRoute
   '/app/producao/demandas': typeof AppProducaoDemandasRoute
   '/app/reconciliacao/dashboard': typeof AppReconciliacaoDashboardRoute
+  '/app/celulas/': typeof AppCelulasIndexRoute
   '/app/cursos/': typeof AppCursosIndexRoute
   '/app/eventos/': typeof AppEventosIndexRoute
   '/app/eventos/$id/producao': typeof AppEventosIdProducaoRoute
@@ -265,7 +279,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/app/campus': typeof AppCampusRoute
-  '/app/celulas': typeof AppCelulasRoute
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
@@ -273,6 +286,7 @@ export interface FileRoutesByTo {
   '/app/responsaveis': typeof AppResponsaveisRoute
   '/app': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
+  '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
   '/app/celulas/$id': typeof AppCelulasIdRoute
   '/app/celulas/coordination': typeof AppCelulasCoordinationRoute
   '/app/cursos/gestao': typeof AppCursosGestaoRoute
@@ -287,6 +301,7 @@ export interface FileRoutesByTo {
   '/app/pessoas/$id': typeof AppPessoasIdRoute
   '/app/producao/demandas': typeof AppProducaoDemandasRoute
   '/app/reconciliacao/dashboard': typeof AppReconciliacaoDashboardRoute
+  '/app/celulas': typeof AppCelulasIndexRoute
   '/app/cursos': typeof AppCursosIndexRoute
   '/app/eventos': typeof AppEventosIndexRoute
   '/app/eventos/$id/producao': typeof AppEventosIdProducaoRoute
@@ -301,7 +316,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/app/campus': typeof AppCampusRoute
-  '/app/celulas': typeof AppCelulasRoute
+  '/app/celulas': typeof AppCelulasRouteWithChildren
   '/app/cursos': typeof AppCursosRouteWithChildren
   '/app/eventos': typeof AppEventosRouteWithChildren
   '/app/meus-cursos': typeof AppMeusCursosRoute
@@ -311,6 +326,7 @@ export interface FileRoutesById {
   '/app/responsaveis': typeof AppResponsaveisRoute
   '/app/': typeof AppIndexRoute
   '/app/campus_/$id': typeof AppCampusIdRoute
+  '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
   '/app/celulas_/$id': typeof AppCelulasIdRoute
   '/app/celulas_/coordination': typeof AppCelulasCoordinationRoute
   '/app/cursos/gestao': typeof AppCursosGestaoRoute
@@ -325,6 +341,7 @@ export interface FileRoutesById {
   '/app/pessoas_/$id': typeof AppPessoasIdRoute
   '/app/producao_/demandas': typeof AppProducaoDemandasRoute
   '/app/reconciliacao_/dashboard': typeof AppReconciliacaoDashboardRoute
+  '/app/celulas/': typeof AppCelulasIndexRoute
   '/app/cursos/': typeof AppCursosIndexRoute
   '/app/eventos/': typeof AppEventosIndexRoute
   '/app/eventos_/$id_/producao': typeof AppEventosIdProducaoRoute
@@ -350,6 +367,7 @@ export interface FileRouteTypes {
     | '/app/responsaveis'
     | '/app/'
     | '/app/campus/$id'
+    | '/app/celulas/coordenacao'
     | '/app/celulas/$id'
     | '/app/celulas/coordination'
     | '/app/cursos/gestao'
@@ -364,6 +382,7 @@ export interface FileRouteTypes {
     | '/app/pessoas/$id'
     | '/app/producao/demandas'
     | '/app/reconciliacao/dashboard'
+    | '/app/celulas/'
     | '/app/cursos/'
     | '/app/eventos/'
     | '/app/eventos/$id/producao'
@@ -376,7 +395,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/app/campus'
-    | '/app/celulas'
     | '/app/meus-cursos'
     | '/app/ministerios'
     | '/app/pessoas'
@@ -384,6 +402,7 @@ export interface FileRouteTypes {
     | '/app/responsaveis'
     | '/app'
     | '/app/campus/$id'
+    | '/app/celulas/coordenacao'
     | '/app/celulas/$id'
     | '/app/celulas/coordination'
     | '/app/cursos/gestao'
@@ -398,6 +417,7 @@ export interface FileRouteTypes {
     | '/app/pessoas/$id'
     | '/app/producao/demandas'
     | '/app/reconciliacao/dashboard'
+    | '/app/celulas'
     | '/app/cursos'
     | '/app/eventos'
     | '/app/eventos/$id/producao'
@@ -421,6 +441,7 @@ export interface FileRouteTypes {
     | '/app/responsaveis'
     | '/app/'
     | '/app/campus_/$id'
+    | '/app/celulas/coordenacao'
     | '/app/celulas_/$id'
     | '/app/celulas_/coordination'
     | '/app/cursos/gestao'
@@ -435,6 +456,7 @@ export interface FileRouteTypes {
     | '/app/pessoas_/$id'
     | '/app/producao_/demandas'
     | '/app/reconciliacao_/dashboard'
+    | '/app/celulas/'
     | '/app/cursos/'
     | '/app/eventos/'
     | '/app/eventos_/$id_/producao'
@@ -549,6 +571,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/campus/$id'
       preLoaderRoute: typeof AppCampusIdRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/app/celulas/': {
+      id: '/app/celulas/'
+      path: '/'
+      fullPath: '/app/celulas/'
+      preLoaderRoute: typeof AppCelulasIndexRouteImport
+      parentRoute: typeof AppCelulasRoute
+    }
+    '/app/celulas/coordenacao': {
+      id: '/app/celulas/coordenacao'
+      path: '/coordenacao'
+      fullPath: '/app/celulas/coordenacao'
+      preLoaderRoute: typeof AppCelulasCoordenacaoRouteImport
+      parentRoute: typeof AppCelulasRoute
     }
     '/app/celulas_/$id': {
       id: '/app/celulas_/$id'
@@ -700,6 +736,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppCelulasRouteChildren {
+  AppCelulasCoordenacaoRoute: typeof AppCelulasCoordenacaoRoute
+  AppCelulasIndexRoute: typeof AppCelulasIndexRoute
+}
+
+const AppCelulasRouteChildren: AppCelulasRouteChildren = {
+  AppCelulasCoordenacaoRoute: AppCelulasCoordenacaoRoute,
+  AppCelulasIndexRoute: AppCelulasIndexRoute,
+}
+
+const AppCelulasRouteWithChildren = AppCelulasRoute._addFileChildren(
+  AppCelulasRouteChildren,
+)
+
 interface AppCursosRouteChildren {
   AppCursosGestaoRoute: typeof AppCursosGestaoRoute
   AppCursosMatriculasRoute: typeof AppCursosMatriculasRoute
@@ -738,7 +788,7 @@ const AppEventosRouteWithChildren = AppEventosRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppCampusRoute: typeof AppCampusRoute
-  AppCelulasRoute: typeof AppCelulasRoute
+  AppCelulasRoute: typeof AppCelulasRouteWithChildren
   AppCursosRoute: typeof AppCursosRouteWithChildren
   AppEventosRoute: typeof AppEventosRouteWithChildren
   AppMeusCursosRoute: typeof AppMeusCursosRoute
@@ -765,7 +815,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppCampusRoute: AppCampusRoute,
-  AppCelulasRoute: AppCelulasRoute,
+  AppCelulasRoute: AppCelulasRouteWithChildren,
   AppCursosRoute: AppCursosRouteWithChildren,
   AppEventosRoute: AppEventosRouteWithChildren,
   AppMeusCursosRoute: AppMeusCursosRoute,

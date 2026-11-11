@@ -17,8 +17,8 @@ describe("Cell required fields", () => {
 
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should("be.visible");
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("button", "Nova célula").click();
     cy.get('[role="dialog"]').should("be.visible");
   });
@@ -52,7 +52,7 @@ describe("Cell required fields", () => {
     });
     // Still open: nothing was sent.
     cy.get('[role="dialog"]').should("be.visible");
-    cy.url().should("include", "/coordination");
+    cy.url().should("include", "/coordenacao");
   });
 
   it("clears each message as the field is filled", () => {
