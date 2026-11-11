@@ -32,6 +32,8 @@ export interface Me {
   email: string;
   phone: string;
   campus: CampusMini | null;
+  /** The person's church (through their campus); null without a campus. */
+  church: ChurchMini | null;
   baptized: boolean;
   is_manager: boolean;
   led_ministries: LedMinistry[];
@@ -93,9 +95,18 @@ export function useAuth() {
 // /api/auth/me/ doesn't return one single "role" enum (that was a mock-only concept
 // tied to the old demo role-switcher) — it returns is_manager + the leadership
 // relations, so the display label is derived client-side from those.
+export interface ChurchMini {
+  id: string;
+  name: string;
+  abbreviation: string;
+}
+
 export function deriveRoleLabel(me: Me | undefined): string {
   if (!me) return "";
-  if (me.is_manager) return "Gestor da Mega Igreja";
+  if (me.is_manager) {
+    const church = me.church?.abbreviation || me.church?.name;
+    return church ? `Gestor da ${church}` : "Gestor";
+  }
   if (me.is_cells_general_leader) return "Responsável Geral pelas Células";
   if (me.led_campuses_cells.length > 0) {
     return `Responsável pelas Células (${me.led_campuses_cells.map((c) => c.name).join(", ")})`;

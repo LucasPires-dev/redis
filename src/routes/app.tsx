@@ -93,7 +93,6 @@ const NAV: {
   },
 ];
 
-
 function AppShell() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
@@ -137,8 +136,7 @@ function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { me } = useAuth();
   const restrictedNav = isMinistryLeaderOnly(me) || isReconciliadorOnly(me);
-  const isCellCoordinator =
-    canCoordinateCells(me) || (me?.led_campuses_cells ?? []).length > 0;
+  const isCellCoordinator = canCoordinateCells(me) || (me?.led_campuses_cells ?? []).length > 0;
   const items = NAV.filter((item) => {
     if (item.visibleWhen === "cellCoordinator" && !isCellCoordinator) return false;
     if (item.visibleWhen === "responsibleManager" && !canManageResponsibles(me)) return false;
@@ -154,9 +152,14 @@ function AppSidebar() {
           </div>
           <div className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
             <div className="truncate text-sm font-semibold tracking-tight">redis</div>
-            <div className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Mega Igreja Vida
-            </div>
+            {me?.church && (
+              <div
+                className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
+                title={me.church.name}
+              >
+                {me.church.name}
+              </div>
+            )}
           </div>
         </div>
       </SidebarHeader>

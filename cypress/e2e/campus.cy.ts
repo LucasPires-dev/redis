@@ -32,3 +32,15 @@ describe("Campus pages", () => {
     cy.contains(CAMPUS_NAME).should("not.exist");
   });
 });
+
+describe("Sidebar church name", () => {
+  // Comes from /api/auth/me/ (the person's campus → church), not a fixed text.
+  it("shows the logged-in person's church and manager label", () => {
+    cy.login("gestor@ilan.church", SEED_PASSWORD);
+    cy.visit("/app");
+
+    cy.contains("Igreja Luz às Nações", { timeout: 15000 }).should("be.visible");
+    cy.contains("Gestor da ILAN").should("be.visible");
+    cy.contains("Mega Igreja Vida").should("not.exist");
+  });
+});
