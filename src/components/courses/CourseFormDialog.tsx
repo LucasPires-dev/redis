@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useMe } from "@/lib/api/auth";
+import { capabilitiesOf, useMe } from "@/lib/api/auth";
 import { useCreateCourse } from "@/lib/api/courses";
 import { useCampuses } from "@/lib/api/ministries";
 import { apiErrorMessage } from "@/lib/api/client";
@@ -39,12 +39,24 @@ export function CourseFormDialog({ open, onOpenChange }: Props) {
   const [description, setDescription] = useState("");
   const [campusId, setCampusId] = useState<string>(NONE);
 
+  // Only what the person may create (mirrors CoursePermission): church-wide
+  // courses for church-wide coordinators; otherwise the campuses they run.
+  const canChurchWide = capabilitiesOf(me).courses.coordinate_all;
+  const ownCampusIds = new Set(
+    [...(me?.led_campuses ?? []), ...(me?.led_campuses_courses ?? [])].map((c) => c.id),
+  );
+  const campusOptions = (campuses ?? []).filter((c) => canChurchWide || ownCampusIds.has(c.id));
+  const defaultCampus =
+    campusOptions.find((c) => c.id === me?.campus?.id)?.id ??
+    (canChurchWide ? NONE : (campusOptions[0]?.id ?? NONE));
+
   useEffect(() => {
     if (!open) return;
     setName("");
     setDescription("");
-    setCampusId(me?.campus?.id ?? NONE);
-  }, [open, me?.campus?.id]);
+    setCampusId(defaultCampus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const valid = name.trim().length > 0;
 
@@ -60,8 +72,7 @@ export function CourseFormDialog({ open, onOpenChange }: Props) {
           toast.success("Curso criado");
           onOpenChange(false);
         },
-        onError: (e) =>
-          toast.error(apiErrorMessage(e, "Não foi possível criar o curso.")),
+        onError: (e) => toast.error(apiErrorMessage(e, "Não foi possível criar o curso.")),
       },
     );
   };
@@ -91,17 +102,19 @@ export function CourseFormDialog({ open, onOpenChange }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NONE}>Geral (toda a igreja)</SelectItem>
-                {(campuses ?? []).map((c) => (
+                {canChurchWide && <SelectItem value={NONE}>Geral (toda a igreja)</SelectItem>}
+                {campusOptions.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Selecione &quot;Geral&quot; para um curso aberto a todos os campi.
-            </p>
+            {canChurchWide && (
+              <p className="text-xs text-muted-foreground">
+                Selecione &quot;Geral&quot; para um curso aberto a todos os campi.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">

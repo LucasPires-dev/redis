@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   GraduationCap,
   Users,
@@ -15,6 +16,8 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { apiErrorMessage } from "@/lib/api/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DetailHeader } from "@/components/detail/DetailHeader";
 import { RouteError } from "@/components/RouteError";
@@ -38,6 +41,7 @@ import {
   TEACHER_ROLE_LABEL,
   ENROLLMENT_STATUS_LABEL,
   holdsSeat,
+  useMarkMaterial,
   type Lesson,
 } from "@/lib/api/courses";
 
@@ -54,6 +58,7 @@ function ClassDetail() {
   const { id: courseId, classId } = Route.useParams();
   const { data: cc, isLoading } = useCourseClass(classId);
   const { data: enrollments } = useEnrollments(classId);
+  const material = useMarkMaterial();
   const { data: lessons } = useLessons(classId);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showNewLesson, setShowNewLesson] = useState(false);
@@ -232,6 +237,26 @@ function ClassDetail() {
                   </div>
                   <div className="flex items-center gap-2">
                     {isPaid && <PaymentStatusBadge status={e.payment_status} />}
+                    {/* Material delivery: teachers too (the Financeiro tab is coordinators-only). */}
+                    {isPaid && cc.can_manage && e.status === "active" && (
+                      <label className="flex items-center gap-1.5 text-xs">
+                        <Checkbox
+                          checked={!!e.material_delivered_at}
+                          disabled={material.isPending}
+                          onCheckedChange={(v) =>
+                            material.mutate(
+                              { id: e.id, classId: cc.id, body: { delivered: v === true } },
+                              {
+                                onError: (err) =>
+                                  toast.error(apiErrorMessage(err, "Não foi possível salvar.")),
+                              },
+                            )
+                          }
+                          aria-label={`Material entregue para ${e.person.name}`}
+                        />
+                        Material
+                      </label>
+                    )}
                     <Badge
                       variant={
                         e.status === "active"

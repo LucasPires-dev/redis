@@ -8,7 +8,6 @@ import {
   Sparkles,
   Calendar,
   GraduationCap,
-  BookOpenCheck,
   Clapperboard,
   ChevronsUpDown,
   LogOut,
@@ -84,9 +83,9 @@ const NAV: {
     visibleWhen: "cellCoordinator",
   },
   { to: "/app/eventos", label: "Eventos", icon: Calendar, hideForMinistryLeader: true },
-  { to: "/app/cursos", label: "Cursos", icon: GraduationCap, hideForMinistryLeader: true },
-  // Everyone: open classes to enroll in and their own enrollments.
-  { to: "/app/meus-cursos", label: "Meus cursos", icon: BookOpenCheck },
+  // Everyone: open classes and own enrollments; teachers and coordinators get
+  // extra tabs inside (see app.cursos.tsx).
+  { to: "/app/cursos", label: "Cursos", icon: GraduationCap },
   // Appointing responsibles: manager, campus leaders and general area responsibles.
   {
     to: "/app/responsaveis",

@@ -56,6 +56,26 @@ export interface Me {
   // Campuses whose courses the person is in charge of (responsável pelos cursos do campus).
   led_campuses_courses: LedCampus[];
   total_points: number;
+  /** Per-area flags computed by the backend's permission rules; they drive the
+   *  tabs of each area screen. They never exclude each other. */
+  capabilities: Capabilities;
+}
+
+export interface Capabilities {
+  cells: { lead: boolean; coordinate: boolean };
+  courses: { teach: boolean; coordinate: boolean; coordinate_all: boolean };
+  events: { create: boolean; produce: boolean; production: boolean };
+}
+
+const NO_CAPABILITIES: Capabilities = {
+  cells: { lead: false, coordinate: false },
+  courses: { teach: false, coordinate: false, coordinate_all: false },
+  events: { create: false, produce: false, production: false },
+};
+
+/** The person's capabilities, or all-false while loading / signed out. */
+export function capabilitiesOf(me: Me | undefined): Capabilities {
+  return me?.capabilities ?? NO_CAPABILITIES;
 }
 
 export async function login(email: string, password: string) {
