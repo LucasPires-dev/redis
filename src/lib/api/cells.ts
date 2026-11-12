@@ -83,8 +83,17 @@ export interface Cell {
   effective_end: string | null;
   // Same cell in the previous season (history across seasons).
   previous_cell: string | null;
+  /** The cell this one was born from in a multiplication ("célula mãe"). */
+  parent_cell: { id: string; name: string } | null;
+  /** When the multiplication that created this cell happened. */
+  multiplied_on: string | null;
+  /** Multiplication plan: the planned date and who will lead the new cell. */
+  multiplication_date: string | null;
+  multiplication_leader: PersonMini | null;
   leaders: PersonMini[];
   co_leaders: PersonMini[];
+  /** Líderes em treinamento. */
+  trainees: PersonMini[];
   member_count: number;
   /** Leaders, co-leaders and members, each once — what screens call "membros". */
   participant_count: number;
@@ -94,6 +103,8 @@ export interface Cell {
   can_manage: boolean;
   // Whether the logged-in user may assign its leaders and renew it.
   can_coordinate: boolean;
+  /** Whether the logged-in user may name its leaders in training (its leader or coordination). */
+  can_appoint_trainee: boolean;
   /** How the cell is doing; only for whoever manages it (null otherwise). */
   health: CellHealth | null;
 }
@@ -472,10 +483,19 @@ export function useRemoveCellMember(cellId: string) {
 
 export type LeadershipRole = "leader" | "co_leader";
 
+/** A cell also has leaders in training, unlike ministries and campuses. */
+export type CellRole = LeadershipRole | "trainee";
+
+export const CELL_ROLE_LABEL: Record<CellRole, string> = {
+  leader: "Líder",
+  co_leader: "Colíder",
+  trainee: "Líder em treinamento",
+};
+
 export function useAssignCellLeader(cellId: string) {
   const invalidate = useInvalidateCell(cellId);
   return useMutation({
-    mutationFn: (input: { person_id: string; role: LeadershipRole }) =>
+    mutationFn: (input: { person_id: string; role: CellRole }) =>
       apiFetch(`/api/cells/${cellId}/leaderships/`, {
         method: "POST",
         body: JSON.stringify(input),
@@ -490,6 +510,76 @@ export function useRemoveCellLeader(cellId: string) {
     mutationFn: (personId: string) =>
       apiFetch<void>(`/api/cells/${cellId}/leaderships/${personId}/`, { method: "DELETE" }),
     onSuccess: invalidate,
+  });
+}
+
+// ─── Multiplication ──────────────────────────────────────────────────
+
+export function useSetMultiplicationPlan(cellId: string) {
+  const invalidate = useInvalidateCell(cellId);
+  return useMutation({
+    mutationFn: (input: { date: string | null; leader_id: string | null }) =>
+      apiFetch<Cell>(`/api/cells/${cellId}/multiplication-plan/`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useClearMultiplicationPlan(cellId: string) {
+  const invalidate = useInvalidateCell(cellId);
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<Cell>(`/api/cells/${cellId}/multiplication-plan/`, { method: "DELETE" }),
+    onSuccess: invalidate,
+  });
+}
+
+export interface MultiplyCellInput {
+  name: string;
+  leader_id: string;
+  member_ids: string[];
+  meeting_day?: MeetingDay;
+  meeting_time?: string;
+  address?: string;
+}
+
+// People leave this cell for the new one: the cell, its members and every
+// list are refreshed (useInvalidateCell).
+export function useMultiplyCell(cellId: string) {
+  const invalidate = useInvalidateCell(cellId);
+  return useMutation({
+    mutationFn: (input: MultiplyCellInput) =>
+      apiFetch<Cell>(`/api/cells/${cellId}/multiply/`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export interface CellLineageItem {
+  id: string;
+  name: string;
+  season: string | null;
+  multiplied_on: string | null;
+}
+
+export interface CellLineage {
+  /** 1 for a cell nobody multiplied into, +1 per mother up the line. */
+  generation: number;
+  /** Mother first, then grandmother… */
+  ancestors: CellLineageItem[];
+  /** Cells born from this one (or from its earlier versions). */
+  daughters: (CellLineageItem & { leaders: string[] })[];
+}
+
+// Under ["cells", id] so a multiplication or renewal refreshes it.
+export function useCellLineage(cellId: string) {
+  return useQuery({
+    queryKey: ["cells", cellId, "lineage"],
+    queryFn: () => apiFetch<CellLineage>(`/api/cells/${cellId}/lineage/`),
   });
 }
 
@@ -578,6 +668,14 @@ export interface CellReportRow {
   name: string;
   campus: { id: string; name: string };
   leaders: string[];
+  trainees: string[];
+  /** The mother cell, for the generations tree. */
+  parent: { id: string; name: string } | null;
+  multiplied_on: string | null;
+  /** Cells born from this one. */
+  multiplications: number;
+  /** Planned multiplication date, if any. */
+  multiplication_date: string | null;
   participants: number;
   meetings_held: number;
   meetings_not_held: number;

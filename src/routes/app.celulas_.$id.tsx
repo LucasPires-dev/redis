@@ -34,11 +34,13 @@ import { DetailSkeleton } from "@/components/skeletons";
 import { CellMeetingsSection } from "@/components/cells/CellMeetingsSection";
 import { CellVisitorsSection } from "@/components/cells/CellVisitorsSection";
 import { CellHealthSection } from "@/components/cells/CellHealthSection";
+import { CellMultiplicationSection } from "@/components/cells/CellMultiplicationSection";
 import { PersonSearch } from "@/components/cells/PersonSearch";
 import { RenewCellDialog } from "@/components/cells/RenewCellDialog";
 import { ApiError, apiErrorMessage } from "@/lib/api/client";
 import {
   CELL_AUDIENCE_LABEL,
+  CELL_ROLE_LABEL,
   describeMissingFields,
   formatSchedule,
   useAddCellMember,
@@ -48,7 +50,7 @@ import {
   useRemoveCellLeader,
   useRemoveCellMember,
   type Cell,
-  type LeadershipRole,
+  type CellRole,
 } from "@/lib/api/cells";
 import { formatDate } from "@/lib/api/seasons";
 import type { PersonMini } from "@/lib/api/people";
@@ -83,7 +85,7 @@ function CellDetail() {
     return <DetailSkeleton />;
   }
 
-  const roster = buildRoster(cell.leaders, cell.co_leaders, members ?? []);
+  const roster = buildRoster(cell.leaders, cell.co_leaders, members ?? [], cell.trainees);
   const schedule = formatSchedule(cell.meeting_day, cell.meeting_time);
   const memberIds = new Set((members ?? []).map((m) => m.id));
   const incomplete = cell.missing_fields.length > 0;
@@ -227,11 +229,27 @@ function CellDetail() {
       </DetailSection>
 
       <DetailSection title="Liderança">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <LeaderCard label="Líderes" people={cell.leaders} cell={cell} />
-          <LeaderCard label="Colíderes" people={cell.co_leaders} cell={cell} />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <LeaderCard
+            label="Líderes"
+            people={cell.leaders}
+            cell={cell}
+            canRemove={cell.can_coordinate}
+          />
+          <LeaderCard
+            label="Colíderes"
+            people={cell.co_leaders}
+            cell={cell}
+            canRemove={cell.can_coordinate}
+          />
+          <LeaderCard
+            label="Líderes em treinamento"
+            people={cell.trainees}
+            cell={cell}
+            canRemove={cell.can_appoint_trainee}
+          />
         </div>
-        {cell.can_coordinate && <AddLeader cell={cell} />}
+        {(cell.can_coordinate || cell.can_appoint_trainee) && <AddLeader cell={cell} />}
       </DetailSection>
 
       <DetailSection title="Membros" count={roster.length}>
@@ -270,6 +288,8 @@ function CellDetail() {
         )}
       </DetailSection>
 
+      <CellMultiplicationSection cell={cell} roster={roster} />
+
       <CellHealthSection cell={cell} />
 
       <CellMeetingsSection cell={cell} roster={roster} />
@@ -288,7 +308,17 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function LeaderCard({ label, people, cell }: { label: string; people: PersonMini[]; cell: Cell }) {
+function LeaderCard({
+  label,
+  people,
+  cell,
+  canRemove,
+}: {
+  label: string;
+  people: PersonMini[];
+  cell: Cell;
+  canRemove: boolean;
+}) {
   const removeLeader = useRemoveCellLeader(cell.id);
   return (
     <Card>
@@ -307,7 +337,7 @@ function LeaderCard({ label, people, cell }: { label: string; people: PersonMini
                 >
                   {p.name}
                 </Link>
-                {cell.can_coordinate && (
+                {canRemove && (
                   <button
                     type="button"
                     aria-label={`Remover ${p.name} da liderança`}
@@ -335,24 +365,31 @@ function LeaderCard({ label, people, cell }: { label: string; people: PersonMini
 }
 
 // Leaders must belong to the cell's campus — the search only returns those.
+// Coordination assigns any role; the cell's leader names leaders in training.
 function AddLeader({ cell }: { cell: Cell }) {
   const assign = useAssignCellLeader(cell.id);
-  const [role, setRole] = useState<LeadershipRole>("leader");
-  const current = new Set([...cell.leaders, ...cell.co_leaders].map((p) => p.id));
+  const onlyTrainee = !cell.can_coordinate;
+  const [role, setRole] = useState<CellRole>(onlyTrainee ? "trainee" : "leader");
+  const current = new Set([...cell.leaders, ...cell.co_leaders, ...cell.trainees].map((p) => p.id));
   return (
     <Card className="mt-3">
       <CardContent className="space-y-2 p-4">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium">Adicionar liderança</span>
-          <Select value={role} onValueChange={(v) => setRole(v as LeadershipRole)}>
-            <SelectTrigger className="h-8 w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="leader">Líder</SelectItem>
-              <SelectItem value="co_leader">Colíder</SelectItem>
-            </SelectContent>
-          </Select>
+          <span className="text-sm font-medium">
+            {onlyTrainee ? "Adicionar líder em treinamento" : "Adicionar liderança"}
+          </span>
+          {!onlyTrainee && (
+            <Select value={role} onValueChange={(v) => setRole(v as CellRole)}>
+              <SelectTrigger className="h-8 w-48" aria-label="Papel">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="leader">Líder</SelectItem>
+                <SelectItem value="co_leader">Colíder</SelectItem>
+                <SelectItem value="trainee">Líder em treinamento</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <PersonSearch
           endpoint={`/api/cells/${cell.id}/people-search/?for=leaders`}
@@ -364,7 +401,7 @@ function AddLeader({ cell }: { cell: Cell }) {
               { person_id: p.id, role },
               {
                 onSuccess: () =>
-                  toast.success(`${p.name} agora é ${role === "leader" ? "líder" : "colíder"}`),
+                  toast.success(`${p.name} agora é ${CELL_ROLE_LABEL[role].toLowerCase()}`),
                 onError: (e) => toast.error(apiErrorMessage(e, "Não foi possível adicionar.")),
               },
             )

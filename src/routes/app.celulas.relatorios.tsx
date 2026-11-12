@@ -7,7 +7,9 @@ import {
   CalendarCheck,
   Download,
   HeartHandshake,
+  GitBranch,
   PieChart,
+  Sprout,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -108,6 +110,9 @@ function CellReportsPage() {
   const decisions = cells.reduce((s, c) => s + c.decisions, 0);
   const newMembers = cells.reduce((s, c) => s + c.new_members, 0);
   const pending = cells.reduce((s, c) => s + c.meetings_pending, 0);
+  const multiplications = cells.reduce((s, c) => s + c.multiplications, 0);
+  const planned = cells.filter((c) => c.multiplication_date).length;
+  const trainees = cells.reduce((s, c) => s + c.trainees.length, 0);
   const people = campuses.reduce((s, c) => s + c.people, 0);
   const inCells = campuses.reduce((s, c) => s + c.people_in_cells, 0);
 
@@ -193,10 +198,7 @@ function CellReportsPage() {
         <EmptyState>Nenhuma célula nesta temporada.</EmptyState>
       ) : (
         <>
-          <div
-            className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5"
-            data-testid="report-totals"
-          >
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3" data-testid="report-totals">
             <StatCard
               icon={<CalendarCheck className="h-4 w-4" />}
               label="Encontros realizados"
@@ -230,6 +232,19 @@ function CellReportsPage() {
               value={people ? `${Math.round((100 * inCells) / people)}%` : "—"}
               hint={people ? `${inCells} de ${people} pessoas do campus` : undefined}
             />
+            <StatCard
+              icon={<Sprout className="h-4 w-4" />}
+              label="Multiplicações"
+              value={multiplications}
+              hint={
+                [
+                  planned > 0 && `${planned} ${planned === 1 ? "planejada" : "planejadas"}`,
+                  trainees > 0 && `${trainees} em treinamento`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || undefined
+              }
+            />
           </div>
 
           <DetailSection title="Por semana">
@@ -258,6 +273,7 @@ function CellReportsPage() {
 
           {campuses.length > 1 && <CampusTable campuses={campuses} />}
           {cellId === ALL && <CellTable cells={campusCells} />}
+          {cellId === ALL && <GenerationsTree cells={campusCells} />}
         </>
       )}
     </div>
@@ -323,6 +339,60 @@ function WeeklyChart({
   );
 }
 
+// Gerações: each cell under the one it was born from. A cell whose mother
+// isn't in the list (another season or campus) starts its own branch, with
+// the mother's name as a note. Shown only when there was a multiplication.
+function GenerationsTree({ cells }: { cells: CellReportRow[] }) {
+  const ids = new Set(cells.map((c) => c.id));
+  const children = new Map<string, CellReportRow[]>();
+  const roots: CellReportRow[] = [];
+  for (const c of cells) {
+    if (c.parent && ids.has(c.parent.id)) {
+      children.set(c.parent.id, [...(children.get(c.parent.id) ?? []), c]);
+    } else {
+      roots.push(c);
+    }
+  }
+  if (!cells.some((c) => c.parent || c.multiplications > 0)) return null;
+  // Branches with a multiplication first; lone cells after.
+  const hasFamily = (c: CellReportRow) => children.has(c.id) || !!c.parent;
+  roots.sort((a, b) => Number(hasFamily(b)) - Number(hasFamily(a)) || a.name.localeCompare(b.name));
+
+  const node = (c: CellReportRow, depth: number): React.ReactNode => (
+    <li key={c.id}>
+      <div className="flex flex-wrap items-center gap-x-2 py-1" data-testid="generation-node">
+        {depth > 0 && <span className="text-muted-foreground">└</span>}
+        <Link to="/app/celulas/$id" params={{ id: c.id }} className="font-medium hover:underline">
+          {c.name}
+        </Link>
+        <span className="text-xs text-muted-foreground">
+          {c.leaders.join(", ")}
+          {depth === 0 && c.parent && ` · nasceu de ${c.parent.name}`}
+          {c.multiplied_on && ` · ${formatDate(c.multiplied_on)}`}
+        </span>
+      </div>
+      {children.has(c.id) && (
+        <ul className="ml-4 border-l pl-3">
+          {children.get(c.id)!.map((child) => node(child, depth + 1))}
+        </ul>
+      )}
+    </li>
+  );
+
+  return (
+    <DetailSection title="Gerações">
+      <Card>
+        <CardContent className="p-4 text-sm">
+          <div className="mb-2 flex items-center gap-2 text-muted-foreground">
+            <GitBranch className="h-4 w-4" /> Cada célula aparece abaixo da que a gerou.
+          </div>
+          <ul data-testid="generations-tree">{roots.map((c) => node(c, 0))}</ul>
+        </CardContent>
+      </Card>
+    </DetailSection>
+  );
+}
+
 function CoverageBar({ value }: { value: number | null }) {
   if (value === null) return <span className="text-muted-foreground">—</span>;
   return (
@@ -384,7 +454,8 @@ type SortKey =
   | "avg_attendance"
   | "visitors"
   | "decisions"
-  | "new_members";
+  | "new_members"
+  | "multiplications";
 
 const CELL_COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: "name", label: "Célula" },
@@ -396,6 +467,7 @@ const CELL_COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: "visitors", label: "Visitantes", numeric: true },
   { key: "decisions", label: "Decisões", numeric: true },
   { key: "new_members", label: "Novos membros", numeric: true },
+  { key: "multiplications", label: "Multiplicações", numeric: true },
 ];
 
 function sortValue(c: CellReportRow, key: SortKey): string | number {
@@ -483,6 +555,14 @@ function CellTable({ cells }: { cells: CellReportRow[] }) {
                 <TableCell className="text-right tabular-nums">{c.visitors}</TableCell>
                 <TableCell className="text-right tabular-nums">{c.decisions}</TableCell>
                 <TableCell className="text-right tabular-nums">{c.new_members}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {c.multiplications}
+                  {c.multiplication_date && (
+                    <div className="text-xs text-muted-foreground">
+                      prevista {shortDate(c.multiplication_date)}
+                    </div>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -512,6 +592,10 @@ function downloadCsv(cells: CellReportRow[], weeks: string[], season: string, se
     "Decisões",
     "Novos membros",
     "Encaminhados à Reconciliação",
+    "Líderes em treinamento",
+    "Célula mãe",
+    "Multiplicações",
+    "Multiplicação prevista",
     ...weeks.map((w) => `Presença ${formatDate(w)}`),
   ];
   const rows = cells.map((c) => [
@@ -528,6 +612,10 @@ function downloadCsv(cells: CellReportRow[], weeks: string[], season: string, se
     c.decisions,
     c.new_members,
     c.forwarded,
+    quote(c.trainees.join(", ")),
+    quote(c.parent?.name ?? ""),
+    c.multiplications,
+    c.multiplication_date ? formatDate(c.multiplication_date) : "",
     ...c.series.map((w) => (w.held ? w.attendance : "")),
   ]);
   const csv = [header.map(quote), ...rows].map((r) => r.join(";")).join("\r\n");
