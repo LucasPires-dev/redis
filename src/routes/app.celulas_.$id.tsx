@@ -35,6 +35,7 @@ import { CellMeetingsSection } from "@/components/cells/CellMeetingsSection";
 import { CellVisitorsSection } from "@/components/cells/CellVisitorsSection";
 import { CellHealthSection } from "@/components/cells/CellHealthSection";
 import { CellMultiplicationSection } from "@/components/cells/CellMultiplicationSection";
+import { CellSupervisionSection } from "@/components/cells/CellSupervisionSection";
 import { PersonSearch } from "@/components/cells/PersonSearch";
 import { RenewCellDialog } from "@/components/cells/RenewCellDialog";
 import { ApiError, apiErrorMessage } from "@/lib/api/client";
@@ -234,13 +235,13 @@ function CellDetail() {
             label="Líderes"
             people={cell.leaders}
             cell={cell}
-            canRemove={cell.can_coordinate}
+            canRemove={cell.can_supervise}
           />
           <LeaderCard
             label="Colíderes"
             people={cell.co_leaders}
             cell={cell}
-            canRemove={cell.can_coordinate}
+            canRemove={cell.can_supervise}
           />
           <LeaderCard
             label="Líderes em treinamento"
@@ -249,7 +250,7 @@ function CellDetail() {
             canRemove={cell.can_appoint_trainee}
           />
         </div>
-        {(cell.can_coordinate || cell.can_appoint_trainee) && <AddLeader cell={cell} />}
+        {(cell.can_supervise || cell.can_appoint_trainee) && <AddLeader cell={cell} />}
       </DetailSection>
 
       <DetailSection title="Membros" count={roster.length}>
@@ -287,6 +288,8 @@ function CellDetail() {
           </div>
         )}
       </DetailSection>
+
+      <CellSupervisionSection cell={cell} />
 
       <CellMultiplicationSection cell={cell} roster={roster} />
 
@@ -365,10 +368,11 @@ function LeaderCard({
 }
 
 // Leaders must belong to the cell's campus — the search only returns those.
-// Coordination assigns any role; the cell's leader names leaders in training.
+// Supervision and coordination assign any role; the cell's leader names
+// leaders in training.
 function AddLeader({ cell }: { cell: Cell }) {
   const assign = useAssignCellLeader(cell.id);
-  const onlyTrainee = !cell.can_coordinate;
+  const onlyTrainee = !cell.can_supervise;
   const [role, setRole] = useState<CellRole>(onlyTrainee ? "trainee" : "leader");
   const current = new Set([...cell.leaders, ...cell.co_leaders, ...cell.trainees].map((p) => p.id));
   return (

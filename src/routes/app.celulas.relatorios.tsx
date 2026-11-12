@@ -533,6 +533,14 @@ function CellTable({ cells }: { cells: CellReportRow[] }) {
                     {c.campus.name}
                     {c.leaders.length > 0 && ` · ${c.leaders.join(", ")}`}
                   </div>
+                  {c.supervisor && (
+                    <div className="text-xs text-muted-foreground">
+                      Supervisão: {c.supervisor}
+                      {c.last_supervision_visit
+                        ? ` · visita em ${shortDate(c.last_supervision_visit)}`
+                        : " · sem visita"}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className={HEALTH_CLASS[c.health]}>
@@ -596,6 +604,8 @@ function downloadCsv(cells: CellReportRow[], weeks: string[], season: string, se
     "Célula mãe",
     "Multiplicações",
     "Multiplicação prevista",
+    "Supervisor",
+    "Última visita de supervisão",
     ...weeks.map((w) => `Presença ${formatDate(w)}`),
   ];
   const rows = cells.map((c) => [
@@ -616,6 +626,8 @@ function downloadCsv(cells: CellReportRow[], weeks: string[], season: string, se
     quote(c.parent?.name ?? ""),
     c.multiplications,
     c.multiplication_date ? formatDate(c.multiplication_date) : "",
+    quote(c.supervisor ?? ""),
+    c.last_supervision_visit ? formatDate(c.last_supervision_visit) : "",
     ...c.series.map((w) => (w.held ? w.attendance : "")),
   ]);
   const csv = [header.map(quote), ...rows].map((r) => r.join(";")).join("\r\n");

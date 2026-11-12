@@ -103,8 +103,15 @@ export interface Cell {
   can_manage: boolean;
   // Whether the logged-in user may assign its leaders and renew it.
   can_coordinate: boolean;
-  /** Whether the logged-in user may name its leaders in training (its leader or coordination). */
+  /** Whether the logged-in user may name its leaders in training (its leader or anyone above). */
   can_appoint_trainee: boolean;
+  /** Who supervises the cell (between its leader and the campus coordination). */
+  supervisor: PersonMini | null;
+  /** Whether the logged-in user does the cell's supervision: its supervisor or
+   * coordination (registers visits, names its leaders). */
+  can_supervise: boolean;
+  /** Last supervision visit; only for whoever does supervision. */
+  last_supervision_visit: string | null;
   /** How the cell is doing; only for whoever manages it (null otherwise). */
   health: CellHealth | null;
 }
@@ -177,6 +184,8 @@ export interface CellFilters {
   campusId?: string;
   /** Only the cells the caller leads, co-leads or belongs to. */
   mine?: boolean;
+  /** Only the cells the caller supervises ("Supervisão" tab). */
+  supervised?: boolean;
 }
 
 export function useCells(filters: CellFilters = {}) {
@@ -185,6 +194,7 @@ export function useCells(filters: CellFilters = {}) {
   if (filters.meetingDay) params.set("meeting_day", String(filters.meetingDay));
   if (filters.campusId) params.set("campus", filters.campusId);
   if (filters.mine) params.set("mine", "true");
+  if (filters.supervised) params.set("supervised", "true");
   return useQuery({
     queryKey: ["cells", "list", filters],
     queryFn: () => apiList<Cell>(`/api/cells/?${params}`),
@@ -513,6 +523,88 @@ export function useRemoveCellLeader(cellId: string) {
   });
 }
 
+// ─── Supervision ─────────────────────────────────────────────────────
+
+export function useSetCellSupervisor(cellId: string) {
+  const invalidate = useInvalidateCell(cellId);
+  return useMutation({
+    mutationFn: (personId: string | null) =>
+      apiFetch<Cell>(`/api/cells/${cellId}/supervisor/`, {
+        method: "PUT",
+        body: JSON.stringify({ person_id: personId }),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export type SupervisionVisitKind = "meeting" | "leadership";
+
+export const SUPERVISION_VISIT_KIND_LABEL: Record<SupervisionVisitKind, string> = {
+  meeting: "Visita ao encontro",
+  leadership: "Conversa com a liderança",
+};
+
+export interface SupervisionVisit {
+  id: string;
+  cell: { id: string; name: string };
+  date: string;
+  kind: SupervisionVisitKind;
+  kind_display: string;
+  notes: string;
+  created_by: PersonMini | null;
+  created_at: string;
+}
+
+export interface SupervisionVisitInput {
+  date: string;
+  kind: SupervisionVisitKind;
+  notes: string;
+}
+
+export function useSupervisionVisits(cellId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["cell-supervision-visits", cellId],
+    queryFn: () => apiList<SupervisionVisit>(`/api/cell-supervision-visits/?cell=${cellId}`),
+    enabled,
+  });
+}
+
+function useInvalidateVisits(cellId: string) {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ["cell-supervision-visits", cellId] });
+    // The cell carries the last visit's date.
+    queryClient.invalidateQueries({ queryKey: ["cells"] });
+  };
+}
+
+// Creates a visit, or updates it when `visitId` is given.
+export function useSaveSupervisionVisit(cellId: string) {
+  const invalidate = useInvalidateVisits(cellId);
+  return useMutation({
+    mutationFn: ({ visitId, ...input }: SupervisionVisitInput & { visitId?: string }) =>
+      visitId
+        ? apiFetch<SupervisionVisit>(`/api/cell-supervision-visits/${visitId}/`, {
+            method: "PATCH",
+            body: JSON.stringify(input),
+          })
+        : apiFetch<SupervisionVisit>("/api/cell-supervision-visits/", {
+            method: "POST",
+            body: JSON.stringify({ cell_id: cellId, ...input }),
+          }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteSupervisionVisit(cellId: string) {
+  const invalidate = useInvalidateVisits(cellId);
+  return useMutation({
+    mutationFn: (visitId: string) =>
+      apiFetch<void>(`/api/cell-supervision-visits/${visitId}/`, { method: "DELETE" }),
+    onSuccess: invalidate,
+  });
+}
+
 // ─── Multiplication ──────────────────────────────────────────────────
 
 export function useSetMultiplicationPlan(cellId: string) {
@@ -676,6 +768,8 @@ export interface CellReportRow {
   multiplications: number;
   /** Planned multiplication date, if any. */
   multiplication_date: string | null;
+  supervisor: string | null;
+  last_supervision_visit: string | null;
   participants: number;
   meetings_held: number;
   meetings_not_held: number;
