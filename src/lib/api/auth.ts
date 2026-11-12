@@ -36,6 +36,8 @@ export interface Me {
   campus: CampusMini | null;
   /** The person's church (through their campus); null without a campus. */
   church: ChurchMini | null;
+  /** A request to join a campus still awaiting the leadership's answer. */
+  pending_join_request: { id: string; campus: CampusMini; created_at: string } | null;
   baptized: boolean;
   is_manager: boolean;
   led_ministries: LedMinistry[];
