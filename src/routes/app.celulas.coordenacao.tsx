@@ -7,6 +7,7 @@ import {
   Calendar as CalIcon,
   CalendarRange,
   CalendarX,
+  Activity,
   Plus,
   UserCog,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { CellFormDialog } from "@/components/cells/CellFormDialog";
 import { CellIncompleteBadge } from "@/components/cells/CellIncompleteBadge";
+import { CellHealthBadge } from "@/components/cells/CellHealthBadge";
 import { CampusCellsLeadersDialog } from "@/components/cells/CampusCellsLeadersDialog";
 import { SeasonsDialog } from "@/components/cells/SeasonsDialog";
 import {
@@ -35,16 +37,21 @@ import {
   useMe,
 } from "@/lib/api/auth";
 import {
+  CELL_HEALTH_LABEL,
+  CELL_HEALTH_ORDER,
   formatSchedule,
   MEETING_DAY_LABEL,
   MEETING_DAYS,
   useCells,
+  type CellHealthStatus,
   type MeetingDay,
 } from "@/lib/api/cells";
 import { useCampuses } from "@/lib/api/ministries";
 import { formatDate, useCurrentSeason, useSeasons } from "@/lib/api/seasons";
 
 const ALL_DAYS = "all";
+const ALL_HEALTH = "all";
+const HEALTH_FILTERS: CellHealthStatus[] = ["critical", "attention", "healthy", "new"];
 const CURRENT_SEASON = "current";
 
 // "Coordenação": every cell of the campuses the person coordinates, with
@@ -75,6 +82,9 @@ function CellCoordinationPage() {
 
   const [selectedSeason, setSelectedSeason] = useState<string>(CURRENT_SEASON);
   const [selectedDay, setSelectedDay] = useState<MeetingDay | undefined>();
+  const [selectedHealth, setSelectedHealth] = useState<CellHealthStatus | typeof ALL_HEALTH>(
+    ALL_HEALTH,
+  );
 
   const { data: cells, isLoading: cellsLoading } = useCells({
     season: selectedSeason,
@@ -98,6 +108,20 @@ function CellCoordinationPage() {
   const leaderlessCount = cellList.filter((c) => c.leaders.length === 0).length;
   const pendingMeetings = cellList.reduce((sum, c) => sum + c.pending_meetings, 0);
   const cellsWithPending = cellList.filter((c) => c.pending_meetings > 0).length;
+  const needCare = cellList.filter(
+    (c) => c.health?.status === "critical" || c.health?.status === "attention",
+  ).length;
+  const criticalCount = cellList.filter((c) => c.health?.status === "critical").length;
+  // The ones that need attention first; otherwise the API order (day, time, name).
+  const shownCells = cellList
+    .filter((c) => selectedHealth === ALL_HEALTH || c.health?.status === selectedHealth)
+    .map((c, i) => ({ c, i }))
+    .sort(
+      (a, b) =>
+        CELL_HEALTH_ORDER[a.c.health?.status ?? "new"] -
+          CELL_HEALTH_ORDER[b.c.health?.status ?? "new"] || a.i - b.i,
+    )
+    .map(({ c }) => c);
 
   if (me && !hasAccess) return <Navigate to="/app/celulas" replace />;
   if (meLoading) return <DetailSkeleton />;
@@ -192,6 +216,22 @@ function CellCoordinationPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select
+          value={selectedHealth}
+          onValueChange={(v) => setSelectedHealth(v as CellHealthStatus | typeof ALL_HEALTH)}
+        >
+          <SelectTrigger className="w-full sm:w-52" aria-label="Saúde">
+            <SelectValue placeholder="Saúde" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_HEALTH}>Todas as situações</SelectItem>
+            {HEALTH_FILTERS.map((h) => (
+              <SelectItem key={h} value={h}>
+                {CELL_HEALTH_LABEL[h]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {selectedSeason === CURRENT_SEASON && (
@@ -202,7 +242,7 @@ function CellCoordinationPage() {
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         <StatCard icon={<Sparkles className="h-4 w-4" />} label="Células" value={cellList.length} />
         <StatCard icon={<Users className="h-4 w-4" />} label="Membros" value={totalMembers} />
         <StatCard
@@ -221,16 +261,22 @@ function CellCoordinationPage() {
               : undefined
           }
         />
+        <StatCard
+          icon={<Activity className="h-4 w-4" />}
+          label="Precisam de atenção"
+          value={needCare}
+          hint={criticalCount > 0 ? `${criticalCount} em situação crítica` : undefined}
+        />
       </div>
 
-      <DetailSection title="Células" count={cellList.length}>
+      <DetailSection title="Células" count={shownCells.length}>
         {cellsLoading ? (
           <EmptyState>Carregando…</EmptyState>
-        ) : cellList.length === 0 ? (
+        ) : shownCells.length === 0 ? (
           <EmptyState>Nenhuma célula encontrada para os filtros selecionados.</EmptyState>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {cellList.map((cell) => (
+            {shownCells.map((cell) => (
               <CellCard key={cell.id} cell={cell} />
             ))}
           </div>
@@ -276,6 +322,7 @@ function CellCard({
                 </Badge>
               )}
               <CellIncompleteBadge cell={cell} />
+              <CellHealthBadge cell={cell} />
             </div>
           </div>
           <h3 className="mt-4 text-lg font-semibold tracking-tight">{cell.name}</h3>

@@ -33,6 +33,7 @@ import { RouteError } from "@/components/RouteError";
 import { DetailSkeleton } from "@/components/skeletons";
 import { CellMeetingsSection } from "@/components/cells/CellMeetingsSection";
 import { CellVisitorsSection } from "@/components/cells/CellVisitorsSection";
+import { CellHealthSection } from "@/components/cells/CellHealthSection";
 import { PersonSearch } from "@/components/cells/PersonSearch";
 import { RenewCellDialog } from "@/components/cells/RenewCellDialog";
 import { ApiError, apiErrorMessage } from "@/lib/api/client";
@@ -268,6 +269,8 @@ function CellDetail() {
           </div>
         )}
       </DetailSection>
+
+      <CellHealthSection cell={cell} />
 
       <CellMeetingsSection cell={cell} roster={roster} />
 

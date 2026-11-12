@@ -94,6 +94,69 @@ export interface Cell {
   can_manage: boolean;
   // Whether the logged-in user may assign its leaders and renew it.
   can_coordinate: boolean;
+  /** How the cell is doing; only for whoever manages it (null otherwise). */
+  health: CellHealth | null;
+}
+
+export type CellHealthStatus = "critical" | "attention" | "healthy" | "new";
+
+export interface CellHealthReason {
+  level: "critical" | "attention";
+  text: string;
+}
+
+export interface CellHealth {
+  status: CellHealthStatus;
+  /** Average % of the cell present in the last 4 meetings held. */
+  attendance_rate: number | null;
+  /** % change in attendance against the 4 meetings before (null without history). */
+  trend: number | null;
+  /** Visitors (named or not) in the last 4 meetings held. */
+  recent_visitors: number;
+  reasons: CellHealthReason[];
+}
+
+export const CELL_HEALTH_LABEL: Record<CellHealthStatus, string> = {
+  critical: "Crítica",
+  attention: "Atenção",
+  healthy: "Saudável",
+  new: "Sem histórico",
+};
+
+/** Most urgent first, for sorting. */
+export const CELL_HEALTH_ORDER: Record<CellHealthStatus, number> = {
+  critical: 0,
+  attention: 1,
+  new: 2,
+  healthy: 3,
+};
+
+/** "Pessoas para cuidar": who the leader should reach out to. */
+export interface CellCare {
+  absent_members: {
+    person: { id: string; name: string; email: string; phone: string };
+    /** Held meetings missed in a row, up to the last one. */
+    absences: number;
+    last_attended: string | null;
+  }[];
+  visitors_not_returning: {
+    id: string;
+    name: string;
+    phone: string;
+    last_visit: string;
+    visit_count: number;
+    /** Held meetings since the last visit. */
+    missed: number;
+  }[];
+}
+
+// Under ["cells", id] so anything that refreshes the cell refreshes this too.
+export function useCellCare(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ["cells", id, "care"],
+    queryFn: () => apiFetch<CellCare>(`/api/cells/${id}/care/`),
+    enabled,
+  });
 }
 
 export interface CellFilters {
@@ -245,6 +308,8 @@ export function useCellVisitors(cellId: string, enabled = true) {
 
 function invalidateVisitors(queryClient: ReturnType<typeof useQueryClient>, cellId: string) {
   queryClient.invalidateQueries({ queryKey: ["cell-visitors", cellId] });
+  // "Pessoas para cuidar" lists visitors still visiting.
+  queryClient.invalidateQueries({ queryKey: ["cells", cellId, "care"] });
 }
 
 export function useCreateCellVisitor(cellId: string) {
