@@ -140,10 +140,17 @@ export interface CellMeeting {
   // false: the meeting didn't happen on this date (holiday, cancelled).
   held: boolean;
   cancel_reason: string;
+  /** What was studied/discussed. */
+  topic: string;
   notes: string;
+  /** People who made a decision for Christ. */
+  decisions_count: number;
   attendees: PersonMini[];
+  /** Guests registered by name (CellVisitor). */
+  visitors: CellVisitorMini[];
+  /** Guests counted by number only (not registered). */
   visitors_count: number;
-  // Registered attendees + visitors.
+  // Registered attendees + named visitors + visitors counted by number.
   attendance_count: number;
   created_by: PersonMini | null;
   created_at: string;
@@ -168,6 +175,7 @@ export interface CalendarSummary {
   upcoming: number;
   average_attendance: number | null;
   total_visitors: number;
+  total_decisions: number;
 }
 
 export interface CellCalendar {
@@ -188,14 +196,122 @@ export interface CellMeetingInput {
   date: string;
   held: boolean;
   cancel_reason: string;
+  topic: string;
   notes: string;
+  decisions_count: number;
   attendee_ids: string[];
+  visitor_ids: string[];
   visitors_count: number;
+}
+
+// --- Visitors (guests by name) ----------------------------------------------------
+
+export type VisitorStatus = "visiting" | "member" | "forwarded";
+
+export const VISITOR_STATUS_LABEL: Record<VisitorStatus, string> = {
+  visiting: "Visitante",
+  member: "Virou membro",
+  forwarded: "Na Reconciliação",
+};
+
+export interface CellVisitorMini {
+  id: string;
+  name: string;
+  status: VisitorStatus;
+}
+
+/** A cell's guest. Only whoever manages the cell gets these (contact data). */
+export interface CellVisitor extends CellVisitorMini {
+  cell: string;
+  phone: string;
+  email: string;
+  notes: string;
+  person: PersonMini | null;
+  /** Sent to the Reconciliação triage queue. */
+  forwarded: boolean;
+  visit_count: number;
+  first_visit: string | null;
+  last_visit: string | null;
+  created_at: string;
+}
+
+export function useCellVisitors(cellId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["cell-visitors", cellId],
+    queryFn: () => apiList<CellVisitor>(`/api/cell-visitors/?cell=${cellId}`),
+    enabled,
+  });
+}
+
+function invalidateVisitors(queryClient: ReturnType<typeof useQueryClient>, cellId: string) {
+  queryClient.invalidateQueries({ queryKey: ["cell-visitors", cellId] });
+}
+
+export function useCreateCellVisitor(cellId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; phone?: string; email?: string; notes?: string }) =>
+      apiFetch<CellVisitor>("/api/cell-visitors/", {
+        method: "POST",
+        body: JSON.stringify({ cell_id: cellId, ...input }),
+      }),
+    onSuccess: () => invalidateVisitors(queryClient, cellId),
+  });
+}
+
+export function useUpdateCellVisitor(cellId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...input
+    }: {
+      id: string;
+      name?: string;
+      phone?: string;
+      email?: string;
+      notes?: string;
+    }) =>
+      apiFetch<CellVisitor>(`/api/cell-visitors/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => invalidateVisitors(queryClient, cellId),
+  });
+}
+
+/** Hands the visitor to Reconciliação as a pending lead of the cell's campus. */
+export function useForwardCellVisitor(cellId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<CellVisitor>(`/api/cell-visitors/${id}/forward/`, { method: "POST" }),
+    onSuccess: () => invalidateVisitors(queryClient, cellId),
+  });
+}
+
+/** The visitor joins the cell: an existing person, or a new one by e-mail. */
+export function useMakeVisitorMember(cellId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: { id: string; person_id?: string; email?: string }) =>
+      apiFetch<CellVisitor>(`/api/cell-visitors/${id}/make-member/`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      invalidateVisitors(queryClient, cellId);
+      queryClient.invalidateQueries({ queryKey: ["cell-members", cellId] });
+      queryClient.invalidateQueries({ queryKey: ["cells"] });
+    },
+  });
 }
 
 // Meeting data changes the calendar and the cells' pending counts.
 function invalidateMeetings(queryClient: ReturnType<typeof useQueryClient>, cellId: string) {
   queryClient.invalidateQueries({ queryKey: ["cell-meetings", cellId] });
+  // Visit counts come from the meetings.
+  queryClient.invalidateQueries({ queryKey: ["cell-visitors", cellId] });
   queryClient.invalidateQueries({ queryKey: ["cells"] });
 }
 

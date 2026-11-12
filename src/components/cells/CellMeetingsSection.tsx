@@ -6,7 +6,9 @@ import {
   CalendarOff,
   CalendarPlus,
   ChevronDown,
+  HeartHandshake,
   Pencil,
+  Plus,
   Trash2,
   UserPlus,
 } from "lucide-react";
@@ -33,6 +35,8 @@ import { apiErrorMessage } from "@/lib/api/client";
 import {
   describeMissingFields,
   useCellCalendar,
+  useCellVisitors,
+  useCreateCellVisitor,
   useDeleteCellMeeting,
   useSaveCellMeeting,
   type CalendarEntry,
@@ -55,8 +59,11 @@ interface FormState {
   date: string;
   held: boolean;
   cancelReason: string;
+  topic: string;
   notes: string;
+  decisionsCount: number;
   attendeeIds: Set<string>;
+  visitorIds: Set<string>;
   visitorsCount: number;
 }
 
@@ -100,6 +107,10 @@ export function CellMeetingsSection({ cell, roster }: Props) {
   const { data: calendar, isLoading } = useCellCalendar(cell.id);
   const saveMeeting = useSaveCellMeeting(cell.id);
   const deleteMeeting = useDeleteCellMeeting(cell.id);
+  // Named guests (only whoever manages the cell gets them).
+  const { data: visitors } = useCellVisitors(cell.id, cell.can_manage);
+  const createVisitor = useCreateCellVisitor(cell.id);
+  const [newVisitor, setNewVisitor] = useState({ name: "", phone: "" });
   const [form, setForm] = useState<FormState | null>(null);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   // An incomplete cell isn't active: no new records (the API rejects them too).
@@ -110,8 +121,11 @@ export function CellMeetingsSection({ cell, roster }: Props) {
     date,
     held,
     cancelReason: "",
+    topic: "",
     notes: "",
+    decisionsCount: 0,
     attendeeIds: new Set(),
+    visitorIds: new Set(),
     visitorsCount: 0,
   });
 
@@ -122,10 +136,41 @@ export function CellMeetingsSection({ cell, roster }: Props) {
       date: m.date,
       held: m.held,
       cancelReason: m.cancel_reason,
+      topic: m.topic,
       notes: m.notes,
+      decisionsCount: m.decisions_count,
       attendeeIds: new Set(m.attendees.map((a) => a.id)),
+      visitorIds: new Set(m.visitors.map((v) => v.id)),
       visitorsCount: m.visitors_count,
     });
+
+  const toggleVisitor = (id: string, checked: boolean) => {
+    if (!form) return;
+    const next = new Set(form.visitorIds);
+    if (checked) next.add(id);
+    else next.delete(id);
+    setForm({ ...form, visitorIds: next });
+  };
+
+  // Guests to tick: the ones still visiting (or forwarded), plus whoever this
+  // meeting already has; members are ticked in the roster instead.
+  const visitorOptions = (visitors ?? []).filter(
+    (v) => v.status !== "member" || form?.visitorIds.has(v.id),
+  );
+
+  const addVisitor = () => {
+    if (!form || !newVisitor.name.trim()) return;
+    createVisitor.mutate(
+      { name: newVisitor.name.trim(), phone: newVisitor.phone.trim() },
+      {
+        onSuccess: (v) => {
+          setForm((f) => (f ? { ...f, visitorIds: new Set(f.visitorIds).add(v.id) } : f));
+          setNewVisitor({ name: "", phone: "" });
+        },
+        onError: (e) => toast.error(apiErrorMessage(e, "Não foi possível cadastrar o visitante.")),
+      },
+    );
+  };
 
   const toggleAttendee = (id: string, checked: boolean) => {
     if (!form) return;
@@ -146,8 +191,11 @@ export function CellMeetingsSection({ cell, roster }: Props) {
         date: form.date,
         held: form.held,
         cancel_reason: form.held ? "" : form.cancelReason.trim(),
+        topic: form.held ? form.topic.trim() : "",
         notes: form.notes,
+        decisions_count: form.held ? form.decisionsCount : 0,
         attendee_ids: form.held ? [...form.attendeeIds] : [],
+        visitor_ids: form.held ? [...form.visitorIds] : [],
         visitors_count: form.held ? form.visitorsCount : 0,
       },
       {
@@ -207,16 +255,34 @@ export function CellMeetingsSection({ cell, roster }: Props) {
               {meeting?.held && (
                 <span className="font-normal text-muted-foreground">
                   {meeting.attendance_count} presentes
-                  {meeting.visitors_count > 0 && ` (${meeting.visitors_count} visitantes)`}
+                  {meeting.visitors.length + meeting.visitors_count > 0 &&
+                    ` (${meeting.visitors.length + meeting.visitors_count} visitantes)`}
                 </span>
               )}
+              {meeting?.held && meeting.decisions_count > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <HeartHandshake className="h-3 w-3" />
+                  {meeting.decisions_count} {meeting.decisions_count === 1 ? "decisão" : "decisões"}
+                </Badge>
+              )}
             </div>
+            {meeting?.held && meeting.topic && (
+              <p className="text-sm">
+                <span className="text-muted-foreground">Tema:</span> {meeting.topic}
+              </p>
+            )}
             {meeting && !meeting.held && (
               <p className="text-sm text-muted-foreground">{meeting.cancel_reason}</p>
             )}
             {meeting?.held && meeting.attendees.length > 0 && (
               <p className="text-xs text-muted-foreground">
                 {meeting.attendees.map((a) => a.name).join(", ")}
+              </p>
+            )}
+            {meeting?.held && meeting.visitors.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Visitantes: {meeting.visitors.map((v) => v.name).join(", ")}
+                {meeting.visitors_count > 0 && ` e mais ${meeting.visitors_count}`}
               </p>
             )}
             {meeting?.notes && <p className="whitespace-pre-line text-sm">{meeting.notes}</p>}
@@ -322,6 +388,11 @@ export function CellMeetingsSection({ cell, roster }: Props) {
                 </span>
               )}
               {summary.total_visitors > 0 && <span>{summary.total_visitors} visitantes</span>}
+              {summary.total_decisions > 0 && (
+                <span>
+                  {summary.total_decisions} {summary.total_decisions === 1 ? "decisão" : "decisões"}
+                </span>
+              )}
             </div>
           )}
 
@@ -406,21 +477,21 @@ export function CellMeetingsSection({ cell, roster }: Props) {
                 </div>
                 {form.held && (
                   <div className="space-y-1.5">
-                    <Label htmlFor="meeting-visitors" className="flex items-center gap-1">
-                      <UserPlus className="h-3.5 w-3.5" /> Visitantes
+                    <Label htmlFor="meeting-decisions" className="flex items-center gap-1">
+                      <HeartHandshake className="h-3.5 w-3.5" /> Decisões
                     </Label>
                     <Input
-                      id="meeting-visitors"
+                      id="meeting-decisions"
                       type="number"
                       min={0}
                       placeholder="0"
                       // Empty instead of "0", so clearing the field and typing
                       // doesn't end up as "02"/"20".
-                      value={form.visitorsCount || ""}
+                      value={form.decisionsCount || ""}
                       onChange={(e) =>
                         setForm({
                           ...form,
-                          visitorsCount: Math.max(0, Number(e.target.value) || 0),
+                          decisionsCount: Math.max(0, Number(e.target.value) || 0),
                         })
                       }
                     />
@@ -430,6 +501,17 @@ export function CellMeetingsSection({ cell, roster }: Props) {
 
               {form.held ? (
                 <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="meeting-topic">Tema</Label>
+                    <Input
+                      id="meeting-topic"
+                      placeholder="O que foi estudado ou conversado"
+                      maxLength={200}
+                      value={form.topic}
+                      onChange={(e) => setForm({ ...form, topic: e.target.value })}
+                    />
+                  </div>
+
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <Label>
@@ -478,10 +560,90 @@ export function CellMeetingsSection({ cell, roster }: Props) {
                   </div>
 
                   <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1">
+                      <UserPlus className="h-3.5 w-3.5" /> Visitantes ({form.visitorIds.size})
+                    </Label>
+                    {visitorOptions.length > 0 && (
+                      <div
+                        className="max-h-40 space-y-1 overflow-y-auto rounded-md border p-2"
+                        data-testid="meeting-visitors-list"
+                      >
+                        {visitorOptions.map((v) => (
+                          <label
+                            key={v.id}
+                            className="flex cursor-pointer items-center gap-3 rounded px-2 py-1.5 hover:bg-muted"
+                          >
+                            <Checkbox
+                              checked={form.visitorIds.has(v.id)}
+                              onCheckedChange={(c) => toggleVisitor(v.id, c === true)}
+                            />
+                            <span className="flex-1 truncate text-sm">{v.name}</span>
+                            {v.visit_count > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                {v.visit_count} {v.visit_count === 1 ? "visita" : "visitas"}
+                              </span>
+                            )}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Input
+                        aria-label="Nome do novo visitante"
+                        placeholder="Novo visitante: nome"
+                        value={newVisitor.name}
+                        onChange={(e) => setNewVisitor({ ...newVisitor, name: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addVisitor();
+                          }
+                        }}
+                      />
+                      <Input
+                        aria-label="Telefone do novo visitante"
+                        placeholder="Telefone"
+                        className="w-36"
+                        value={newVisitor.phone}
+                        onChange={(e) => setNewVisitor({ ...newVisitor, phone: e.target.value })}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="Adicionar visitante"
+                        disabled={!newVisitor.name.trim() || createVisitor.isPending}
+                        onClick={addVisitor}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Label htmlFor="meeting-visitors" className="text-sm font-normal">
+                        Outros visitantes, sem cadastro
+                      </Label>
+                      <Input
+                        id="meeting-visitors"
+                        type="number"
+                        min={0}
+                        placeholder="0"
+                        className="w-20"
+                        value={form.visitorsCount || ""}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            visitorsCount: Math.max(0, Number(e.target.value) || 0),
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
                     <Label htmlFor="meeting-notes">Anotações</Label>
                     <Textarea
                       id="meeting-notes"
-                      placeholder="Tema, pedidos de oração, observações…"
+                      placeholder="Pedidos de oração, observações…"
                       value={form.notes}
                       onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     />
