@@ -29,6 +29,7 @@ function CellsArea() {
         tabs={[
           { to: "/app/celulas", label: "Minhas células", exact: true },
           { to: "/app/celulas/coordenacao", label: "Coordenação", show: caps.coordinate },
+          { to: "/app/celulas/relatorios", label: "Relatórios", show: caps.coordinate },
         ]}
       />
 

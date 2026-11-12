@@ -562,3 +562,69 @@ export function useRemoveCampusCellsLeader(campusId: string) {
       queryClient.invalidateQueries({ queryKey: ["campus-cells-leaders", campusId] }),
   });
 }
+
+// ─── Coordination report ─────────────────────────────────────────────
+
+/** One week of one cell (or of a sum of cells). */
+export interface CellReportWeek {
+  held: number;
+  attendance: number;
+  visitors: number;
+  decisions: number;
+}
+
+export interface CellReportRow {
+  id: string;
+  name: string;
+  campus: { id: string; name: string };
+  leaders: string[];
+  participants: number;
+  meetings_held: number;
+  meetings_not_held: number;
+  meetings_pending: number;
+  /** Sum of people present over the meetings held. */
+  attendance: number;
+  avg_attendance: number | null;
+  /** Average % of the participants present. */
+  attendance_rate: number | null;
+  visitors: number;
+  decisions: number;
+  /** Visitors who became members of the cell. */
+  new_members: number;
+  forwarded: number;
+  health: CellHealthStatus;
+  /** Aligned with CellReport.weeks. */
+  series: CellReportWeek[];
+}
+
+export interface CampusReportRow {
+  id: string;
+  name: string;
+  cells: number;
+  participants: number;
+  meetings_held: number;
+  attendance: number;
+  avg_attendance: number | null;
+  visitors: number;
+  decisions: number;
+  new_members: number;
+  /** Active people of the campus, and how many are in a cell of the season. */
+  people: number;
+  people_in_cells: number;
+  coverage: number | null;
+}
+
+export interface CellReport {
+  /** Mondays (ISO dates) from the season's start to the current week. */
+  weeks: string[];
+  cells: CellReportRow[];
+  campuses: CampusReportRow[];
+}
+
+export function useCellReport(season: string, enabled = true) {
+  return useQuery({
+    queryKey: ["cells", "report", season],
+    queryFn: () => apiFetch<CellReport>(`/api/cells/report/?season=${encodeURIComponent(season)}`),
+    enabled,
+  });
+}
