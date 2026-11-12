@@ -94,7 +94,7 @@ function CellCoordinationPage() {
   const canAssignLeaders = assignableCampuses === null || assignableCampuses.size > 0;
 
   const cellList = cells ?? [];
-  const totalMembers = cellList.reduce((sum, c) => sum + c.member_count, 0);
+  const totalMembers = cellList.reduce((sum, c) => sum + c.participant_count, 0);
   const leaderlessCount = cellList.filter((c) => c.leaders.length === 0).length;
   const pendingMeetings = cellList.reduce((sum, c) => sum + c.pending_meetings, 0);
   const cellsWithPending = cellList.filter((c) => c.pending_meetings > 0).length;
@@ -285,7 +285,7 @@ function CellCard({
             </p>
           )}
           <div className="mt-3 text-sm">
-            <span className="font-semibold tabular-nums">{cell.member_count}</span>{" "}
+            <span className="font-semibold tabular-nums">{cell.participant_count}</span>{" "}
             <span className="text-muted-foreground">membros</span>
           </div>
         </CardContent>

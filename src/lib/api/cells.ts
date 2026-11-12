@@ -86,6 +86,8 @@ export interface Cell {
   leaders: PersonMini[];
   co_leaders: PersonMini[];
   member_count: number;
+  /** Leaders, co-leaders and members, each once — what screens call "membros". */
+  participant_count: number;
   // Past scheduled meetings nobody registered yet.
   pending_meetings: number;
   // Whether the logged-in user may edit the cell, its members and meetings.

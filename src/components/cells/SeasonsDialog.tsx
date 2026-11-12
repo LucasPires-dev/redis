@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useMe } from "@/lib/api/auth";
 import { apiErrorMessage } from "@/lib/api/client";
 import { formatDate, useChurches, useSaveSeason, useSeasons, type Season } from "@/lib/api/seasons";
 
@@ -21,19 +29,28 @@ interface FormState {
   end_date: string;
 }
 
-// Church-wide seasons. Only the manager / general cells leader opens this.
+// Seasons of one church (each church has its own calendar). Only the manager /
+// general cells leader opens this; the manager picks the church when there are several.
 export function SeasonsDialog({ open, onOpenChange }: Props) {
-  const { data: seasons } = useSeasons();
+  const { data: me } = useMe();
+  const { data: allSeasons } = useSeasons();
   const { data: churches } = useChurches();
   const saveSeason = useSaveSeason();
   const [form, setForm] = useState<FormState | null>(null);
+  const [pickedChurchId, setPickedChurchId] = useState("");
+
+  const churchOptions = me?.is_manager
+    ? (churches ?? [])
+    : (churches ?? []).filter((c) => c.id === me?.church?.id);
+  const churchId = pickedChurchId || me?.church?.id || churchOptions[0]?.id || "";
+  const seasons = (allSeasons ?? []).filter((s) => s.church === churchId);
 
   const startEdit = (s: Season) =>
     setForm({ seasonId: s.id, name: s.name, start_date: s.start_date, end_date: s.end_date });
 
   const startNew = () => {
     // Suggest starting the day after the latest season ends.
-    const latest = (seasons ?? [])[0];
+    const latest = seasons[0];
     let start = "";
     if (latest) {
       const d = new Date(`${latest.end_date}T12:00:00`);
@@ -45,7 +62,6 @@ export function SeasonsDialog({ open, onOpenChange }: Props) {
 
   const submit = () => {
     if (!form) return;
-    const churchId = churches?.[0]?.id;
     if (!churchId) return;
     saveSeason.mutate(
       {
@@ -82,6 +98,29 @@ export function SeasonsDialog({ open, onOpenChange }: Props) {
         <p className="text-sm text-muted-foreground">
           Valem para a igreja toda. A temporada atual é identificada pela data de hoje.
         </p>
+        {churchOptions.length > 1 && (
+          <div className="space-y-1.5">
+            <Label>Igreja</Label>
+            <Select
+              value={churchId}
+              onValueChange={(v) => {
+                setPickedChurchId(v);
+                setForm(null);
+              }}
+            >
+              <SelectTrigger aria-label="Igreja">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {churchOptions.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {form ? (
           <div className="space-y-4 rounded-md border p-4">
@@ -131,10 +170,10 @@ export function SeasonsDialog({ open, onOpenChange }: Props) {
         )}
 
         <div className="space-y-2">
-          {(seasons ?? []).length === 0 && (
+          {seasons.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhuma temporada cadastrada.</p>
           )}
-          {(seasons ?? []).map((s) => (
+          {seasons.map((s) => (
             <div
               key={s.id}
               className="flex items-center justify-between rounded-md border px-3 py-2"

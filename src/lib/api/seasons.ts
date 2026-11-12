@@ -5,6 +5,8 @@ import { ApiError, apiFetch, apiList } from "./client";
 // from today's date — the season whose start/end range contains today.
 export interface Season {
   id: string;
+  /** Church id: each church has its own calendar of seasons. */
+  church: string;
   name: string;
   start_date: string; // YYYY-MM-DD
   end_date: string;
