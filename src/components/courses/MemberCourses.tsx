@@ -2,7 +2,17 @@
 // own enrollments. Shown to everyone (coordinators and teachers included).
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CalendarDays, ExternalLink, GraduationCap, MapPin, Users } from "lucide-react";
+import {
+  Award,
+  CalendarDays,
+  Check,
+  ExternalLink,
+  GraduationCap,
+  MapPin,
+  Minus,
+  Users,
+  X,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,7 +45,9 @@ import {
 } from "@/lib/fee-selection";
 import { FeeChoicesPicker } from "@/components/courses/FeeChoicesPicker";
 import { PaymentStatusBadge } from "@/components/courses/PaymentStatusBadge";
+import { attendanceLabel, attendanceTone } from "@/lib/attendance";
 import {
+  holdsSeat,
   isOpenPayment,
   useCancelEnrollment,
   useMyEnrollments,
@@ -275,6 +287,59 @@ export function MyEnrollments() {
   );
 }
 
+/** The student's presence lesson by lesson, against the class's minimum. */
+function MyAttendance({ enrollment: e }: { enrollment: MyEnrollment }) {
+  const min = e.course_class.min_attendance_percent;
+  return (
+    <div className="space-y-2 rounded-md border p-3" data-testid="my-attendance">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+        <span>
+          Presença:{" "}
+          <span className={`font-medium ${attendanceTone(e.meets_attendance, e.attendance)}`}>
+            {attendanceLabel(e.attendance)}
+          </span>
+        </span>
+        <span className="text-xs text-muted-foreground">Mínimo para concluir: {min}%</span>
+      </div>
+      <ul className="flex flex-wrap gap-1.5">
+        {e.attendance.lessons.map((l) => {
+          const label = `Aula ${l.order}${l.title ? ` — ${l.title}` : ""}${
+            l.date ? ` (${formatDate(l.date)})` : ""
+          }: ${l.present == null ? "presença não registrada" : l.present ? "presente" : "falta"}`;
+          return (
+            <li
+              key={l.id}
+              title={label}
+              aria-label={label}
+              className={`grid h-7 w-7 place-items-center rounded-md border text-xs ${
+                l.present == null
+                  ? "text-muted-foreground"
+                  : l.present
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                    : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+              }`}
+            >
+              {l.present == null ? (
+                <Minus className="h-3 w-3" />
+              ) : l.present ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <X className="h-3.5 w-3.5" />
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {e.status === "active" && e.attendance.percent != null && !e.meets_attendance && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Sua presença está abaixo do mínimo. Fale com o professor se precisar de ajuda para repor
+          as aulas.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function MyEnrollmentCard({ enrollment: e }: { enrollment: MyEnrollment }) {
   const pay = usePayEnrollment();
   const cancel = useCancelEnrollment();
@@ -331,8 +396,17 @@ function MyEnrollmentCard({ enrollment: e }: { enrollment: MyEnrollment }) {
               </p>
             </div>
           </div>
-          <PaymentStatusBadge status={e.payment_status} overdue={e.has_overdue_installment} />
+          <div className="flex flex-wrap items-center gap-1.5">
+            {e.status === "completed" && (
+              <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+                <Award className="h-3 w-3" /> Concluído
+              </Badge>
+            )}
+            <PaymentStatusBadge status={e.payment_status} overdue={e.has_overdue_installment} />
+          </div>
         </div>
+
+        {holdsSeat(e) && e.attendance.lessons.length > 0 && <MyAttendance enrollment={e} />}
 
         {e.items.length > 0 && (
           <div className="rounded-md bg-muted/50 p-3 text-sm">

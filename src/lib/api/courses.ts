@@ -32,6 +32,14 @@ export type EnrollmentStatus = "active" | "completed" | "dropped";
 export type PaymentStatus =
   "free" | "pending" | "partial" | "paid" | "waived" | "expired" | "cancelled" | "refunded";
 
+/** Lessons attended out of those whose attendance was taken for the student. */
+export interface AttendanceSummary {
+  present: number;
+  counted: number;
+  /** null while no lesson counted yet. */
+  percent: number | null;
+}
+
 export interface Enrollment {
   id: string;
   person: PersonMini;
@@ -41,6 +49,10 @@ export interface Enrollment {
   payment_status: PaymentStatus;
   payment_status_display: string;
   material_delivered_at: string | null;
+  /** Present in the class roster; null elsewhere. */
+  attendance: AttendanceSummary | null;
+  /** Reaches the class's minimum attendance (null when attendance isn't included). */
+  meets_attendance: boolean | null;
 }
 
 export interface ClassFeeItem {
@@ -89,7 +101,18 @@ export interface EnrollmentFinance extends Enrollment {
   has_overdue_installment: boolean;
 }
 
+export interface LessonPresence {
+  id: string;
+  order: number;
+  title: string;
+  date: string | null;
+  /** null: attendance not taken for the student in this lesson. */
+  present: boolean | null;
+}
+
 export interface MyEnrollment extends EnrollmentFinance {
+  attendance: AttendanceSummary & { lessons: LessonPresence[] };
+  meets_attendance: boolean;
   course_class: {
     id: string;
     name: string;
@@ -101,6 +124,7 @@ export interface MyEnrollment extends EnrollmentFinance {
     start_date: string | null;
     end_date: string | null;
     max_installments: number;
+    min_attendance_percent: number;
   };
   can_cancel: boolean;
 }
@@ -172,7 +196,10 @@ export interface CourseClass {
   description: string;
   teachers: Teacher[];
   enrolled_count: number;
+  completed_count: number;
   lesson_count: number;
+  /** Share of the lessons a student must attend to complete the class. */
+  min_attendance_percent: number;
   self_enrollment: boolean;
   max_capacity: number | null;
   enrollment_deadline: string | null;
@@ -202,6 +229,7 @@ export interface CourseClassInput {
   reservation_days?: number;
   max_installments?: number;
   refund_before_start?: boolean;
+  min_attendance_percent?: number;
   fee_items?: ClassFeeItem[];
 }
 
@@ -466,6 +494,24 @@ export function useRemoveEnrollment() {
   });
 }
 
+/** Marks the given students as having completed the class. */
+export function useCompleteClass(classId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (personIds: string[]) =>
+      apiFetch<Enrollment[]>(`/api/course-classes/${classId}/complete/`, {
+        method: "POST",
+        body: JSON.stringify({ person_ids: personIds }),
+      }),
+    onSuccess: (roster) => {
+      qc.setQueryData(["course-class-enrollments", classId], roster);
+      qc.invalidateQueries({ queryKey: ["course-class", classId] });
+      qc.invalidateQueries({ queryKey: ["lessons", classId] });
+      qc.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
 // ── Lessons ────────────────────────────────────────────────────────────────
 
 export function useLessons(classId: string) {
@@ -518,6 +564,8 @@ export function useSaveAttendance() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["lesson-attendance", vars.lessonId] });
       qc.invalidateQueries({ queryKey: ["lessons", vars.classId] });
+      // Each student's attendance percentage in the roster.
+      qc.invalidateQueries({ queryKey: ["course-class-enrollments", vars.classId] });
     },
   });
 }
