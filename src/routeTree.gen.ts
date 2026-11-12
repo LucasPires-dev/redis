@@ -22,6 +22,7 @@ import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
 import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
 import { Route as AppProducaoRouteImport } from './routes/app.producao'
 import { Route as AppResponsaveisRouteImport } from './routes/app.responsaveis'
+import { Route as CertificadoCodeRouteImport } from './routes/certificado.$code'
 import { Route as AppCampusIdRouteImport } from './routes/app.campus_.$id'
 import { Route as AppCelulasIndexRouteImport } from './routes/app.celulas.index'
 import { Route as AppCelulasCoordenacaoRouteImport } from './routes/app.celulas.coordenacao'
@@ -113,6 +114,11 @@ const AppResponsaveisRoute = AppResponsaveisRouteImport.update({
   id: '/responsaveis',
   path: '/responsaveis',
   getParentRoute: () => AppRoute,
+} as any)
+const CertificadoCodeRoute = CertificadoCodeRouteImport.update({
+  id: '/certificado/$code',
+  path: '/certificado/$code',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppCampusIdRoute = AppCampusIdRouteImport.update({
   id: '/campus_/$id',
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
+  '/certificado/$code': typeof CertificadoCodeRoute
   '/app/': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByTo {
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
+  '/certificado/$code': typeof CertificadoCodeRoute
   '/app': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
+  '/certificado/$code': typeof CertificadoCodeRoute
   '/app/': typeof AppIndexRoute
   '/app/campus_/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
@@ -383,6 +392,7 @@ export interface FileRouteTypes {
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
+    | '/certificado/$code'
     | '/app/'
     | '/app/campus/$id'
     | '/app/celulas/coordenacao'
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
+    | '/certificado/$code'
     | '/app'
     | '/app/campus/$id'
     | '/app/celulas/coordenacao'
@@ -461,6 +472,7 @@ export interface FileRouteTypes {
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
+    | '/certificado/$code'
     | '/app/'
     | '/app/campus_/$id'
     | '/app/celulas/coordenacao'
@@ -494,6 +506,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  CertificadoCodeRoute: typeof CertificadoCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -588,6 +601,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/responsaveis'
       preLoaderRoute: typeof AppResponsaveisRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/certificado/$code': {
+      id: '/certificado/$code'
+      path: '/certificado/$code'
+      fullPath: '/certificado/$code'
+      preLoaderRoute: typeof CertificadoCodeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/app/campus_/$id': {
       id: '/app/campus_/$id'
@@ -889,6 +909,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  CertificadoCodeRoute: CertificadoCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

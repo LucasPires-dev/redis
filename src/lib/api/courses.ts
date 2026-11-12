@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, apiList } from "./client";
+import { apiDownload, apiFetch, apiList } from "./client";
 import type { CampusMini } from "./ministries";
 import type { PersonMini } from "./people";
 
@@ -53,6 +53,24 @@ export interface Enrollment {
   attendance: AttendanceSummary | null;
   /** Reaches the class's minimum attendance (null when attendance isn't included). */
   meets_attendance: boolean | null;
+  /** "ABCD-EFGH-JKLM" once completed: printed on the certificate. */
+  certificate_code: string | null;
+}
+
+/** What the public page shows for a valid certificate. */
+export interface CertificateCheck {
+  code: string;
+  person_name: string;
+  course_name: string;
+  class_name: string;
+  campus_name: string;
+  church_name: string;
+  start_date: string | null;
+  end_date: string | null;
+  completed_on: string;
+  lesson_count: number;
+  attendance_percent: number | null;
+  teachers: string[];
 }
 
 export interface ClassFeeItem {
@@ -509,6 +527,42 @@ export function useCompleteClass(classId: string) {
       qc.invalidateQueries({ queryKey: ["lessons", classId] });
       qc.invalidateQueries({ queryKey: ["courses"] });
     },
+  });
+}
+
+// ── Certificates ───────────────────────────────────────────────────────────
+
+function slug(text: string) {
+  return text
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** Downloads the completion certificate (PDF) of an enrollment. */
+export function downloadCertificate(enrollmentId: string, courseName: string, personName: string) {
+  return apiDownload(
+    `/api/course-enrollments/${enrollmentId}/certificate/`,
+    `certificado-${slug(courseName)}-${slug(personName)}.pdf`,
+  );
+}
+
+/** Public check of a certificate by its code (no login needed). */
+export function useCertificateCheck(code: string) {
+  return useQuery({
+    queryKey: ["certificate-check", code],
+    queryFn: () =>
+      apiFetch<CertificateCheck>(`/api/certificates/${encodeURIComponent(code)}/`).catch(
+        (e: unknown) => {
+          // Not found = not a valid certificate (an answer, not an error).
+          if (e && typeof e === "object" && "status" in e && e.status === 404) return null;
+          throw e;
+        },
+      ),
+    enabled: !!code,
+    retry: false,
   });
 }
 

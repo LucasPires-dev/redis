@@ -161,7 +161,22 @@ describe("Course completion", () => {
       .and("contain", "concluiu em");
     cy.contains("[data-testid=student-row]", lowName).should("contain", "Ativo");
     cy.get("[data-testid=completion-summary]").should("contain", "1 concluiu");
+
+    // The coordination can download the certificate of who completed.
+    cy.contains("[data-testid=student-row]", lowName)
+      .find("button[aria-label^='Baixar certificado']")
+      .should("not.exist");
+    cy.intercept("GET", "**/api/course-enrollments/*/certificate/").as("certificate");
+    cy.contains("[data-testid=student-row]", goodName)
+      .find(`button[aria-label="Baixar certificado de ${goodName}"]`)
+      .click();
+    cy.wait("@certificate").then(({ response }) => {
+      expect(response?.statusCode).to.eq(200);
+      expect(response?.headers["content-type"]).to.contain("application/pdf");
+    });
   });
+
+  let certificateCode: string;
 
   it("the student follows their attendance and sees the completion", () => {
     cy.login(GOOD_STUDENT, PASSWORD);
@@ -172,8 +187,41 @@ describe("Course completion", () => {
         .should("contain", "75% (3 de 4 aulas)")
         .and("contain", "Mínimo para concluir: 70%");
       cy.get("[data-testid=my-attendance] li").should("have.length", 4);
-      cy.get("[aria-label^='Aula 2 — Tema 2']").should("have.attr", "aria-label").and("contain", "falta");
+      cy.get("[aria-label^='Aula 2 — Tema 2']")
+        .should("have.attr", "aria-label")
+        .and("contain", "falta");
     });
+
+    // The certificate, with its verification code.
+    cy.contains("[data-testid=my-enrollment]", CLASS)
+      .find("[data-testid=my-certificate] .font-mono")
+      .invoke("text")
+      .should("match", /^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/)
+      .then((code) => {
+        certificateCode = code as unknown as string;
+      });
+    cy.intercept("GET", "**/api/course-enrollments/*/certificate/").as("certificate");
+    cy.contains("[data-testid=my-enrollment]", CLASS)
+      .contains("button", "Baixar certificado")
+      .click();
+    cy.wait("@certificate").its("response.statusCode").should("eq", 200);
+  });
+
+  it("anyone confirms the certificate by its code, without logging in", () => {
+    cy.clearLocalStorage();
+    cy.visit(`/certificado/${certificateCode}`);
+    cy.get("[data-testid=certificate-valid]", { timeout: 15000 })
+      .should("contain", "Certificado válido")
+      .and("contain", goodName)
+      .and("contain", COURSE)
+      .and("contain", CLASS)
+      .and("contain", certificateCode);
+
+    cy.visit("/certificado/ZZZZ-ZZZZ-ZZZZ");
+    cy.get("[data-testid=certificate-invalid]", { timeout: 15000 }).should(
+      "contain",
+      "Certificado não encontrado",
+    );
   });
 
   it("a student below the minimum is warned", () => {

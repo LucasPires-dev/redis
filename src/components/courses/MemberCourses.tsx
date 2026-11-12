@@ -46,6 +46,7 @@ import {
 import { FeeChoicesPicker } from "@/components/courses/FeeChoicesPicker";
 import { PaymentStatusBadge } from "@/components/courses/PaymentStatusBadge";
 import { attendanceLabel, attendanceTone } from "@/lib/attendance";
+import { CertificateButton } from "@/components/courses/CertificateButton";
 import {
   holdsSeat,
   isOpenPayment,
@@ -407,6 +408,25 @@ function MyEnrollmentCard({ enrollment: e }: { enrollment: MyEnrollment }) {
         </div>
 
         {holdsSeat(e) && e.attendance.lessons.length > 0 && <MyAttendance enrollment={e} />}
+
+        {e.status === "completed" && e.certificate_code && (
+          <div
+            className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-emerald-500/10 p-3"
+            data-testid="my-certificate"
+          >
+            <div className="text-sm">
+              <div className="font-medium">Parabéns, você concluiu este curso!</div>
+              <div className="text-xs text-muted-foreground">
+                Código do certificado: <span className="font-mono">{e.certificate_code}</span>
+              </div>
+            </div>
+            <CertificateButton
+              enrollmentId={e.id}
+              courseName={cls.course_name}
+              personName={e.person.name}
+            />
+          </div>
+        )}
 
         {e.items.length > 0 && (
           <div className="rounded-md bg-muted/50 p-3 text-sm">

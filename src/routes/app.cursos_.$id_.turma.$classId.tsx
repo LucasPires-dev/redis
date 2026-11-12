@@ -32,6 +32,7 @@ import { ClassFinanceTab } from "@/components/courses/ClassFinanceTab";
 import { CourseClassFormDialog } from "@/components/courses/CourseClassFormDialog";
 import { PaymentStatusBadge } from "@/components/courses/PaymentStatusBadge";
 import { CompleteClassDialog } from "@/components/courses/CompleteClassDialog";
+import { CertificateButton } from "@/components/courses/CertificateButton";
 import { attendanceLabel, attendanceTone } from "@/lib/attendance";
 import { formatBRL } from "@/lib/api/payments";
 import {
@@ -263,6 +264,14 @@ function ClassDetail() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {e.status === "completed" && e.certificate_code && cc.can_manage && (
+                      <CertificateButton
+                        compact
+                        enrollmentId={e.id}
+                        courseName={cc.course_name}
+                        personName={e.person.name}
+                      />
+                    )}
                     {isPaid && <PaymentStatusBadge status={e.payment_status} />}
                     {/* Material delivery: teachers too (the Financeiro tab is coordinators-only). */}
                     {isPaid && cc.can_manage && e.status === "active" && (
