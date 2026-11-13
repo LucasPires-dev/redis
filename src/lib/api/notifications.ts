@@ -78,6 +78,40 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
+export interface NotificationCategory {
+  key: string;
+  label: string;
+  description: string;
+  /** Also by email (the center always shows everything). */
+  email: boolean;
+}
+
+export interface NotificationPreferences {
+  /** False while the church hasn't set up email sending. */
+  email_available: boolean;
+  email_address: string;
+  categories: NotificationCategory[];
+}
+
+export function useNotificationPreferences() {
+  return useQuery({
+    queryKey: [...KEY, "preferences"],
+    queryFn: () => apiFetch<NotificationPreferences>("/api/notifications/preferences/"),
+  });
+}
+
+export function useSaveNotificationPreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (email: Record<string, boolean>) =>
+      apiFetch<NotificationPreferences>("/api/notifications/preferences/", {
+        method: "PATCH",
+        body: JSON.stringify({ email }),
+      }),
+    onSuccess: (data) => qc.setQueryData([...KEY, "preferences"], data),
+  });
+}
+
 const RECONNECT_DELAYS_MS = [1000, 2000, 5000, 10000, 30000];
 
 /** Keeps a WebSocket open while signed in; on each new notification refreshes

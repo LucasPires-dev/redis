@@ -29,7 +29,7 @@ function me(t: string) {
   return cy.request({ url: `${API}/api/auth/me/`, headers: auth(t) }).its("body");
 }
 
-const bell = () => cy.get("[data-testid=notification-bell]");
+const bell = (opts?: { timeout: number }) => cy.get("[data-testid=notification-bell]", opts);
 const count = () => cy.get("[data-testid=notification-count]");
 
 describe("Notification center", () => {
@@ -96,7 +96,8 @@ describe("Notification center", () => {
   it("a new notification shows up live and leads to the class", () => {
     cy.login(MEMBER, PASSWORD);
     cy.visit("/app/cursos");
-    bell().should("be.visible");
+    // The first page of a fresh browser can take a while on the dev server.
+    bell({ timeout: 30000 }).should("be.visible");
     count().should("not.exist");
     // Let the live connection open before anything happens.
     cy.wait(1500);
@@ -139,5 +140,22 @@ describe("Notification center", () => {
     cy.contains("button", "Marcar todas como lidas").click();
     cy.get("[data-testid=notifications-empty]").should("contain", "Tudo em dia");
     count().should("not.exist");
+  });
+
+  it("chooses what also comes by email", () => {
+    const cells = (opts?: { timeout: number }) => cy.get("[aria-label='Células por e-mail']", opts);
+    cy.login(MEMBER, PASSWORD);
+    cy.visit("/app/notificacoes");
+    cy.get("[aria-label='Preferências de e-mail']", { timeout: 15000 }).click();
+    cy.location("pathname").should("eq", "/app/notificacoes/preferencias");
+    // No SMTP on the test backend: the choices are kept for when it is set up.
+    cy.get("[data-testid=email-unavailable]").should("be.visible");
+    cy.get("[data-testid=email-category]").should("have.length", 4);
+
+    cells().should("have.attr", "data-state", "checked").click();
+    cy.contains("Células: só no sininho");
+    cy.reload();
+    cells({ timeout: 15000 }).should("have.attr", "data-state", "unchecked").click();
+    cells().should("have.attr", "data-state", "checked");
   });
 });

@@ -1,6 +1,6 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Bell, CheckCheck, ChevronRight } from "lucide-react";
+import { Bell, CheckCheck, ChevronRight, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,20 +46,31 @@ function NotificationsPage() {
           <Bell className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-semibold tracking-tight">Notificações</h1>
         </div>
-        {unread > 0 && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={markAll.isPending}
-            onClick={() =>
-              markAll.mutate(undefined, {
-                onError: (e) => toast.error(apiErrorMessage(e, "Não foi possível.")),
-              })
-            }
-          >
-            <CheckCheck className="mr-1.5 h-4 w-4" /> Marcar todas como lidas
+        <div className="flex items-center gap-2">
+          {unread > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={markAll.isPending}
+              onClick={() =>
+                markAll.mutate(undefined, {
+                  onError: (e) => toast.error(apiErrorMessage(e, "Não foi possível.")),
+                })
+              }
+            >
+              <CheckCheck className="mr-1.5 h-4 w-4" /> Marcar todas como lidas
+            </Button>
+          )}
+          <Button size="icon" variant="ghost" asChild>
+            <Link
+              to="/app/notificacoes/preferencias"
+              aria-label="Preferências de e-mail"
+              title="Preferências de e-mail"
+            >
+              <Settings className="h-4 w-4" />
+            </Link>
           </Button>
-        )}
+        </div>
       </div>
 
       <div className="inline-flex rounded-lg bg-muted p-1 text-sm" role="tablist">
