@@ -20,6 +20,7 @@ import { Route as AppCursosRouteImport } from './routes/app.cursos'
 import { Route as AppEventosRouteImport } from './routes/app.eventos'
 import { Route as AppMeusCursosRouteImport } from './routes/app.meus-cursos'
 import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
+import { Route as AppNotificacoesRouteImport } from './routes/app.notificacoes'
 import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
 import { Route as AppProducaoRouteImport } from './routes/app.producao'
 import { Route as AppResponsaveisRouteImport } from './routes/app.responsaveis'
@@ -106,6 +107,11 @@ const AppMeusCursosRoute = AppMeusCursosRouteImport.update({
 const AppMinisteriosRoute = AppMinisteriosRouteImport.update({
   id: '/ministerios',
   path: '/ministerios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificacoesRoute = AppNotificacoesRouteImport.update({
+  id: '/notificacoes',
+  path: '/notificacoes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPessoasRoute = AppPessoasRouteImport.update({
@@ -283,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/app/eventos': typeof AppEventosRouteWithChildren
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/notificacoes': typeof AppNotificacoesRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByTo {
   '/app/campus': typeof AppCampusRoute
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/notificacoes': typeof AppNotificacoesRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
@@ -370,6 +378,7 @@ export interface FileRoutesById {
   '/app/eventos': typeof AppEventosRouteWithChildren
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/notificacoes': typeof AppNotificacoesRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
@@ -417,6 +426,7 @@ export interface FileRouteTypes {
     | '/app/eventos'
     | '/app/meus-cursos'
     | '/app/ministerios'
+    | '/app/notificacoes'
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
@@ -458,6 +468,7 @@ export interface FileRouteTypes {
     | '/app/campus'
     | '/app/meus-cursos'
     | '/app/ministerios'
+    | '/app/notificacoes'
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
@@ -503,6 +514,7 @@ export interface FileRouteTypes {
     | '/app/eventos'
     | '/app/meus-cursos'
     | '/app/ministerios'
+    | '/app/notificacoes'
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
@@ -624,6 +636,13 @@ declare module '@tanstack/react-router' {
       path: '/ministerios'
       fullPath: '/app/ministerios'
       preLoaderRoute: typeof AppMinisteriosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/notificacoes': {
+      id: '/app/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/app/notificacoes'
+      preLoaderRoute: typeof AppNotificacoesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/pessoas': {
@@ -916,6 +935,7 @@ interface AppRouteChildren {
   AppEventosRoute: typeof AppEventosRouteWithChildren
   AppMeusCursosRoute: typeof AppMeusCursosRoute
   AppMinisteriosRoute: typeof AppMinisteriosRoute
+  AppNotificacoesRoute: typeof AppNotificacoesRoute
   AppPessoasRoute: typeof AppPessoasRoute
   AppProducaoRoute: typeof AppProducaoRoute
   AppResponsaveisRoute: typeof AppResponsaveisRoute
@@ -943,6 +963,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEventosRoute: AppEventosRouteWithChildren,
   AppMeusCursosRoute: AppMeusCursosRoute,
   AppMinisteriosRoute: AppMinisteriosRoute,
+  AppNotificacoesRoute: AppNotificacoesRoute,
   AppPessoasRoute: AppPessoasRoute,
   AppProducaoRoute: AppProducaoRoute,
   AppResponsaveisRoute: AppResponsaveisRoute,
