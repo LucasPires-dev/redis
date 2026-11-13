@@ -9,11 +9,22 @@ import { login } from "@/lib/api/auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — Redis" }] }),
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect: safeRedirect(search.redirect),
+  }),
   component: Login,
 });
 
+/** Only same-site paths ("/convite/X"), never "//host" or full URLs. */
+function safeRedirect(value: unknown): string | undefined {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
+    ? value
+    : undefined;
+}
+
 function Login() {
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +36,7 @@ function Login() {
     setSubmitting(true);
     try {
       await login(email, password);
-      navigate({ to: "/app" });
+      navigate({ to: redirect ?? "/app" });
     } catch (err) {
       if (err instanceof AuthError || (err instanceof ApiError && err.status === 401)) {
         setError("Email ou senha inválidos.");
@@ -63,6 +74,7 @@ function Login() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 placeholder="voce@ilan.church"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -74,6 +86,7 @@ function Login() {
               <Input
                 id="pwd"
                 type="password"
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -82,9 +95,18 @@ function Login() {
             </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button type="submit" className="h-11 w-full" disabled={submitting}>
             {submitting ? "Entrando…" : "Entrar na plataforma"}
           </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            Ainda não tem conta?{" "}
+            <Link
+              to="/cadastro"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Criar conta
+            </Link>
+          </p>
         </form>
       </div>
     </div>
