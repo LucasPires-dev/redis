@@ -82,14 +82,20 @@ export interface NotificationCategory {
   key: string;
   label: string;
   description: string;
-  /** Also by email (the center always shows everything). */
+  /** Also by email / as push (the center always shows everything). */
   email: boolean;
+  push: boolean;
 }
+
+export type NotificationChannel = "email" | "push";
 
 export interface NotificationPreferences {
   /** False while the church hasn't set up email sending. */
   email_available: boolean;
   email_address: string;
+  /** False while push isn't set up on the server (no VAPID keys). */
+  push_available: boolean;
+  push_public_key: string;
   categories: NotificationCategory[];
 }
 
@@ -103,10 +109,10 @@ export function useNotificationPreferences() {
 export function useSaveNotificationPreferences() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (email: Record<string, boolean>) =>
+    mutationFn: (change: Partial<Record<NotificationChannel, Record<string, boolean>>>) =>
       apiFetch<NotificationPreferences>("/api/notifications/preferences/", {
         method: "PATCH",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(change),
       }),
     onSuccess: (data) => qc.setQueryData([...KEY, "preferences"], data),
   });

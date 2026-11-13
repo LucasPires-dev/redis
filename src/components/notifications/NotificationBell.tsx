@@ -1,13 +1,19 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import { useNotificationsRealtime, useUnreadNotificationCount } from "@/lib/api/notifications";
+import { syncPushSubscription } from "@/lib/push";
 
 /** Top-bar bell with the unread count. Also keeps the live connection open, so a
  *  new notification bumps the count and shows a toast wherever the person is. */
 export function NotificationBell() {
   const navigate = useNavigate();
   const { data: count = 0 } = useUnreadNotificationCount();
+
+  useEffect(() => {
+    void syncPushSubscription();
+  }, []);
 
   useNotificationsRealtime((title) =>
     toast(title, {

@@ -102,10 +102,18 @@ describe("Notification center", () => {
     // Let the live connection open before anything happens.
     cy.wait(1500);
 
-    cy.then(() => appoint(classIds[0], "teacher"));
+    // Fired from the page without waiting for the response: the toast lasts a
+    // few seconds and must be checked while it's up.
+    cy.window().then((win) => {
+      void win.fetch(`${API}/api/course-classes/${classIds[0]}/teachers/`, {
+        method: "POST",
+        headers: { ...auth(managerToken), "Content-Type": "application/json" },
+        body: JSON.stringify({ person_id: memberId, role: "teacher" }),
+      });
+    });
     const title = `Você agora é professor(a) da turma ${CLASS_A} (${COURSE})`;
+    cy.contains("[data-sonner-toast]", title, { timeout: 15000 }).should("be.visible");
     count({ timeout: 15000 }).should("have.text", "1");
-    cy.contains("[data-sonner-toast]", title).should("be.visible");
 
     bell().click();
     cy.location("pathname").should("eq", "/app/notificacoes");
@@ -142,20 +150,26 @@ describe("Notification center", () => {
     count().should("not.exist");
   });
 
-  it("chooses what also comes by email", () => {
-    const cells = (opts?: { timeout: number }) => cy.get("[aria-label='Células por e-mail']", opts);
+  it("chooses what also comes by email and on the phone", () => {
+    const toggle = (channel: string, opts?: { timeout: number }) =>
+      cy.get(`[aria-label='Células: ${channel}']`, opts);
     cy.login(MEMBER, PASSWORD);
     cy.visit("/app/notificacoes");
     cy.get("[aria-label='Preferências de e-mail']", { timeout: 15000 }).click();
     cy.location("pathname").should("eq", "/app/notificacoes/preferencias");
     // No SMTP on the test backend: the choices are kept for when it is set up.
     cy.get("[data-testid=email-unavailable]").should("be.visible");
-    cy.get("[data-testid=email-category]").should("have.length", 4);
+    // Push is set up (VAPID keys): this device's status shows.
+    cy.get("[data-testid=push-state]").should("not.have.text", "…");
+    cy.get("[data-testid=notification-category]").should("have.length", 4);
 
-    cells().should("have.attr", "data-state", "checked").click();
-    cy.contains("Células: só no sininho");
+    toggle("E-mail").should("have.attr", "data-state", "checked").click();
+    cy.contains("Células: não vai mais chegar por e-mail");
+    toggle("Celular").should("have.attr", "data-state", "checked").click();
     cy.reload();
-    cells({ timeout: 15000 }).should("have.attr", "data-state", "unchecked").click();
-    cells().should("have.attr", "data-state", "checked");
+    toggle("E-mail", { timeout: 15000 }).should("have.attr", "data-state", "unchecked").click();
+    toggle("E-mail").should("have.attr", "data-state", "checked");
+    toggle("Celular").should("have.attr", "data-state", "unchecked").click();
+    toggle("Celular").should("have.attr", "data-state", "checked");
   });
 });

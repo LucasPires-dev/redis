@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, clearTokens, hasAccessToken, setTokens } from "./client";
+import { apiFetch, clearTokens, getTokens, hasAccessToken, setTokens } from "./client";
+import { forgetPushDevice } from "../push";
 import { MINISTRY_LABEL, type CampusMini, type MinistryKind } from "./ministries";
 
 interface LedMinistry {
@@ -90,6 +91,7 @@ export async function login(email: string, password: string) {
 }
 
 export function logout() {
+  forgetPushDevice(getTokens()?.access);
   clearTokens();
 }
 
