@@ -26,6 +26,8 @@ import { DetailSkeleton } from "@/components/skeletons";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { LessonFormDialog } from "@/components/courses/LessonFormDialog";
+import { LessonMaterials } from "@/components/courses/LessonMaterials";
+import { ClassWaitlistSection } from "@/components/courses/ClassWaitlistSection";
 import { AddTeacherDialog } from "@/components/courses/AddTeacherDialog";
 import { AddEnrollmentDialog } from "@/components/courses/AddEnrollmentDialog";
 import { ClassFinanceTab } from "@/components/courses/ClassFinanceTab";
@@ -208,8 +210,13 @@ function ClassDetail() {
                         {l.attendance_count}/{l.total_enrolled}
                       </Badge>
                     </div>
-                    {l.date && (
-                      <div className="mt-1 text-xs text-muted-foreground">{formatDate(l.date)}</div>
+                    {(l.date || l.materials.length > 0) && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {l.date && formatDate(l.date)}
+                        {l.date && l.materials.length > 0 && " · "}
+                        {l.materials.length > 0 &&
+                          `${l.materials.length} ${l.materials.length === 1 ? "material" : "materiais"}`}
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -217,6 +224,13 @@ function ClassDetail() {
             </div>
           )}
 
+          {selectedLesson && (
+            <LessonMaterials
+              lesson={(lessons ?? []).find((l) => l.id === selectedLesson.id) ?? selectedLesson}
+              classId={classId}
+              canManage={cc.can_manage}
+            />
+          )}
           {selectedLesson && (
             <AttendancePanel lesson={selectedLesson} classId={classId} enrollments={roster} />
           )}
@@ -243,6 +257,7 @@ function ClassDetail() {
             </div>
           </div>
           <ClassCareSection courseClass={cc} />
+          <ClassWaitlistSection courseClass={cc} />
           <CompleteClassDialog
             open={showComplete}
             onOpenChange={setShowComplete}

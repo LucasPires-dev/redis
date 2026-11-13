@@ -133,6 +133,14 @@ export interface LessonPresence {
   date: string | null;
   /** null: attendance not taken for the student in this lesson. */
   present: boolean | null;
+  materials: LessonMaterialLink[];
+}
+
+/** A link handed out with a lesson (slides, handout, video). */
+export interface LessonMaterialLink {
+  id: string;
+  title: string;
+  url: string;
 }
 
 export interface MyEnrollment extends EnrollmentFinance {
@@ -172,11 +180,30 @@ export interface OpenClass {
   refund_before_start: boolean;
   fee_items: ClassFeeItem[];
   base_price_cents: number;
+  /** For the person asking: a seat held for them on the waitlist counts as free. */
   seats_left: number | null;
   my_enrollment: { id: string; payment_status: PaymentStatus } | null;
+  /** The person's place on the waitlist (a full class), if they joined it. */
+  my_waitlist: MyWaitlist | null;
   prerequisites: CourseMini[];
   /** Prerequisites the person hasn't completed: they can't enroll yet. */
   missing_prerequisites: CourseMini[];
+}
+
+export interface MyWaitlist {
+  /** 1 = next in line; null once a seat is held for them. */
+  position: number | null;
+  /** Set while a seat is held for the person: enroll before it. */
+  offer_expires_at: string | null;
+  joined_at: string;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  person: PersonMini;
+  position: number | null;
+  offer_expires_at: string | null;
+  created_at: string;
 }
 
 export interface FinanceSummary {
@@ -237,6 +264,7 @@ export interface CourseClass {
   fee_items: ClassFeeItem[];
   base_price_cents: number;
   seats_left: number | null;
+  waitlist_count: number;
   can_manage: boolean;
   can_manage_finances: boolean;
   created_at: string;
@@ -270,6 +298,7 @@ export interface Lesson {
   notes: string;
   attendance_count: number;
   total_enrolled: number;
+  materials: LessonMaterialLink[];
   created_at: string;
 }
 
@@ -840,6 +869,65 @@ export function useOpenClasses() {
   return useQuery({
     queryKey: ["open-classes"],
     queryFn: () => apiFetch<OpenClass[]>("/api/course-classes/open/"),
+  });
+}
+
+// ── Waitlist ───────────────────────────────────────────────────────────────
+
+/** Joins (or leaves) the waitlist of a full open class. */
+export function useOwnWaitlist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, join }: { classId: string; join: boolean }) =>
+      apiFetch<MyWaitlist | null>(`/api/course-classes/${classId}/waitlist/`, {
+        method: join ? "POST" : "DELETE",
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["open-classes"] }),
+  });
+}
+
+export function useWaitlistEntries(classId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["waitlist", classId],
+    queryFn: () => apiFetch<WaitlistEntry[]>(`/api/course-classes/${classId}/waitlist-entries/`),
+    enabled: !!classId && enabled,
+  });
+}
+
+export function useRemoveWaitlistEntry(classId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (entryId: string) =>
+      apiFetch<void>(`/api/course-classes/${classId}/waitlist-entries/${entryId}/`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["waitlist", classId] });
+      qc.invalidateQueries({ queryKey: ["course-class", classId] });
+    },
+  });
+}
+
+// ── Lesson materials ───────────────────────────────────────────────────────
+
+export function useAddMaterial(classId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lessonId, ...body }: { lessonId: string; title: string; url: string }) =>
+      apiFetch<LessonMaterialLink>(`/api/lessons/${lessonId}/materials/`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lessons", classId] }),
+  });
+}
+
+export function useRemoveMaterial(classId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lessonId, materialId }: { lessonId: string; materialId: string }) =>
+      apiFetch<void>(`/api/lessons/${lessonId}/materials/${materialId}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lessons", classId] }),
   });
 }
 

@@ -45,6 +45,8 @@ import {
 } from "@/lib/fee-selection";
 import { FeeChoicesPicker } from "@/components/courses/FeeChoicesPicker";
 import { MyTracks } from "@/components/courses/Tracks";
+import { MaterialLinks } from "@/components/courses/LessonMaterials";
+import { formatDateTime } from "@/lib/utils";
 import { PaymentStatusBadge } from "@/components/courses/PaymentStatusBadge";
 import { attendanceLabel, attendanceTone } from "@/lib/attendance";
 import { CertificateButton } from "@/components/courses/CertificateButton";
@@ -54,6 +56,7 @@ import {
   useCancelEnrollment,
   useMyEnrollments,
   useOpenClasses,
+  useOwnWaitlist,
   usePayEnrollment,
   useSelfEnroll,
   WEEKDAY_LABEL,
@@ -80,6 +83,16 @@ function schedule(c: { weekday: number | null; start_time: string | null }) {
 export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
   const { data: classes, isLoading } = useOpenClasses();
   const [enrolling, setEnrolling] = useState<OpenClass | null>(null);
+  const line = useOwnWaitlist();
+  const toggleLine = (c: OpenClass, join: boolean) =>
+    line.mutate(
+      { classId: c.id, join },
+      {
+        onSuccess: () =>
+          toast.success(join ? "Você entrou na lista de espera" : "Você saiu da lista de espera"),
+        onError: (e) => toast.error(apiErrorMessage(e, "Não foi possível.")),
+      },
+    );
 
   if (isLoading) return <CardGridSkeleton />;
   if (!classes?.length) return <EmptyState>Nenhuma turma com inscrições abertas agora.</EmptyState>;
@@ -90,6 +103,8 @@ export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
         {classes.map((c) => {
           const full = c.seats_left === 0;
           const missing = c.missing_prerequisites;
+          const waiting = c.my_waitlist;
+          const offered = !!waiting?.offer_expires_at;
           return (
             <Card key={c.id} data-testid="open-class">
               <CardContent className="flex h-full flex-col gap-3 p-5">
@@ -146,6 +161,15 @@ export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
                       : `Requer: ${c.prerequisites.map((p) => p.name).join(", ")} ✓`}
                   </p>
                 )}
+                {offered && (
+                  <p
+                    className="rounded-md bg-emerald-500/10 px-2 py-1.5 text-xs font-medium text-emerald-800 dark:text-emerald-300"
+                    data-testid="waitlist-offer"
+                  >
+                    Abriu uma vaga para você! Ela fica reservada até{" "}
+                    {formatDateTime(waiting!.offer_expires_at!)}.
+                  </p>
+                )}
                 <div className="mt-auto pt-2">
                   {c.my_enrollment ? (
                     <div className="flex items-center gap-2">
@@ -154,18 +178,56 @@ export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
                         Ver matrícula
                       </Button>
                     </div>
-                  ) : (
+                  ) : waiting && !offered ? (
+                    <div
+                      className="flex flex-wrap items-center gap-2"
+                      data-testid="waitlist-status"
+                    >
+                      <Badge variant="secondary">
+                        Lista de espera · {waiting.position}º da fila
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="link"
+                        disabled={line.isPending}
+                        onClick={() => toggleLine(c, false)}
+                      >
+                        Sair da lista
+                      </Button>
+                    </div>
+                  ) : full && !missing.length ? (
                     <Button
                       size="sm"
-                      disabled={full || missing.length > 0}
-                      onClick={() => setEnrolling(c)}
+                      variant="outline"
+                      disabled={line.isPending}
+                      onClick={() => toggleLine(c, true)}
                     >
-                      {full
-                        ? "Sem vagas"
-                        : missing.length
-                          ? "Pré-requisito pendente"
-                          : "Inscrever-me"}
+                      Entrar na lista de espera
                     </Button>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        disabled={full || missing.length > 0}
+                        onClick={() => setEnrolling(c)}
+                      >
+                        {full
+                          ? "Sem vagas"
+                          : missing.length
+                            ? "Pré-requisito pendente"
+                            : "Inscrever-me"}
+                      </Button>
+                      {offered && (
+                        <Button
+                          size="sm"
+                          variant="link"
+                          disabled={line.isPending}
+                          onClick={() => toggleLine(c, false)}
+                        >
+                          Não quero mais
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -362,6 +424,22 @@ function MyAttendance({ enrollment: e }: { enrollment: MyEnrollment }) {
           );
         })}
       </ul>
+      {e.attendance.lessons.some((l) => l.materials.length > 0) && (
+        <div className="space-y-2 border-t pt-2" data-testid="my-materials">
+          <p className="text-xs font-medium text-muted-foreground">Materiais</p>
+          {e.attendance.lessons
+            .filter((l) => l.materials.length > 0)
+            .map((l) => (
+              <div key={l.id} className="space-y-0.5">
+                <p className="text-xs text-muted-foreground">
+                  Aula {l.order}
+                  {l.title ? ` — ${l.title}` : ""}
+                </p>
+                <MaterialLinks materials={l.materials} />
+              </div>
+            ))}
+        </div>
+      )}
       {e.status === "active" && e.attendance.percent != null && !e.meets_attendance && (
         <p className="text-xs text-amber-700 dark:text-amber-400">
           Sua presença está abaixo do mínimo. Fale com o professor se precisar de ajuda para repor
