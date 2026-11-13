@@ -9,8 +9,8 @@ import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { ApiError, apiErrorMessage } from "@/lib/api/client";
-import { useAuth, isEventProducer } from "@/lib/api/auth";
-import { useEvent, EVENT_TYPE_LABEL } from "@/lib/api/production";
+import { capabilitiesOf, useAuth } from "@/lib/api/auth";
+import { useEvent, EVENT_STATUS_LABEL, EVENT_TYPE_LABEL } from "@/lib/api/production";
 import { MINISTRY_LABEL } from "@/lib/api/ministries";
 import {
   useMyRegistration,
@@ -34,13 +34,6 @@ export const Route = createFileRoute("/app/eventos_/$id")({
   ),
 });
 
-const EVENT_STATUS_LABEL: Record<string, string> = {
-  planning: "Planejamento",
-  confirmed: "Confirmado",
-  in_progress: "Em andamento",
-  closed: "Encerrado",
-};
-
 function EventDetail() {
   const { id } = Route.useParams();
   const { me } = useAuth();
@@ -62,7 +55,9 @@ function EventDetail() {
     minute: "2-digit",
   });
 
-  const canManage = !!me && (me.is_manager || isEventProducer(me));
+  // The production panel: whoever manages the event, plus ministry members
+  // (they follow the rundown and report their part).
+  const showProduction = event.can_manage || capabilitiesOf(me).events.production;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
@@ -128,16 +123,16 @@ function EventDetail() {
         </DetailSection>
       )}
 
-      {canManage && (
+      {showProduction && (
         <DetailSection title="Produção">
           <Card>
             <CardContent className="p-5">
               <Link
-                to="/app/producao/eventos/$id"
+                to="/app/eventos/$id/producao"
                 params={{ id: event.id }}
                 className="text-sm text-primary hover:underline"
               >
-                Abrir painel completo de produção (ordem do culto, escala, delegações)
+                Abrir painel de produção (ordem do culto, escala, delegações)
               </Link>
             </CardContent>
           </Card>

@@ -56,6 +56,26 @@ export interface Me {
   // Campuses whose courses the person is in charge of (responsável pelos cursos do campus).
   led_campuses_courses: LedCampus[];
   total_points: number;
+  /** Per-area flags computed by the backend's permission rules; they drive the
+   *  tabs of each area screen. They never exclude each other. */
+  capabilities: Capabilities;
+}
+
+export interface Capabilities {
+  cells: { lead: boolean; coordinate: boolean };
+  courses: { teach: boolean; coordinate: boolean; coordinate_all: boolean };
+  events: { create: boolean; produce: boolean; production: boolean };
+}
+
+const NO_CAPABILITIES: Capabilities = {
+  cells: { lead: false, coordinate: false },
+  courses: { teach: false, coordinate: false, coordinate_all: false },
+  events: { create: false, produce: false, production: false },
+};
+
+/** The person's capabilities, or all-false while loading / signed out. */
+export function capabilitiesOf(me: Me | undefined): Capabilities {
+  return me?.capabilities ?? NO_CAPABILITIES;
 }
 
 export async function login(email: string, password: string) {
@@ -131,10 +151,9 @@ export function deriveRoleLabel(me: Me | undefined): string {
   return "Membro";
 }
 
-// A "ministry leader" account (local or general, not the mega-church manager) only
-// has Ministérios to manage — the other areas (Campus, Pessoas, Eventos...) are out
-// of their scope. Células is the one exception: it stays visible for a ministry
-// leader who also leads/co-leads a célula, so they can reach the GT they run.
+// A "ministry leader" account (local or general, not the mega-church manager)
+// doesn't get the managerial areas (Dashboard, Campus, Pessoas). The personal
+// areas — Células, Eventos, Cursos — are never hidden: their tabs adapt instead.
 export function isMinistryLeaderOnly(me: Me | undefined): boolean {
   return (
     !!me && !me.is_manager && (me.led_ministries.length > 0 || me.general_led_kinds.length > 0)
@@ -165,13 +184,6 @@ export function hasAnyLeadership(me: Me | undefined): boolean {
 // managerial areas aren't in their scope.
 export function isReconciliadorOnly(me: Me | undefined): boolean {
   return !!me && !me.is_manager && me.is_reconciliador && !hasAnyLeadership(me);
-}
-
-export function hasCellLeadership(me: Me | undefined): boolean {
-  return (
-    !!me &&
-    (me.led_cells.length > 0 || me.is_cells_general_leader || me.led_campuses_cells.length > 0)
-  );
 }
 
 // Church-wide cell powers: define seasons, manage every cell. Mirrors the

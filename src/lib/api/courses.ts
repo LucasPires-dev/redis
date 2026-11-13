@@ -12,6 +12,10 @@ export interface Course {
   campus: CampusMini | null;
   class_count: number;
   total_enrolled: number;
+  /** Edit/delete the course. */
+  can_manage: boolean;
+  /** Open a class (for a church-wide course, local coordinators at their campus). */
+  can_add_class: boolean;
   created_at: string;
 }
 
@@ -317,6 +321,15 @@ export function useCourseClasses(courseId: string) {
     queryKey: ["course-classes", courseId],
     queryFn: () => apiList<CourseClass>(`/api/course-classes/?course_id=${courseId}`),
     enabled: !!courseId,
+  });
+}
+
+/** Classes the person teaches or assists ("Minhas turmas"). */
+export function useTaughtClasses(enabled = true) {
+  return useQuery({
+    queryKey: ["course-classes", "teaching"],
+    queryFn: () => apiList<CourseClass>("/api/course-classes/?teaching=1"),
+    enabled,
   });
 }
 

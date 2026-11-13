@@ -1,6 +1,6 @@
 /**
  * End-to-end tests for the Courses module:
- *  - Courses listing page loads and shows content
+ *  - Courses management tab (Gestão) loads and shows content
  *  - Create course dialog opens, validates, and submits
  *  - Course detail page shows stats and turma list
  *  - Create class (turma) dialog works
@@ -20,13 +20,13 @@ describe("Courses — Listing page", () => {
   });
 
   it("loads the courses page and shows heading", () => {
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains("Cursos", { timeout: 15000 }).should("be.visible");
-    cy.contains("Formação disponível").should("be.visible");
+    cy.contains("Cursos e turmas sob a sua coordenação").should("be.visible");
   });
 
   it("shows the 'Novo curso' button", () => {
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains("button", "Novo curso", { timeout: 10000 }).should("be.visible");
   });
 });
@@ -34,7 +34,7 @@ describe("Courses — Listing page", () => {
 describe("Courses — Create course dialog", () => {
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains("Cursos", { timeout: 15000 }).should("be.visible");
   });
 
@@ -87,7 +87,7 @@ describe("Courses — Create course dialog", () => {
 describe("Courses — Course detail", () => {
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains(COURSE_NAME, { timeout: 15000 }).closest("a").click();
   });
 
@@ -115,7 +115,7 @@ describe("Courses — Course detail", () => {
 describe("Courses — Create class (turma) dialog", () => {
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains(COURSE_NAME, { timeout: 15000 }).closest("a").click();
     cy.contains("button", "Nova turma", { timeout: 10000 }).should("be.visible");
   });
@@ -173,7 +173,7 @@ describe("Courses — Create class (turma) dialog", () => {
 describe("Courses — Class detail page", () => {
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains(COURSE_NAME, { timeout: 15000 }).closest("a").click();
     cy.contains(CLASS_NAME, { timeout: 10000 }).closest("a").click();
   });
@@ -208,7 +208,7 @@ describe("Courses — Class detail page", () => {
 describe("Courses — Create lesson dialog", () => {
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains(COURSE_NAME, { timeout: 15000 }).closest("a").click();
     cy.contains(CLASS_NAME, { timeout: 10000 }).closest("a").click();
     cy.contains("button", "Nova aula", { timeout: 10000 }).should("be.visible");
@@ -249,7 +249,7 @@ describe("Courses — Create lesson dialog", () => {
 describe("Courses — Alunos tab and enrollment", () => {
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains(COURSE_NAME, { timeout: 15000 }).closest("a").click();
     cy.contains(CLASS_NAME, { timeout: 10000 }).closest("a").click();
     cy.get("[role='tablist']", { timeout: 10000 })
@@ -285,7 +285,7 @@ describe("Courses — Alunos tab and enrollment", () => {
 describe("Courses — Professores tab and teacher assignment", () => {
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains(COURSE_NAME, { timeout: 15000 }).closest("a").click();
     cy.contains(CLASS_NAME, { timeout: 10000 }).closest("a").click();
     // Click the Professores tab trigger specifically (tab text includes count)
@@ -325,7 +325,7 @@ describe("Courses — Navigation flow", () => {
   });
 
   it("navigates from listing → course → class → back to course → back to listing", () => {
-    cy.visit("/app/cursos");
+    cy.visit("/app/cursos/gestao");
     cy.contains(COURSE_NAME, { timeout: 15000 }).closest("a").click();
     cy.contains("h1", COURSE_NAME, { timeout: 10000 }).should("be.visible");
 
@@ -338,8 +338,8 @@ describe("Courses — Navigation flow", () => {
     cy.contains("Nova turma").should("be.visible");
 
     // Back link to courses listing
-    cy.contains("a", "Cursos").click();
-    cy.url().should("include", "/app/cursos");
-    cy.contains("Formação disponível", { timeout: 10000 }).should("be.visible");
+    cy.get("main").contains("a", "Cursos").click();
+    cy.url().should("include", "/app/cursos/gestao");
+    cy.contains("Cursos e turmas sob a sua coordenação", { timeout: 10000 }).should("be.visible");
   });
 });

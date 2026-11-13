@@ -23,7 +23,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { useMe } from "@/lib/api/auth";
+import { capabilitiesOf, useMe } from "@/lib/api/auth";
 import {
   useCreateCourseClass,
   useUpdateCourseClass,
@@ -75,6 +75,17 @@ function toDraft(item: ClassFeeItem): ItemDraft {
 export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClass }: Props) {
   const { data: me } = useMe();
   const { data: campuses } = useCampuses();
+  // Campuses the person may open a class at: all for church-wide coordinators,
+  // otherwise the ones they run (plus the class's own campus when editing).
+  const ownCampusIds = new Set(
+    [...(me?.led_campuses ?? []), ...(me?.led_campuses_courses ?? [])].map((c) => c.id),
+  );
+  const campusOptions = (campuses ?? []).filter(
+    (c) =>
+      capabilitiesOf(me).courses.coordinate_all ||
+      ownCampusIds.has(c.id) ||
+      c.id === courseClass?.campus.id,
+  );
   const createClass = useCreateCourseClass();
   const updateClass = useUpdateCourseClass(courseClass?.id ?? "");
   const editing = !!courseClass;
@@ -118,8 +129,11 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
   }, [open, courseClass?.id]);
 
   useEffect(() => {
-    if (open && !courseClass && !campusId && me?.campus?.id) setCampusId(me.campus.id);
-  }, [open, courseClass, campusId, me?.campus?.id]);
+    if (open && !courseClass && !campusId && campusOptions.length) {
+      const own = campusOptions.find((c) => c.id === me?.campus?.id);
+      setCampusId((own ?? campusOptions[0]).id);
+    }
+  }, [open, courseClass, campusId, me?.campus?.id, campusOptions]);
 
   const updateItem = (key: string, patch: Partial<ItemDraft>) =>
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, ...patch } : i)));
@@ -213,7 +227,7 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                {(campuses ?? []).map((c) => (
+                {campusOptions.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>

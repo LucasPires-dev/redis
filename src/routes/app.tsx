@@ -8,8 +8,6 @@ import {
   Sparkles,
   Calendar,
   GraduationCap,
-  BookOpenCheck,
-  Clapperboard,
   ChevronsUpDown,
   LogOut,
   UserCog,
@@ -41,10 +39,8 @@ import {
 import { hasAccessToken } from "@/lib/api/client";
 import { RouteError } from "@/components/RouteError";
 import {
-  canCoordinateCells,
   canManageResponsibles,
   deriveRoleLabel,
-  hasCellLeadership,
   isMinistryLeaderOnly,
   isReconciliadorOnly,
   useAuth,
@@ -62,7 +58,7 @@ const NAV: {
   exact?: boolean;
   hideForMinistryLeader?: boolean;
   /** Show only when this predicate returns true (checked in AppSidebar). */
-  visibleWhen?: "cellCoordinator" | "responsibleManager";
+  visibleWhen?: "responsibleManager";
 }[] = [
   {
     to: "/app",
@@ -73,20 +69,15 @@ const NAV: {
   },
   { to: "/app/campus", label: "Campus", icon: Building2, hideForMinistryLeader: true },
   { to: "/app/ministerios", label: "Ministérios", icon: HeartHandshake },
-  { to: "/app/producao", label: "Produção", icon: Clapperboard },
   { to: "/app/pessoas", label: "Pessoas", icon: Users, hideForMinistryLeader: true },
-  { to: "/app/celulas", label: "Células", icon: Sparkles, hideForMinistryLeader: true },
-  {
-    to: "/app/celulas/coordination",
-    label: "Coord. Células",
-    icon: Sparkles,
-    hideForMinistryLeader: true,
-    visibleWhen: "cellCoordinator",
-  },
-  { to: "/app/eventos", label: "Eventos", icon: Calendar, hideForMinistryLeader: true },
-  { to: "/app/cursos", label: "Cursos", icon: GraduationCap, hideForMinistryLeader: true },
-  // Everyone: open classes to enroll in and their own enrollments.
-  { to: "/app/meus-cursos", label: "Meus cursos", icon: BookOpenCheck },
+  // Everyone: own cells; coordinators get the Coordenação tab inside (see app.celulas.tsx).
+  { to: "/app/celulas", label: "Células", icon: Sparkles },
+  // Everyone: upcoming events and own registrations; producers and ministry
+  // people get the Produção and Demandas tabs inside (see app.eventos.tsx).
+  { to: "/app/eventos", label: "Eventos", icon: Calendar },
+  // Everyone: open classes and own enrollments; teachers and coordinators get
+  // extra tabs inside (see app.cursos.tsx).
+  { to: "/app/cursos", label: "Cursos", icon: GraduationCap },
   // Appointing responsibles: manager, campus leaders and general area responsibles.
   {
     to: "/app/responsaveis",
@@ -139,12 +130,9 @@ function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { me } = useAuth();
   const restrictedNav = isMinistryLeaderOnly(me) || isReconciliadorOnly(me);
-  const isCellCoordinator = canCoordinateCells(me) || (me?.led_campuses_cells ?? []).length > 0;
   const items = NAV.filter((item) => {
-    if (item.visibleWhen === "cellCoordinator" && !isCellCoordinator) return false;
     if (item.visibleWhen === "responsibleManager" && !canManageResponsibles(me)) return false;
-    if (!item.hideForMinistryLeader || !restrictedNav) return true;
-    return item.to === "/app/celulas" && hasCellLeadership(me);
+    return !item.hideForMinistryLeader || !restrictedNav;
   });
   return (
     <Sidebar collapsible="icon">
