@@ -25,6 +25,8 @@ import { Route as AppResponsaveisRouteImport } from './routes/app.responsaveis'
 import { Route as AppCampusIdRouteImport } from './routes/app.campus_.$id'
 import { Route as AppCelulasIndexRouteImport } from './routes/app.celulas.index'
 import { Route as AppCelulasCoordenacaoRouteImport } from './routes/app.celulas.coordenacao'
+import { Route as AppCelulasRelatoriosRouteImport } from './routes/app.celulas.relatorios'
+import { Route as AppCelulasSupervisaoRouteImport } from './routes/app.celulas.supervisao'
 import { Route as AppCelulasIdRouteImport } from './routes/app.celulas_.$id'
 import { Route as AppCelulasCoordinationRouteImport } from './routes/app.celulas_.coordination'
 import { Route as AppCursosIndexRouteImport } from './routes/app.cursos.index'
@@ -125,6 +127,16 @@ const AppCelulasIndexRoute = AppCelulasIndexRouteImport.update({
 const AppCelulasCoordenacaoRoute = AppCelulasCoordenacaoRouteImport.update({
   id: '/coordenacao',
   path: '/coordenacao',
+  getParentRoute: () => AppCelulasRoute,
+} as any)
+const AppCelulasRelatoriosRoute = AppCelulasRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AppCelulasRoute,
+} as any)
+const AppCelulasSupervisaoRoute = AppCelulasSupervisaoRouteImport.update({
+  id: '/supervisao',
+  path: '/supervisao',
   getParentRoute: () => AppCelulasRoute,
 } as any)
 const AppCelulasIdRoute = AppCelulasIdRouteImport.update({
@@ -252,6 +264,8 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
+  '/app/celulas/relatorios': typeof AppCelulasRelatoriosRoute
+  '/app/celulas/supervisao': typeof AppCelulasSupervisaoRoute
   '/app/celulas/$id': typeof AppCelulasIdRoute
   '/app/celulas/coordination': typeof AppCelulasCoordinationRoute
   '/app/cursos/gestao': typeof AppCursosGestaoRoute
@@ -287,6 +301,8 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
+  '/app/celulas/relatorios': typeof AppCelulasRelatoriosRoute
+  '/app/celulas/supervisao': typeof AppCelulasSupervisaoRoute
   '/app/celulas/$id': typeof AppCelulasIdRoute
   '/app/celulas/coordination': typeof AppCelulasCoordinationRoute
   '/app/cursos/gestao': typeof AppCursosGestaoRoute
@@ -327,6 +343,8 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/app/campus_/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
+  '/app/celulas/relatorios': typeof AppCelulasRelatoriosRoute
+  '/app/celulas/supervisao': typeof AppCelulasSupervisaoRoute
   '/app/celulas_/$id': typeof AppCelulasIdRoute
   '/app/celulas_/coordination': typeof AppCelulasCoordinationRoute
   '/app/cursos/gestao': typeof AppCursosGestaoRoute
@@ -368,6 +386,8 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/campus/$id'
     | '/app/celulas/coordenacao'
+    | '/app/celulas/relatorios'
+    | '/app/celulas/supervisao'
     | '/app/celulas/$id'
     | '/app/celulas/coordination'
     | '/app/cursos/gestao'
@@ -403,6 +423,8 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/campus/$id'
     | '/app/celulas/coordenacao'
+    | '/app/celulas/relatorios'
+    | '/app/celulas/supervisao'
     | '/app/celulas/$id'
     | '/app/celulas/coordination'
     | '/app/cursos/gestao'
@@ -442,6 +464,8 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/campus_/$id'
     | '/app/celulas/coordenacao'
+    | '/app/celulas/relatorios'
+    | '/app/celulas/supervisao'
     | '/app/celulas_/$id'
     | '/app/celulas_/coordination'
     | '/app/cursos/gestao'
@@ -584,6 +608,20 @@ declare module '@tanstack/react-router' {
       path: '/coordenacao'
       fullPath: '/app/celulas/coordenacao'
       preLoaderRoute: typeof AppCelulasCoordenacaoRouteImport
+      parentRoute: typeof AppCelulasRoute
+    }
+    '/app/celulas/relatorios': {
+      id: '/app/celulas/relatorios'
+      path: '/relatorios'
+      fullPath: '/app/celulas/relatorios'
+      preLoaderRoute: typeof AppCelulasRelatoriosRouteImport
+      parentRoute: typeof AppCelulasRoute
+    }
+    '/app/celulas/supervisao': {
+      id: '/app/celulas/supervisao'
+      path: '/supervisao'
+      fullPath: '/app/celulas/supervisao'
+      preLoaderRoute: typeof AppCelulasSupervisaoRouteImport
       parentRoute: typeof AppCelulasRoute
     }
     '/app/celulas_/$id': {
@@ -738,11 +776,15 @@ declare module '@tanstack/react-router' {
 
 interface AppCelulasRouteChildren {
   AppCelulasCoordenacaoRoute: typeof AppCelulasCoordenacaoRoute
+  AppCelulasRelatoriosRoute: typeof AppCelulasRelatoriosRoute
+  AppCelulasSupervisaoRoute: typeof AppCelulasSupervisaoRoute
   AppCelulasIndexRoute: typeof AppCelulasIndexRoute
 }
 
 const AppCelulasRouteChildren: AppCelulasRouteChildren = {
   AppCelulasCoordenacaoRoute: AppCelulasCoordenacaoRoute,
+  AppCelulasRelatoriosRoute: AppCelulasRelatoriosRoute,
+  AppCelulasSupervisaoRoute: AppCelulasSupervisaoRoute,
   AppCelulasIndexRoute: AppCelulasIndexRoute,
 }
 

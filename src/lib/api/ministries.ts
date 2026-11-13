@@ -46,6 +46,8 @@ export interface CampusMini {
   id: string;
   name: string;
   city: string;
+  /** Present in the campus list (/api/campuses/); nested minis leave it out. */
+  church?: { id: string; name: string };
 }
 
 export interface Ministry {

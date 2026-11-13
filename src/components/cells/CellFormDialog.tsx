@@ -115,9 +115,15 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
   const campusOptions = (campuses ?? []).filter(
     (c) => allowedCampusIds === null || allowedCampusIds.has(c.id) || c.id === cell?.campus.id,
   );
+  // Seasons belong to the campus's church (the API rejects any other one).
+  const churchOf = (campusId: string) => campuses?.find((c) => c.id === campusId)?.church?.id;
+  const seasonsOf = (campusId: string) => {
+    const churchId = churchOf(campusId);
+    return (seasons ?? []).filter((s) => !churchId || s.church === churchId);
+  };
   // Past seasons are history: new cells go into the current or a future season.
   const today = todayISO();
-  const seasonOptions = (seasons ?? []).filter(
+  const seasonOptions = seasonsOf(form.campus_id).filter(
     (s) => s.end_date >= today || s.id === cell?.season?.id,
   );
   const season = (seasons ?? []).find((s) => s.id === form.season_id);
@@ -135,8 +141,9 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
 
   // New cell: default to the current season and, for a single allowed campus, to
   // that campus — as soon as they're known, without touching other fields.
-  const currentSeasonId = (seasons ?? []).find((s) => s.is_current)?.id ?? "";
   const onlyCampusId = campusOptions.length === 1 ? campusOptions[0].id : "";
+  const currentSeasonId =
+    seasonsOf(form.campus_id || onlyCampusId).find((s) => s.is_current)?.id ?? "";
   useEffect(() => {
     if (!open || cell) return;
     setForm((f) => ({
@@ -147,7 +154,14 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
   }, [open, cell, currentSeasonId, onlyCampusId]);
 
   const set = <K extends keyof CellInput>(key: K, value: CellInput[K]) => {
-    setForm((f) => ({ ...f, [key]: value }));
+    setForm((f) => {
+      const next = { ...f, [key]: value };
+      // Another church's campus: its own current season replaces the chosen one.
+      if (key === "campus_id" && !seasonsOf(next.campus_id).some((s) => s.id === f.season_id)) {
+        next.season_id = seasonsOf(next.campus_id).find((s) => s.is_current)?.id ?? "";
+      }
+      return next;
+    });
     setServerErrors((e) => ({ ...e, [key]: undefined }));
   };
 
@@ -266,7 +280,8 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
               </Select>
               {seasonOptions.length === 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Nenhuma temporada aberta. Peça ao responsável geral para criar uma.
+                  Nenhuma temporada aberta para a igreja deste campus. Peça ao responsável geral
+                  para criar uma.
                 </p>
               )}
               <FieldError message={errors.season_id} />
