@@ -44,6 +44,7 @@ import {
   type FeeSelection,
 } from "@/lib/fee-selection";
 import { FeeChoicesPicker } from "@/components/courses/FeeChoicesPicker";
+import { MyTracks } from "@/components/courses/Tracks";
 import { PaymentStatusBadge } from "@/components/courses/PaymentStatusBadge";
 import { attendanceLabel, attendanceTone } from "@/lib/attendance";
 import { CertificateButton } from "@/components/courses/CertificateButton";
@@ -88,6 +89,7 @@ export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {classes.map((c) => {
           const full = c.seats_left === 0;
+          const missing = c.missing_prerequisites;
           return (
             <Card key={c.id} data-testid="open-class">
               <CardContent className="flex h-full flex-col gap-3 p-5">
@@ -130,6 +132,20 @@ export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
                     </li>
                   )}
                 </ul>
+                {c.prerequisites.length > 0 && (
+                  <p
+                    className={
+                      missing.length
+                        ? "text-xs text-amber-700 dark:text-amber-400"
+                        : "text-xs text-muted-foreground"
+                    }
+                    data-testid="open-class-prerequisites"
+                  >
+                    {missing.length
+                      ? `Conclua antes: ${missing.map((p) => p.name).join(", ")}`
+                      : `Requer: ${c.prerequisites.map((p) => p.name).join(", ")} ✓`}
+                  </p>
+                )}
                 <div className="mt-auto pt-2">
                   {c.my_enrollment ? (
                     <div className="flex items-center gap-2">
@@ -139,8 +155,16 @@ export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
                       </Button>
                     </div>
                   ) : (
-                    <Button size="sm" disabled={full} onClick={() => setEnrolling(c)}>
-                      {full ? "Sem vagas" : "Inscrever-me"}
+                    <Button
+                      size="sm"
+                      disabled={full || missing.length > 0}
+                      onClick={() => setEnrolling(c)}
+                    >
+                      {full
+                        ? "Sem vagas"
+                        : missing.length
+                          ? "Pré-requisito pendente"
+                          : "Inscrever-me"}
                     </Button>
                   )}
                 </div>
@@ -277,13 +301,20 @@ function EnrollDialog({
 
 export function MyEnrollments() {
   const { data: mine, isLoading } = useMyEnrollments();
-  if (isLoading) return <CardGridSkeleton />;
-  if (!mine?.length) return <EmptyState>Você ainda não tem matrículas.</EmptyState>;
   return (
-    <div className="space-y-3">
-      {mine.map((e) => (
-        <MyEnrollmentCard key={e.id} enrollment={e} />
-      ))}
+    <div className="space-y-6">
+      <MyTracks />
+      {isLoading ? (
+        <CardGridSkeleton />
+      ) : !mine?.length ? (
+        <EmptyState>Você ainda não tem matrículas.</EmptyState>
+      ) : (
+        <div className="space-y-3">
+          {mine.map((e) => (
+            <MyEnrollmentCard key={e.id} enrollment={e} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

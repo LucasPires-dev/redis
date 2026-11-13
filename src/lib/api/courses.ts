@@ -5,11 +5,18 @@ import type { PersonMini } from "./people";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
+export interface CourseMini {
+  id: string;
+  name: string;
+}
+
 export interface Course {
   id: string;
   name: string;
   description: string;
   campus: CampusMini | null;
+  /** Courses to complete before enrolling in this one. */
+  prerequisites: CourseMini[];
   class_count: number;
   total_enrolled: number;
   /** Edit/delete the course. */
@@ -167,6 +174,9 @@ export interface OpenClass {
   base_price_cents: number;
   seats_left: number | null;
   my_enrollment: { id: string; payment_status: PaymentStatus } | null;
+  prerequisites: CourseMini[];
+  /** Prerequisites the person hasn't completed: they can't enroll yet. */
+  missing_prerequisites: CourseMini[];
 }
 
 export interface FinanceSummary {
@@ -360,6 +370,100 @@ export function useCreateCourse() {
   });
 }
 
+/** Replaces the course's prerequisites. */
+export function useSetPrerequisites(courseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (prerequisiteIds: string[]) =>
+      apiFetch<Course>(`/api/courses/${courseId}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ prerequisite_ids: prerequisiteIds }),
+      }),
+    onSuccess: (course) => {
+      qc.setQueryData(["courses", courseId], course);
+      qc.invalidateQueries({ queryKey: ["courses"] });
+      qc.invalidateQueries({ queryKey: ["open-classes"] });
+    },
+  });
+}
+
+// ── Tracks (trilhas) ───────────────────────────────────────────────────────
+
+export type TrackStepState = "completed" | "in_progress" | "not_started";
+
+export const TRACK_STEP_STATE_LABEL: Record<TrackStepState, string> = {
+  completed: "Concluído",
+  in_progress: "Cursando",
+  not_started: "Não iniciado",
+};
+
+export interface CourseTrack {
+  id: string;
+  name: string;
+  description: string;
+  steps: { id: string; order: number; course: CourseMini }[];
+  /** Church-wide coordination keeps the tracks. */
+  can_manage: boolean;
+  my_progress: {
+    completed: number;
+    total: number;
+    next_course: CourseMini | null;
+    steps: {
+      id: string;
+      order: number;
+      course: CourseMini & { description: string };
+      state: TrackStepState;
+      /** Classes of this course open for enrollment now. */
+      open_classes: number;
+    }[];
+  };
+}
+
+export function useTracks() {
+  return useQuery({
+    queryKey: ["course-tracks"],
+    queryFn: () => apiList<CourseTrack>("/api/course-tracks/"),
+  });
+}
+
+export function useSaveTrack() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id?: string;
+      name: string;
+      description: string;
+      course_ids: string[];
+    }) =>
+      apiFetch<CourseTrack>(id ? `/api/course-tracks/${id}/` : "/api/course-tracks/", {
+        method: id ? "PATCH" : "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["course-tracks"] }),
+  });
+}
+
+export function useDeleteTrack() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`/api/course-tracks/${id}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["course-tracks"] }),
+  });
+}
+
+/** The prerequisites an API error says are missing (enrolling without them). */
+export function missingPrerequisitesOf(error: unknown): CourseMini[] | null {
+  if (!error || typeof error !== "object" || !("detail" in error)) return null;
+  const detail = (error as { detail: unknown }).detail;
+  if (detail && typeof detail === "object" && "missing_prerequisites" in detail) {
+    return (detail as { missing_prerequisites: CourseMini[] }).missing_prerequisites;
+  }
+  return null;
+}
+
 // ── Classes (turmas) ───────────────────────────────────────────────────────
 
 export function useCourseClasses(courseId: string) {
@@ -483,6 +587,8 @@ export function useAddEnrollment() {
       send_charge?: boolean;
       /** The person's CPF, when they have none on file and a link is wanted. */
       cpf?: string;
+      /** Enroll even without the course's prerequisites. */
+      override_prerequisites?: boolean;
     }) =>
       apiFetch<Enrollment>(`/api/course-classes/${classId}/enrollments/`, {
         method: "POST",
