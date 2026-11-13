@@ -33,6 +33,7 @@ import { CourseClassFormDialog } from "@/components/courses/CourseClassFormDialo
 import { PaymentStatusBadge } from "@/components/courses/PaymentStatusBadge";
 import { CompleteClassDialog } from "@/components/courses/CompleteClassDialog";
 import { CertificateButton } from "@/components/courses/CertificateButton";
+import { ClassCareSection } from "@/components/courses/ClassCareSection";
 import { attendanceLabel, attendanceTone } from "@/lib/attendance";
 import { formatBRL } from "@/lib/api/payments";
 import {
@@ -241,6 +242,7 @@ function ClassDetail() {
               )}
             </div>
           </div>
+          <ClassCareSection courseClass={cc} />
           <CompleteClassDialog
             open={showComplete}
             onOpenChange={setShowComplete}

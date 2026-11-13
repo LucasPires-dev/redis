@@ -523,10 +523,100 @@ export function useCompleteClass(classId: string) {
       }),
     onSuccess: (roster) => {
       qc.setQueryData(["course-class-enrollments", classId], roster);
+      qc.invalidateQueries({ queryKey: ["course-class-care", classId] });
       qc.invalidateQueries({ queryKey: ["course-class", classId] });
       qc.invalidateQueries({ queryKey: ["lessons", classId] });
       qc.invalidateQueries({ queryKey: ["courses"] });
     },
+  });
+}
+
+// ── Reports and students to care for ───────────────────────────────────────
+
+export type ClassState = "upcoming" | "ongoing" | "finished";
+
+export const CLASS_STATE_LABEL: Record<ClassState, string> = {
+  upcoming: "Próxima",
+  ongoing: "Em andamento",
+  finished: "Encerrada",
+};
+
+export interface CourseReportRow {
+  id: string;
+  course: { id: string; name: string };
+  name: string;
+  campus: { id: string; name: string };
+  start_date: string | null;
+  end_date: string | null;
+  state: ClassState;
+  min_attendance_percent: number;
+  capacity: number | null;
+  /** Holding a seat: active + completed. */
+  enrolled: number;
+  active: number;
+  completed: number;
+  /** Dropped, cancelled or refunded after enrolling (expired reservations don't count). */
+  dropouts: number;
+  /** Over everyone who started (enrolled + dropouts). */
+  completion_rate: number | null;
+  dropout_rate: number | null;
+  lesson_count: number;
+  lessons_held: number;
+  attendance_rate: number | null;
+  to_care: number;
+  is_paid: boolean;
+  expected_cents: number;
+  received_cents: number;
+  outstanding_cents: number;
+}
+
+export interface CourseReport {
+  campuses: { id: string; name: string }[];
+  totals: {
+    classes: number;
+    ongoing: number;
+    enrolled: number;
+    active: number;
+    completed: number;
+    dropouts: number;
+    completion_rate: number | null;
+    dropout_rate: number | null;
+    attendance_rate: number | null;
+    to_care: number;
+    expected_cents: number;
+    received_cents: number;
+    outstanding_cents: number;
+  };
+  classes: CourseReportRow[];
+}
+
+/** Coordination report; filters applied by the API (campus, class state). */
+export function useCourseReport(filters: { campus?: string; state?: ClassState }) {
+  const params = new URLSearchParams();
+  if (filters.campus) params.set("campus", filters.campus);
+  if (filters.state) params.set("state", filters.state);
+  return useQuery({
+    queryKey: ["course-report", filters.campus ?? "", filters.state ?? ""],
+    queryFn: () => apiFetch<CourseReport>(`/api/course-classes/report/?${params}`),
+  });
+}
+
+export type CareReason = "absences_in_a_row" | "below_minimum";
+
+export interface CareStudent {
+  person: PersonMini;
+  reasons: CareReason[];
+  absences_in_a_row: number;
+  attendance: AttendanceSummary;
+  last_present_on: string | null;
+}
+
+/** Active students who need attention (absences in a row, below the minimum). */
+export function useClassCare(classId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["course-class-care", classId],
+    queryFn: () => apiFetch<CareStudent[]>(`/api/course-classes/${classId}/care/`),
+    enabled: !!classId && enabled,
   });
 }
 
@@ -618,8 +708,9 @@ export function useSaveAttendance() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["lesson-attendance", vars.lessonId] });
       qc.invalidateQueries({ queryKey: ["lessons", vars.classId] });
-      // Each student's attendance percentage in the roster.
+      // Each student's attendance percentage in the roster, and who to care for.
       qc.invalidateQueries({ queryKey: ["course-class-enrollments", vars.classId] });
+      qc.invalidateQueries({ queryKey: ["course-class-care", vars.classId] });
     },
   });
 }

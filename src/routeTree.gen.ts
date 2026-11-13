@@ -33,6 +33,7 @@ import { Route as AppCelulasCoordinationRouteImport } from './routes/app.celulas
 import { Route as AppCursosIndexRouteImport } from './routes/app.cursos.index'
 import { Route as AppCursosGestaoRouteImport } from './routes/app.cursos.gestao'
 import { Route as AppCursosMatriculasRouteImport } from './routes/app.cursos.matriculas'
+import { Route as AppCursosRelatoriosRouteImport } from './routes/app.cursos.relatorios'
 import { Route as AppCursosTurmasRouteImport } from './routes/app.cursos.turmas'
 import { Route as AppCursosIdRouteImport } from './routes/app.cursos_.$id'
 import { Route as AppEventosIndexRouteImport } from './routes/app.eventos.index'
@@ -170,6 +171,11 @@ const AppCursosMatriculasRoute = AppCursosMatriculasRouteImport.update({
   path: '/matriculas',
   getParentRoute: () => AppCursosRoute,
 } as any)
+const AppCursosRelatoriosRoute = AppCursosRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AppCursosRoute,
+} as any)
 const AppCursosTurmasRoute = AppCursosTurmasRouteImport.update({
   id: '/turmas',
   path: '/turmas',
@@ -277,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/app/celulas/coordination': typeof AppCelulasCoordinationRoute
   '/app/cursos/gestao': typeof AppCursosGestaoRoute
   '/app/cursos/matriculas': typeof AppCursosMatriculasRoute
+  '/app/cursos/relatorios': typeof AppCursosRelatoriosRoute
   '/app/cursos/turmas': typeof AppCursosTurmasRoute
   '/app/cursos/$id': typeof AppCursosIdRoute
   '/app/eventos/demandas': typeof AppEventosDemandasRoute
@@ -315,6 +322,7 @@ export interface FileRoutesByTo {
   '/app/celulas/coordination': typeof AppCelulasCoordinationRoute
   '/app/cursos/gestao': typeof AppCursosGestaoRoute
   '/app/cursos/matriculas': typeof AppCursosMatriculasRoute
+  '/app/cursos/relatorios': typeof AppCursosRelatoriosRoute
   '/app/cursos/turmas': typeof AppCursosTurmasRoute
   '/app/cursos/$id': typeof AppCursosIdRoute
   '/app/eventos/demandas': typeof AppEventosDemandasRoute
@@ -358,6 +366,7 @@ export interface FileRoutesById {
   '/app/celulas_/coordination': typeof AppCelulasCoordinationRoute
   '/app/cursos/gestao': typeof AppCursosGestaoRoute
   '/app/cursos/matriculas': typeof AppCursosMatriculasRoute
+  '/app/cursos/relatorios': typeof AppCursosRelatoriosRoute
   '/app/cursos/turmas': typeof AppCursosTurmasRoute
   '/app/cursos_/$id': typeof AppCursosIdRoute
   '/app/eventos/demandas': typeof AppEventosDemandasRoute
@@ -402,6 +411,7 @@ export interface FileRouteTypes {
     | '/app/celulas/coordination'
     | '/app/cursos/gestao'
     | '/app/cursos/matriculas'
+    | '/app/cursos/relatorios'
     | '/app/cursos/turmas'
     | '/app/cursos/$id'
     | '/app/eventos/demandas'
@@ -440,6 +450,7 @@ export interface FileRouteTypes {
     | '/app/celulas/coordination'
     | '/app/cursos/gestao'
     | '/app/cursos/matriculas'
+    | '/app/cursos/relatorios'
     | '/app/cursos/turmas'
     | '/app/cursos/$id'
     | '/app/eventos/demandas'
@@ -482,6 +493,7 @@ export interface FileRouteTypes {
     | '/app/celulas_/coordination'
     | '/app/cursos/gestao'
     | '/app/cursos/matriculas'
+    | '/app/cursos/relatorios'
     | '/app/cursos/turmas'
     | '/app/cursos_/$id'
     | '/app/eventos/demandas'
@@ -679,6 +691,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCursosMatriculasRouteImport
       parentRoute: typeof AppCursosRoute
     }
+    '/app/cursos/relatorios': {
+      id: '/app/cursos/relatorios'
+      path: '/relatorios'
+      fullPath: '/app/cursos/relatorios'
+      preLoaderRoute: typeof AppCursosRelatoriosRouteImport
+      parentRoute: typeof AppCursosRoute
+    }
     '/app/cursos/turmas': {
       id: '/app/cursos/turmas'
       path: '/turmas'
@@ -815,6 +834,7 @@ const AppCelulasRouteWithChildren = AppCelulasRoute._addFileChildren(
 interface AppCursosRouteChildren {
   AppCursosGestaoRoute: typeof AppCursosGestaoRoute
   AppCursosMatriculasRoute: typeof AppCursosMatriculasRoute
+  AppCursosRelatoriosRoute: typeof AppCursosRelatoriosRoute
   AppCursosTurmasRoute: typeof AppCursosTurmasRoute
   AppCursosIndexRoute: typeof AppCursosIndexRoute
 }
@@ -822,6 +842,7 @@ interface AppCursosRouteChildren {
 const AppCursosRouteChildren: AppCursosRouteChildren = {
   AppCursosGestaoRoute: AppCursosGestaoRoute,
   AppCursosMatriculasRoute: AppCursosMatriculasRoute,
+  AppCursosRelatoriosRoute: AppCursosRelatoriosRoute,
   AppCursosTurmasRoute: AppCursosTurmasRoute,
   AppCursosIndexRoute: AppCursosIndexRoute,
 }
