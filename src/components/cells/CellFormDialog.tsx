@@ -21,29 +21,46 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cellCampusIds, useMe } from "@/lib/api/auth";
 import {
+  CELL_AUDIENCE_LABEL,
+  CELL_AUDIENCES,
+  describeMissingFields,
   MEETING_DAY_LABEL,
   MEETING_DAYS,
   useCreateCell,
   useUpdateCell,
   type Cell,
+  type CellAudience,
   type CellInput,
+  type CellRequiredField,
   type MeetingDay,
 } from "@/lib/api/cells";
-import { apiErrorMessage } from "@/lib/api/client";
-import {
-  MINISTRY_LABEL,
-  PRODUCTION_MINISTRY_KINDS,
-  useCampuses,
-  type MinistryKind,
-} from "@/lib/api/ministries";
+import { ApiError, apiErrorMessage } from "@/lib/api/client";
+import { useCampuses } from "@/lib/api/ministries";
 import { formatDate, todayISO, useSeasons } from "@/lib/api/seasons";
 
-// Radix Select can't hold an empty string, so "none" stands for "not set".
-const NONE = "none";
+type FieldErrors = Partial<Record<keyof CellInput, string>>;
 
-const AUDIENCES = (Object.keys(MINISTRY_LABEL) as MinistryKind[]).filter(
-  (k) => !PRODUCTION_MINISTRY_KINDS.includes(k) && k !== "reconciliacao",
-);
+// Mirrors the backend's Cell.REQUIRED_FIELDS messages.
+const REQUIRED_MESSAGE: Record<CellRequiredField, string> = {
+  meeting_day: "Defina o dia do encontro.",
+  meeting_time: "Defina o horário do encontro.",
+  target_audience: "Defina o público-alvo.",
+};
+
+function validate(form: CellInput): FieldErrors {
+  const errors: FieldErrors = {};
+  if (!form.name.trim()) errors.name = "Dê um nome à célula.";
+  if (!form.campus_id) errors.campus_id = "Escolha o campus.";
+  if (!form.season_id) errors.season_id = "Escolha a temporada.";
+  (Object.keys(REQUIRED_MESSAGE) as CellRequiredField[]).forEach((field) => {
+    if (!form[field]) errors[field] = REQUIRED_MESSAGE[field];
+  });
+  return errors;
+}
+
+function FieldError({ message }: { message?: string }) {
+  return message ? <p className="text-xs text-destructive">{message}</p> : null;
+}
 
 interface Props {
   open: boolean;
@@ -90,6 +107,9 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
   const updateCell = useUpdateCell(cell?.id ?? "");
   const navigate = useNavigate();
   const [form, setForm] = useState<CellInput>(emptyForm);
+  // Errors show after the first submit attempt (plus any the server returns).
+  const [submitted, setSubmitted] = useState(false);
+  const [serverErrors, setServerErrors] = useState<FieldErrors>({});
 
   const allowedCampusIds = cellCampusIds(me);
   const campusOptions = (campuses ?? []).filter(
@@ -102,31 +122,60 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
   );
   const season = (seasons ?? []).find((s) => s.id === form.season_id);
 
-  // Reset whenever the dialog opens, defaulting to the current season and, for a
-  // single allowed campus, to that campus.
+  // Reset only when the dialog opens (or switches cell) — not when seasons or
+  // campuses finish loading, which used to wipe what was already typed.
   useEffect(() => {
     if (!open) return;
-    if (cell) {
-      setForm(fromCell(cell));
-      return;
-    }
-    const base = emptyForm();
-    base.season_id = (seasons ?? []).find((s) => s.is_current)?.id ?? "";
-    if (campusOptions.length === 1) base.campus_id = campusOptions[0].id;
-    setForm(base);
+    // An older cell missing required fields shows what to fill right away.
+    setSubmitted(!!cell && cell.missing_fields.length > 0);
+    setServerErrors({});
+    setForm(cell ? fromCell(cell) : emptyForm());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, cell?.id, seasons, campuses]);
+  }, [open, cell?.id]);
 
-  const set = <K extends keyof CellInput>(key: K, value: CellInput[K]) =>
+  // New cell: default to the current season and, for a single allowed campus, to
+  // that campus — as soon as they're known, without touching other fields.
+  const currentSeasonId = (seasons ?? []).find((s) => s.is_current)?.id ?? "";
+  const onlyCampusId = campusOptions.length === 1 ? campusOptions[0].id : "";
+  useEffect(() => {
+    if (!open || cell) return;
+    setForm((f) => ({
+      ...f,
+      season_id: f.season_id || currentSeasonId,
+      campus_id: f.campus_id || onlyCampusId,
+    }));
+  }, [open, cell, currentSeasonId, onlyCampusId]);
+
+  const set = <K extends keyof CellInput>(key: K, value: CellInput[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
+    setServerErrors((e) => ({ ...e, [key]: undefined }));
+  };
 
   const saving = createCell.isPending || updateCell.isPending;
-  const valid = form.name.trim() && form.campus_id && form.season_id;
+  const localErrors = validate(form);
+  const errors: FieldErrors = { ...(submitted ? localErrors : {}), ...serverErrors };
+  const missingRequired = (Object.keys(REQUIRED_MESSAGE) as CellRequiredField[]).filter(
+    (f) => localErrors[f],
+  );
 
   const submit = () => {
+    setSubmitted(true);
+    if (Object.keys(localErrors).length > 0) return;
     const payload = { ...form, name: form.name.trim() };
-    const onError = (e: unknown) =>
+    const onError = (e: unknown) => {
+      // Field errors from the API go next to their fields.
+      if (e instanceof ApiError && e.detail && typeof e.detail === "object") {
+        const fieldErrors: FieldErrors = {};
+        for (const [key, value] of Object.entries(e.detail as Record<string, unknown>)) {
+          const message = Array.isArray(value) ? value[0] : value;
+          if (key in form && typeof message === "string") {
+            fieldErrors[key as keyof CellInput] = message;
+          }
+        }
+        setServerErrors(fieldErrors);
+      }
       toast.error(apiErrorMessage(e, "Não foi possível salvar a célula."));
+    };
     if (cell) {
       updateCell.mutate(payload, {
         onSuccess: () => {
@@ -155,9 +204,24 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
         </DialogHeader>
 
         <div className="space-y-4">
+          {cell && cell.missing_fields.length > 0 && (
+            <p
+              role="alert"
+              className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300"
+            >
+              Esta célula está inativa até definir {describeMissingFields(cell.missing_fields)}.
+            </p>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="cell-name">Nome</Label>
-            <Input id="cell-name" value={form.name} onChange={(e) => set("name", e.target.value)} />
+            <Input
+              id="cell-name"
+              value={form.name}
+              aria-invalid={!!errors.name}
+              onChange={(e) => set("name", e.target.value)}
+            />
+            <FieldError message={errors.name} />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -168,7 +232,7 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
                 onValueChange={(v) => set("campus_id", v)}
                 disabled={!!cell && !cell.can_coordinate}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Campus">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
@@ -179,6 +243,7 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError message={errors.campus_id} />
             </div>
             <div className="space-y-1.5">
               <Label>Temporada</Label>
@@ -187,7 +252,7 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
                 onValueChange={(v) => set("season_id", v)}
                 disabled={!!cell}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Temporada">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
@@ -204,23 +269,22 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
                   Nenhuma temporada aberta. Peça ao responsável geral para criar uma.
                 </p>
               )}
+              <FieldError message={errors.season_id} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Dia do encontro</Label>
+              <Label>Dia do encontro *</Label>
               <Select
-                value={form.meeting_day ? String(form.meeting_day) : NONE}
-                onValueChange={(v) =>
-                  set("meeting_day", v === NONE ? null : (Number(v) as MeetingDay))
-                }
+                // "" keeps the Select controlled and shows the placeholder.
+                value={form.meeting_day ? String(form.meeting_day) : ""}
+                onValueChange={(v) => set("meeting_day", Number(v) as MeetingDay)}
               >
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger aria-label="Dia do encontro" aria-invalid={!!errors.meeting_day}>
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE}>Não definido</SelectItem>
                   {MEETING_DAYS.map((d) => (
                     <SelectItem key={d} value={String(d)}>
                       {MEETING_DAY_LABEL[d]}
@@ -228,36 +292,39 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError message={errors.meeting_day} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="cell-time">Horário</Label>
+              <Label htmlFor="cell-time">Horário *</Label>
               <Input
                 id="cell-time"
                 type="time"
                 value={form.meeting_time?.slice(0, 5) ?? ""}
+                aria-invalid={!!errors.meeting_time}
                 onChange={(e) => set("meeting_time", e.target.value || null)}
               />
+              <FieldError message={errors.meeting_time} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Público-alvo</Label>
+            <Label>Público-alvo *</Label>
             <Select
-              value={form.target_audience || NONE}
-              onValueChange={(v) => set("target_audience", v === NONE ? "" : (v as MinistryKind))}
+              value={form.target_audience}
+              onValueChange={(v) => set("target_audience", v as CellAudience)}
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger aria-label="Público-alvo" aria-invalid={!!errors.target_audience}>
+                <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NONE}>Todos</SelectItem>
-                {AUDIENCES.map((k) => (
+                {CELL_AUDIENCES.map((k) => (
                   <SelectItem key={k} value={k}>
-                    {MINISTRY_LABEL[k]}
+                    {CELL_AUDIENCE_LABEL[k]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <FieldError message={errors.target_audience} />
           </div>
 
           <div className="space-y-1.5">
@@ -306,11 +373,16 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="items-center gap-2">
+          {submitted && missingRequired.length > 0 && (
+            <p className="mr-auto text-xs text-muted-foreground">
+              Falta definir {describeMissingFields(missingRequired)}.
+            </p>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={submit} disabled={!valid || saving}>
+          <Button onClick={submit} disabled={saving}>
             {saving ? "Salvando…" : cell ? "Salvar" : "Criar célula"}
           </Button>
         </DialogFooter>

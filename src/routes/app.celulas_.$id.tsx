@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   Sparkles,
   Users,
   Calendar,
@@ -35,6 +36,8 @@ import { PersonSearch } from "@/components/cells/PersonSearch";
 import { RenewCellDialog } from "@/components/cells/RenewCellDialog";
 import { ApiError, apiErrorMessage } from "@/lib/api/client";
 import {
+  CELL_AUDIENCE_LABEL,
+  describeMissingFields,
   formatSchedule,
   useAddCellMember,
   useAssignCellLeader,
@@ -46,7 +49,6 @@ import {
   type LeadershipRole,
 } from "@/lib/api/cells";
 import { formatDate } from "@/lib/api/seasons";
-import { MINISTRY_LABEL } from "@/lib/api/ministries";
 import type { PersonMini } from "@/lib/api/people";
 import { buildRoster } from "@/lib/roster";
 
@@ -82,6 +84,7 @@ function CellDetail() {
   const roster = buildRoster(cell.leaders, cell.co_leaders, members ?? []);
   const schedule = formatSchedule(cell.meeting_day, cell.meeting_time);
   const memberIds = new Set((members ?? []).map((m) => m.id));
+  const incomplete = cell.missing_fields.length > 0;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -108,7 +111,8 @@ function CellDetail() {
                 <Pencil className="h-4 w-4" /> Editar
               </Button>
             )}
-            {cell.can_coordinate && (
+            {/* An incomplete cell can't be renewed: the copy would be incomplete too. */}
+            {cell.can_coordinate && !incomplete && (
               <Button
                 size="sm"
                 variant="outline"
@@ -121,6 +125,30 @@ function CellDetail() {
           </div>
         }
       />
+      {incomplete && (
+        <div
+          role="alert"
+          data-testid="cell-incomplete"
+          className="flex flex-col gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex gap-3 text-sm">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div>
+              <p className="font-medium">Célula inativa</p>
+              <p className="text-muted-foreground">
+                Falta definir {describeMissingFields(cell.missing_fields)}. Até lá, ela não recebe
+                registro de encontros, não pode ser renovada e não aparece para encaminhar novos
+                convertidos.
+              </p>
+            </div>
+          </div>
+          {cell.can_manage && (
+            <Button size="sm" className="shrink-0" onClick={() => setEditing(true)}>
+              Completar dados
+            </Button>
+          )}
+        </div>
+      )}
       {cell.can_manage && <CellFormDialog open={editing} onOpenChange={setEditing} cell={cell} />}
       {cell.can_coordinate && (
         <RenewCellDialog open={renewing} onOpenChange={setRenewing} cell={cell} />
@@ -158,7 +186,7 @@ function CellDetail() {
             <Info label="Horário" value={cell.meeting_time ?? "—"} />
             <Info
               label="Público-alvo"
-              value={cell.target_audience ? MINISTRY_LABEL[cell.target_audience] : "—"}
+              value={cell.target_audience ? CELL_AUDIENCE_LABEL[cell.target_audience] : "—"}
             />
             <Info label="Endereço" value={cell.address || "—"} />
             <Info

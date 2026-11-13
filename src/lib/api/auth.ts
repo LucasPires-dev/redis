@@ -31,6 +31,8 @@ export interface Me {
   name: string;
   email: string;
   phone: string;
+  /** Whether a CPF is on file (needed to pay online; the CPF itself is never returned). */
+  has_cpf: boolean;
   campus: CampusMini | null;
   /** The person's church (through their campus); null without a campus. */
   church: ChurchMini | null;

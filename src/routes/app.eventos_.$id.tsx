@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Calendar, Building2, Clapperboard, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -154,6 +155,20 @@ function RegistrationSection({ eventId }: { eventId: string }) {
   const { data: myReg } = useMyRegistration(eventId);
   const register = useRegisterForEvent();
   const cancel = useCancelRegistration();
+  const cpf = useCpfPrompt();
+
+  const signUp = (cpfValue?: string) =>
+    register.mutate(
+      { eventId, cpf: cpfValue },
+      {
+        onSuccess: (reg) => {
+          toast.success(
+            reg.payment_url ? "Inscrição feita! Conclua o pagamento." : "Inscrição confirmada!",
+          );
+        },
+        onError: (e) => cpf.handleError(e, "Não foi possível fazer a inscrição.", (c) => signUp(c)),
+      },
+    );
 
   if (isLoading || !config) return null;
 
@@ -187,26 +202,11 @@ function RegistrationSection({ eventId }: { eventId: string }) {
           )}
 
           {!myReg && (
-            <Button
-              className="w-full"
-              disabled={register.isPending}
-              onClick={() =>
-                register.mutate(eventId, {
-                  onSuccess: (reg) => {
-                    toast.success(
-                      reg.payment_url
-                        ? "Inscrição feita! Conclua o pagamento."
-                        : "Inscrição confirmada!",
-                    );
-                  },
-                  onError: (e) =>
-                    toast.error(apiErrorMessage(e, "Não foi possível fazer a inscrição.")),
-                })
-              }
-            >
+            <Button className="w-full" disabled={register.isPending} onClick={() => signUp()}>
               Inscrever-se
             </Button>
           )}
+          {cpf.dialog}
 
           {myReg && (
             <div className="flex items-center justify-between rounded-lg border p-3">

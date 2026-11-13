@@ -17,6 +17,7 @@ import { Route as AppCampusRouteImport } from './routes/app.campus'
 import { Route as AppCelulasRouteImport } from './routes/app.celulas'
 import { Route as AppCursosRouteImport } from './routes/app.cursos'
 import { Route as AppEventosRouteImport } from './routes/app.eventos'
+import { Route as AppMeusCursosRouteImport } from './routes/app.meus-cursos'
 import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
 import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
 import { Route as AppProducaoRouteImport } from './routes/app.producao'
@@ -73,6 +74,11 @@ const AppCursosRoute = AppCursosRouteImport.update({
 const AppEventosRoute = AppEventosRouteImport.update({
   id: '/eventos',
   path: '/eventos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMeusCursosRoute = AppMeusCursosRouteImport.update({
+  id: '/meus-cursos',
+  path: '/meus-cursos',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMinisteriosRoute = AppMinisteriosRouteImport.update({
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/app/celulas': typeof AppCelulasRoute
   '/app/cursos': typeof AppCursosRoute
   '/app/eventos': typeof AppEventosRoute
+  '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/app/celulas': typeof AppCelulasRoute
   '/app/cursos': typeof AppCursosRoute
   '/app/eventos': typeof AppEventosRoute
+  '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
@@ -226,6 +234,7 @@ export interface FileRoutesById {
   '/app/celulas': typeof AppCelulasRoute
   '/app/cursos': typeof AppCursosRoute
   '/app/eventos': typeof AppEventosRoute
+  '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
@@ -255,6 +264,7 @@ export interface FileRouteTypes {
     | '/app/celulas'
     | '/app/cursos'
     | '/app/eventos'
+    | '/app/meus-cursos'
     | '/app/ministerios'
     | '/app/pessoas'
     | '/app/producao'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/app/celulas'
     | '/app/cursos'
     | '/app/eventos'
+    | '/app/meus-cursos'
     | '/app/ministerios'
     | '/app/pessoas'
     | '/app/producao'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/app/celulas'
     | '/app/cursos'
     | '/app/eventos'
+    | '/app/meus-cursos'
     | '/app/ministerios'
     | '/app/pessoas'
     | '/app/producao'
@@ -390,6 +402,13 @@ declare module '@tanstack/react-router' {
       path: '/eventos'
       fullPath: '/app/eventos'
       preLoaderRoute: typeof AppEventosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/meus-cursos': {
+      id: '/app/meus-cursos'
+      path: '/meus-cursos'
+      fullPath: '/app/meus-cursos'
+      preLoaderRoute: typeof AppMeusCursosRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/ministerios': {
@@ -519,6 +538,7 @@ interface AppRouteChildren {
   AppCelulasRoute: typeof AppCelulasRoute
   AppCursosRoute: typeof AppCursosRoute
   AppEventosRoute: typeof AppEventosRoute
+  AppMeusCursosRoute: typeof AppMeusCursosRoute
   AppMinisteriosRoute: typeof AppMinisteriosRoute
   AppPessoasRoute: typeof AppPessoasRoute
   AppProducaoRoute: typeof AppProducaoRoute
@@ -544,6 +564,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCelulasRoute: AppCelulasRoute,
   AppCursosRoute: AppCursosRoute,
   AppEventosRoute: AppEventosRoute,
+  AppMeusCursosRoute: AppMeusCursosRoute,
   AppMinisteriosRoute: AppMinisteriosRoute,
   AppPessoasRoute: AppPessoasRoute,
   AppProducaoRoute: AppProducaoRoute,
