@@ -8,6 +8,7 @@ import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { CourseClassFormDialog } from "@/components/courses/CourseClassFormDialog";
+import { CoursePrerequisites } from "@/components/courses/CoursePrerequisites";
 import { useCourse, useCourseClasses, WEEKDAY_LABEL, TEACHER_ROLE_LABEL } from "@/lib/api/courses";
 import { RouteError } from "@/components/RouteError";
 import { capabilitiesOf, useAuth } from "@/lib/api/auth";
@@ -73,6 +74,8 @@ function CourseDetail() {
         />
         <StatCard icon={<BookOpen className="h-4 w-4" />} label="Aulas" value={totalLessons} />
       </div>
+
+      <CoursePrerequisites course={course} />
 
       <CourseClassFormDialog open={showNewClass} onOpenChange={setShowNewClass} courseId={id} />
 

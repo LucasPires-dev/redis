@@ -12,6 +12,7 @@ import {
   Plus,
   Pencil,
   Wallet,
+  Flag,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,11 +26,17 @@ import { DetailSkeleton } from "@/components/skeletons";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { LessonFormDialog } from "@/components/courses/LessonFormDialog";
+import { LessonMaterials } from "@/components/courses/LessonMaterials";
+import { ClassWaitlistSection } from "@/components/courses/ClassWaitlistSection";
 import { AddTeacherDialog } from "@/components/courses/AddTeacherDialog";
 import { AddEnrollmentDialog } from "@/components/courses/AddEnrollmentDialog";
 import { ClassFinanceTab } from "@/components/courses/ClassFinanceTab";
 import { CourseClassFormDialog } from "@/components/courses/CourseClassFormDialog";
 import { PaymentStatusBadge } from "@/components/courses/PaymentStatusBadge";
+import { CompleteClassDialog } from "@/components/courses/CompleteClassDialog";
+import { CertificateButton } from "@/components/courses/CertificateButton";
+import { ClassCareSection } from "@/components/courses/ClassCareSection";
+import { attendanceLabel, attendanceTone } from "@/lib/attendance";
 import { formatBRL } from "@/lib/api/payments";
 import {
   useCourseClass,
@@ -65,6 +72,7 @@ function ClassDetail() {
   const [showAddTeacher, setShowAddTeacher] = useState(false);
   const [showAddEnrollment, setShowAddEnrollment] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showComplete, setShowComplete] = useState(false);
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -78,9 +86,10 @@ function ClassDetail() {
     .filter(Boolean)
     .join(" · ");
 
-  const activeEnrollments = (enrollments ?? []).filter(
-    (e) => e.status === "active" && holdsSeat(e),
-  );
+  // Everyone holding a seat (completed students included) and, among them,
+  // those still in progress.
+  const roster = (enrollments ?? []).filter(holdsSeat);
+  const activeEnrollments = roster.filter((e) => e.status === "active");
   const isPaid = cc.fee_items.length > 0;
   // Enrolling into a paid class creates a charge: coordinators only.
   const canEnroll = isPaid ? cc.can_manage_finances : cc.can_manage;
@@ -164,7 +173,7 @@ function ClassDetail() {
       <Tabs defaultValue="lessons">
         <TabsList>
           <TabsTrigger value="lessons">Aulas & Presença</TabsTrigger>
-          <TabsTrigger value="students">Alunos ({activeEnrollments.length})</TabsTrigger>
+          <TabsTrigger value="students">Alunos ({roster.length})</TabsTrigger>
           <TabsTrigger value="teachers">Professores ({cc.teachers.length})</TabsTrigger>
           {cc.can_manage_finances && (
             <TabsTrigger value="finance">
@@ -201,8 +210,13 @@ function ClassDetail() {
                         {l.attendance_count}/{l.total_enrolled}
                       </Badge>
                     </div>
-                    {l.date && (
-                      <div className="mt-1 text-xs text-muted-foreground">{formatDate(l.date)}</div>
+                    {(l.date || l.materials.length > 0) && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {l.date && formatDate(l.date)}
+                        {l.date && l.materials.length > 0 && " · "}
+                        {l.materials.length > 0 &&
+                          `${l.materials.length} ${l.materials.length === 1 ? "material" : "materiais"}`}
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -211,31 +225,70 @@ function ClassDetail() {
           )}
 
           {selectedLesson && (
-            <AttendancePanel
-              lesson={selectedLesson}
+            <LessonMaterials
+              lesson={(lessons ?? []).find((l) => l.id === selectedLesson.id) ?? selectedLesson}
               classId={classId}
-              enrollments={activeEnrollments}
+              canManage={cc.can_manage}
             />
+          )}
+          {selectedLesson && (
+            <AttendancePanel lesson={selectedLesson} classId={classId} enrollments={roster} />
           )}
         </TabsContent>
 
         <TabsContent value="students" className="space-y-4 pt-4">
-          {canEnroll && (
-            <div className="flex justify-end">
-              <Button size="sm" variant="outline" onClick={() => setShowAddEnrollment(true)}>
-                <Plus className="mr-1.5 h-4 w-4" /> Inscrever aluno
-              </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground" data-testid="completion-summary">
+              Frequência mínima para concluir: {cc.min_attendance_percent}%
+              {cc.completed_count > 0 &&
+                ` · ${cc.completed_count} ${cc.completed_count === 1 ? "concluiu" : "concluíram"}`}
+            </p>
+            <div className="flex gap-2">
+              {cc.can_manage && activeEnrollments.length > 0 && (
+                <Button size="sm" variant="outline" onClick={() => setShowComplete(true)}>
+                  <Flag className="mr-1.5 h-4 w-4" /> Concluir turma
+                </Button>
+              )}
+              {canEnroll && (
+                <Button size="sm" variant="outline" onClick={() => setShowAddEnrollment(true)}>
+                  <Plus className="mr-1.5 h-4 w-4" /> Inscrever aluno
+                </Button>
+              )}
             </div>
-          )}
+          </div>
+          <ClassCareSection courseClass={cc} />
+          <ClassWaitlistSection courseClass={cc} />
+          <CompleteClassDialog
+            open={showComplete}
+            onOpenChange={setShowComplete}
+            courseClass={cc}
+            enrollments={activeEnrollments}
+          />
           <div className="space-y-2">
-            {(enrollments ?? []).filter(holdsSeat).map((e) => (
+            {roster.map((e) => (
               <Card key={e.id} data-testid="student-row">
-                <CardContent className="flex items-center justify-between p-3">
-                  <div>
+                <CardContent className="flex items-center justify-between gap-3 p-3">
+                  <div className="min-w-0">
                     <div className="text-sm font-medium">{e.person.name}</div>
-                    <div className="text-xs text-muted-foreground">{e.person.email}</div>
+                    <div className="truncate text-xs text-muted-foreground">{e.person.email}</div>
+                    <div
+                      className={`text-xs ${attendanceTone(e.meets_attendance, e.attendance)}`}
+                      data-testid="student-attendance"
+                    >
+                      Presença: {attendanceLabel(e.attendance)}
+                      {e.completed_at &&
+                        ` · concluiu em ${formatDate(e.completed_at.slice(0, 10))}`}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {e.status === "completed" && e.certificate_code && cc.can_manage && (
+                      <CertificateButton
+                        compact
+                        enrollmentId={e.id}
+                        courseName={cc.course_name}
+                        personName={e.person.name}
+                      />
+                    )}
                     {isPaid && <PaymentStatusBadge status={e.payment_status} />}
                     {/* Material delivery: teachers too (the Financeiro tab is coordinators-only). */}
                     {isPaid && cc.can_manage && e.status === "active" && (
@@ -273,9 +326,7 @@ function ClassDetail() {
                 </CardContent>
               </Card>
             ))}
-            {(enrollments ?? []).filter(holdsSeat).length === 0 && (
-              <EmptyState>Nenhum aluno inscrito.</EmptyState>
-            )}
+            {roster.length === 0 && <EmptyState>Nenhum aluno inscrito.</EmptyState>}
           </div>
         </TabsContent>
 

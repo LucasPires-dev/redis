@@ -19,7 +19,14 @@ import {
   type FeeSelection,
 } from "@/lib/fee-selection";
 import { FeeChoicesPicker } from "@/components/courses/FeeChoicesPicker";
-import { holdsSeat, useAddEnrollment, type CourseClass, type Enrollment } from "@/lib/api/courses";
+import {
+  holdsSeat,
+  missingPrerequisitesOf,
+  useAddEnrollment,
+  type CourseClass,
+  type CourseMini,
+  type Enrollment,
+} from "@/lib/api/courses";
 import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import type { PersonMini } from "@/lib/api/people";
 
@@ -41,6 +48,8 @@ export function AddEnrollmentDialog({
   const [selection, setSelection] = useState<FeeSelection>({});
   const [installments, setInstallments] = useState(1);
   const [sendCharge, setSendCharge] = useState(false);
+  // Prerequisites the chosen person hasn't completed (the API refused once).
+  const [missing, setMissing] = useState<CourseMini[] | null>(null);
   const paid = courseClass.fee_items.length > 0;
   const cpfPrompt = useCpfPrompt(selected?.name);
 
@@ -53,9 +62,10 @@ export function AddEnrollmentDialog({
     setSelection(initialSelection(courseClass.fee_items));
     setInstallments(1);
     setSendCharge(false);
+    setMissing(null);
   }, [open, courseClass.fee_items]);
 
-  const submit = (cpf?: string) => {
+  const submit = (cpf?: string, override = missing !== null) => {
     if (!selected) return;
     addEnrollment.mutate(
       {
@@ -63,14 +73,23 @@ export function AddEnrollmentDialog({
         person_id: selected.id,
         ...(paid ? { items: toChoices(selection), installments, send_charge: sendCharge } : {}),
         ...(cpf ? { cpf } : {}),
+        ...(override ? { override_prerequisites: true } : {}),
       },
       {
         onSuccess: () => {
           toast.success(`${selected.name} inscrito na turma`);
           onOpenChange(false);
         },
-        onError: (e) =>
-          cpfPrompt.handleError(e, "Não foi possível inscrever o aluno.", (c) => submit(c)),
+        onError: (e) => {
+          const lacking = missingPrerequisitesOf(e);
+          if (lacking) {
+            setMissing(lacking);
+            return;
+          }
+          cpfPrompt.handleError(e, "Não foi possível inscrever o aluno.", (c) =>
+            submit(c, override),
+          );
+        },
       },
     );
   };
@@ -95,7 +114,14 @@ export function AddEnrollmentDialog({
                 <p className="text-sm font-medium">{selected.name}</p>
                 <p className="text-xs text-muted-foreground">{selected.email}</p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelected(null);
+                  setMissing(null);
+                }}
+              >
                 Trocar
               </Button>
             </div>
@@ -108,6 +134,17 @@ export function AddEnrollmentDialog({
                 excludeIds={excludeIds}
                 placeholder="Buscar por nome ou email"
               />
+            </div>
+          )}
+
+          {selected && missing && (
+            <div
+              className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+              role="alert"
+              data-testid="missing-prerequisites"
+            >
+              {selected.name} ainda não concluiu: {missing.map((p) => p.name).join(", ")}. Você pode
+              inscrever mesmo assim, se for uma decisão da coordenação.
             </div>
           )}
 
@@ -151,7 +188,11 @@ export function AddEnrollmentDialog({
               (paid && !selectionComplete(courseClass.fee_items, selection))
             }
           >
-            {addEnrollment.isPending ? "Salvando…" : "Inscrever"}
+            {addEnrollment.isPending
+              ? "Salvando…"
+              : missing
+                ? "Inscrever mesmo assim"
+                : "Inscrever"}
           </Button>
         </DialogFooter>
         {cpfPrompt.dialog}
