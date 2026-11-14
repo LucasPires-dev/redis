@@ -62,6 +62,8 @@ export interface Event {
   ticket_config: EventTicketSummary | null;
   /** Whether the viewer can edit the event and its production (same rule as the API). */
   can_manage: boolean;
+  /** Check people in at the door (managers and the confirmed roster). */
+  can_check_in: boolean;
   created_at: string;
 }
 

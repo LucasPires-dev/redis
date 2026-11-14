@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/detail/DetailSection";
+import { TicketButton } from "@/components/events/TicketDialog";
 import { CardGridSkeleton } from "@/components/skeletons";
 import { EVENT_TYPE_LABEL, type EventType } from "@/lib/api/production";
 import {
@@ -91,6 +92,7 @@ function MyRegistrations() {
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+              <TicketButton registration={r} />
               {r.payment_status === "pending" && r.payment_url && (
                 <Button asChild size="sm">
                   <a href={r.payment_url} target="_blank" rel="noopener noreferrer">

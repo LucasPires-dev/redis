@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Calendar, Building2, Clapperboard, Users } from "lucide-react";
+import { Calendar, Building2, Clapperboard, ScanLine, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
   PAYMENT_STATUS_LABEL,
 } from "@/lib/api/payments";
 import { RouteError } from "@/components/RouteError";
+import { TicketButton } from "@/components/events/TicketDialog";
 import { DetailSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/app/eventos_/$id")({
@@ -139,12 +140,12 @@ function EventDetail() {
         </DetailSection>
       )}
 
-      <RegistrationSection eventId={event.id} />
+      <RegistrationSection eventId={event.id} canCheckIn={event.can_check_in} />
     </div>
   );
 }
 
-function RegistrationSection({ eventId }: { eventId: string }) {
+function RegistrationSection({ eventId, canCheckIn }: { eventId: string; canCheckIn: boolean }) {
   const { data: config, isLoading } = useTicketConfig(eventId);
   const { data: stats } = useRegistrationStats(eventId);
   const { data: myReg } = useMyRegistration(eventId);
@@ -209,7 +210,8 @@ function RegistrationSection({ eventId }: { eventId: string }) {
                 <p className="text-sm font-medium">Sua inscrição</p>
                 <Badge variant="outline">{PAYMENT_STATUS_LABEL[myReg.payment_status]}</Badge>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
+                <TicketButton registration={myReg} />
                 {myReg.payment_url && myReg.payment_status === "pending" && (
                   <Button size="sm" variant="outline" asChild>
                     <a href={myReg.payment_url} target="_blank" rel="noreferrer">
@@ -235,6 +237,15 @@ function RegistrationSection({ eventId }: { eventId: string }) {
                 )}
               </div>
             </div>
+          )}
+
+          {canCheckIn && (
+            <Button asChild variant="secondary" className="w-full">
+              <Link to="/app/eventos/$id/checkin" params={{ id: eventId }}>
+                <ScanLine className="mr-2 h-4 w-4" /> Fazer check-in na entrada
+                {stats && ` (${stats.checked_in} de ${stats.confirmed})`}
+              </Link>
+            </Button>
           )}
         </CardContent>
       </Card>
