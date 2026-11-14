@@ -130,6 +130,8 @@ export interface RosterEntry {
   responded_at: string | null;
   created_at: string;
   conflicts: RosterConflict[];
+  /** The person marked the event's day as a day they can't serve. */
+  unavailable: Unavailable | null;
   /** A swap waiting for the substitute's answer. */
   pending_swap: { id: string; substitute: { id: string; name: string } } | null;
 }
@@ -157,6 +159,74 @@ export interface SwapCandidate {
   name: string;
   /** Already serving somewhere else at that time. */
   conflict: boolean;
+  /** Marked the day as one they can't serve. */
+  unavailable: boolean;
+}
+
+/** Days someone can't serve, as the leadership sees them on the roster. */
+export interface Unavailable {
+  starts_on: string;
+  ends_on: string;
+  reason: string;
+}
+
+export interface ServeUnavailability extends Unavailable {
+  id: string;
+  created_at: string;
+}
+
+/** "12/11" or "12/11 a 15/11". */
+export function unavailableRange(u: Unavailable) {
+  const short = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  return u.starts_on === u.ends_on
+    ? short(u.starts_on)
+    : `${short(u.starts_on)} a ${short(u.ends_on)}`;
+}
+
+/** The caller's own days without serving (current and upcoming). */
+export function useMyUnavailability() {
+  return useQuery({
+    queryKey: ["my-unavailability"],
+    queryFn: () => apiFetch<ServeUnavailability[]>("/api/production-unavailability/"),
+  });
+}
+
+function useUnavailabilityMutation<V>(fn: (v: V) => Promise<unknown>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-unavailability"] });
+      queryClient.invalidateQueries({ queryKey: ["my-roster"] });
+    },
+  });
+}
+
+export function useAddUnavailability() {
+  return useUnavailabilityMutation((body: { starts_on: string; ends_on: string; reason: string }) =>
+    apiFetch<ServeUnavailability>("/api/production-unavailability/", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+export function useDeleteUnavailability() {
+  return useUnavailabilityMutation((id: string) =>
+    apiFetch<void>(`/api/production-unavailability/${id}/`, { method: "DELETE" }),
+  );
+}
+
+/** Before inviting: who of the ministry marked the event's day as unavailable. */
+export function useRosterAvailability(eventId: string, ministryId: string) {
+  return useQuery({
+    queryKey: ["roster-availability", eventId, ministryId],
+    queryFn: () =>
+      apiFetch<{ id: string; name: string; unavailable: Unavailable | null }[]>(
+        `/api/production-roster-entries/availability/?event=${eventId}&ministry=${ministryId}`,
+      ),
+    enabled: !!(eventId && ministryId),
+  });
 }
 
 export interface ChecklistItem {

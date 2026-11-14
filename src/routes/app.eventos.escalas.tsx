@@ -1,10 +1,18 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeftRight, CalendarDays, Repeat } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  CalendarDays,
+  CalendarOff,
+  Repeat,
+  Trash2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -27,11 +35,15 @@ import { CardGridSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/lib/api/auth";
 import { apiErrorMessage } from "@/lib/api/client";
 import {
+  unavailableRange,
+  useAddUnavailability,
   useAnswerSwap,
   useConfirmRosterEntry,
   useDeclineRosterEntry,
+  useDeleteUnavailability,
   useMyRoster,
   useMySwaps,
+  useMyUnavailability,
   useRequestSwap,
   useSwapCandidates,
   type RosterEntry,
@@ -41,7 +53,8 @@ import {
 import { formatDateTime } from "@/lib/utils";
 
 // "Minhas escalas": where the person serves. Answer invitations, ask someone of
-// the same ministry to take your place, and answer the swaps asked of you.
+// the same ministry to take your place, answer the swaps asked of you and mark
+// the days you can't serve (the leadership sees them when building the roster).
 // A personal tab: always there, whatever else the person does.
 export const Route = createFileRoute("/app/eventos/escalas")({
   head: () => ({ meta: [{ title: "Minhas escalas — Redis" }] }),
@@ -92,6 +105,8 @@ function MyRoster() {
           ))}
         </div>
       )}
+
+      <UnavailabilitySection />
     </div>
   );
 }
@@ -132,6 +147,17 @@ function EntryCard({ entry }: { entry: RosterEntry }) {
           >
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             No mesmo horário você também serve em {entry.conflicts.map((c) => c.title).join(", ")}.
+          </p>
+        )}
+
+        {entry.unavailable && entry.status !== "declined" && (
+          <p
+            className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-2 text-xs text-amber-800 dark:text-amber-300"
+            data-testid="roster-unavailable"
+          >
+            <CalendarOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            Você marcou que não pode servir em {unavailableRange(entry.unavailable)}. Recuse ou peça
+            troca.
           </p>
         )}
 
@@ -247,7 +273,11 @@ function SwapDialog({ entry }: { entry: RosterEntry }) {
                 {(candidates ?? []).map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
-                    {c.conflict ? " (já serve nesse horário)" : ""}
+                    {c.unavailable
+                      ? " (indisponível)"
+                      : c.conflict
+                        ? " (já serve nesse horário)"
+                        : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -327,5 +357,126 @@ function SwapRequestCard({ swap }: { swap: RosterSwap }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+const todayIso = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+// "Dias sem servir": a trip, a work shift, rest. The leadership sees them
+// when building the roster; nobody else does.
+function UnavailabilitySection() {
+  const { data: days } = useMyUnavailability();
+  const add = useAddUnavailability();
+  const remove = useDeleteUnavailability();
+  const [startsOn, setStartsOn] = useState("");
+  const [endsOn, setEndsOn] = useState("");
+  const [reason, setReason] = useState("");
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!startsOn) return;
+    add.mutate(
+      { starts_on: startsOn, ends_on: endsOn || startsOn, reason: reason.trim() },
+      {
+        onSuccess: () => {
+          toast.success("Dias marcados. A liderança verá ao montar a escala.");
+          setStartsOn("");
+          setEndsOn("");
+          setReason("");
+        },
+        onError: (err) => toast.error(apiErrorMessage(err, "Não foi possível marcar.")),
+      },
+    );
+  }
+
+  return (
+    <section className="space-y-3" data-testid="unavailability">
+      <div>
+        <h2 className="text-sm font-semibold">Dias em que não posso servir</h2>
+        <p className="text-xs text-muted-foreground">
+          Viagem, plantão, descanso. Só a liderança dos seus ministérios vê, ao montar a escala.
+        </p>
+      </div>
+      <Card>
+        <CardContent className="space-y-3 p-4">
+          <form
+            onSubmit={submit}
+            className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_2fr_auto]"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="away-start">De</Label>
+              <Input
+                id="away-start"
+                type="date"
+                min={todayIso()}
+                value={startsOn}
+                onChange={(e) => setStartsOn(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="away-end">Até (opcional)</Label>
+              <Input
+                id="away-end"
+                type="date"
+                min={startsOn || todayIso()}
+                value={endsOn}
+                onChange={(e) => setEndsOn(e.target.value)}
+              />
+            </div>
+            <div className="col-span-2 space-y-1.5 sm:col-span-1">
+              <Label htmlFor="away-reason">Motivo (opcional)</Label>
+              <Input
+                id="away-reason"
+                value={reason}
+                maxLength={120}
+                placeholder="Ex.: viagem"
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </div>
+            <Button
+              type="submit"
+              className="col-span-2 self-end sm:col-span-1"
+              disabled={!startsOn || add.isPending}
+            >
+              Marcar
+            </Button>
+          </form>
+          {days && days.length > 0 && (
+            <ul className="divide-y rounded-md border">
+              {days.map((d) => (
+                <li
+                  key={d.id}
+                  className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+                  data-testid="unavailable-day"
+                >
+                  <span className="min-w-0 truncate">
+                    <span className="font-medium">{unavailableRange(d)}</span>
+                    {d.reason && <span className="text-muted-foreground"> · {d.reason}</span>}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 shrink-0"
+                    aria-label="Remover"
+                    disabled={remove.isPending}
+                    onClick={() =>
+                      remove.mutate(d.id, {
+                        onSuccess: () => toast.success("Dias removidos."),
+                        onError: (err) => toast.error(apiErrorMessage(err, "Não foi possível.")),
+                      })
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    </section>
   );
 }
