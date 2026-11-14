@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { Clapperboard, Plus, Send, Ticket, Users } from "lucide-react";
+import { AlertTriangle, Clapperboard, Plus, Repeat, Send, Ticket, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ import {
   useDeclineRosterEntry,
   useEvent,
   useInviteToRoster,
+  useRosterConflicts,
   useRosterEntries,
   useSetRundownItemStatus,
   useToggleChecklistItem,
@@ -271,6 +272,22 @@ function EventRundown() {
                       {entry.ministry.name}
                       {entry.function ? ` · ${entry.function}` : ""}
                     </div>
+                    {entry.conflicts.length > 0 && (
+                      <div
+                        className="mt-1 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400"
+                        data-testid="roster-conflict"
+                      >
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        Também serve em {entry.conflicts.map((c) => c.title).join(", ")} no mesmo
+                        horário
+                      </div>
+                    )}
+                    {entry.pending_swap && (
+                      <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                        <Repeat className="h-3 w-3 shrink-0" />
+                        Pediu troca com {entry.pending_swap.substitute.name}
+                      </div>
+                    )}
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {entry.status === "invited" && entry.person.id === me?.id && (
@@ -365,6 +382,7 @@ function InviteToRosterDialog({
   const [fn, setFn] = useState("");
   const [error, setError] = useState("");
   const invite = useInviteToRoster();
+  const { data: conflicts } = useRosterConflicts(eventId, ministryId, personId);
 
   const options = (ministries ?? []).filter((m) => !campusId || m.campus.id === campusId);
 
@@ -445,6 +463,16 @@ function InviteToRosterDialog({
             <Label>Função (opcional)</Label>
             <Input value={fn} onChange={(e) => setFn(e.target.value)} placeholder="Ex: Câmera 2" />
           </div>
+          {conflicts && conflicts.length > 0 && (
+            <p
+              className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-2 text-xs text-amber-800 dark:text-amber-300"
+              data-testid="invite-conflict"
+            >
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              Essa pessoa já está escalada no mesmo horário em{" "}
+              {conflicts.map((c) => c.title).join(", ")}. Você ainda pode convidar.
+            </p>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={invite.isPending}>
             Convidar

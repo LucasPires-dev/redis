@@ -161,7 +161,7 @@ describe("Notification center", () => {
     cy.get("[data-testid=email-unavailable]").should("be.visible");
     // Push is set up (VAPID keys): this device's status shows.
     cy.get("[data-testid=push-state]").should("not.have.text", "…");
-    cy.get("[data-testid=notification-category]").should("have.length", 4);
+    cy.get("[data-testid=notification-category]").should("have.length", 5);
 
     toggle("E-mail").should("have.attr", "data-state", "checked").click();
     cy.contains("Células: não vai mais chegar por e-mail");
