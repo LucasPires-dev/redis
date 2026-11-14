@@ -3,6 +3,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BarChart3,
+  CalendarOff,
   Clapperboard,
   Plus,
   Repeat,
@@ -51,7 +52,9 @@ import {
   useDeclineRosterEntry,
   useEvent,
   useInviteToRoster,
+  useRosterAvailability,
   useRosterConflicts,
+  unavailableRange,
   useRosterEntries,
   useSetRundownItemStatus,
   useToggleChecklistItem,
@@ -310,6 +313,16 @@ function EventRundown() {
                         horário
                       </div>
                     )}
+                    {entry.unavailable && (
+                      <div
+                        className="mt-1 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400"
+                        data-testid="roster-unavailable"
+                      >
+                        <CalendarOff className="h-3 w-3 shrink-0" />
+                        Marcou indisponível em {unavailableRange(entry.unavailable)}
+                        {entry.unavailable.reason ? ` (${entry.unavailable.reason})` : ""}
+                      </div>
+                    )}
                     {entry.pending_swap && (
                       <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                         <Repeat className="h-3 w-3 shrink-0" />
@@ -411,6 +424,9 @@ function InviteToRosterDialog({
   const [error, setError] = useState("");
   const invite = useInviteToRoster();
   const { data: conflicts } = useRosterConflicts(eventId, ministryId, personId);
+  const { data: availability } = useRosterAvailability(eventId, ministryId);
+  const away = new Map((availability ?? []).map((p) => [p.id, p.unavailable]));
+  const personAway = personId ? away.get(personId) : null;
 
   const options = (ministries ?? []).filter((m) => !campusId || m.campus.id === campusId);
 
@@ -482,6 +498,7 @@ function InviteToRosterDialog({
                 {(members ?? []).map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
+                    {away.get(p.id) ? " (indisponível)" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -499,6 +516,16 @@ function InviteToRosterDialog({
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               Essa pessoa já está escalada no mesmo horário em{" "}
               {conflicts.map((c) => c.title).join(", ")}. Você ainda pode convidar.
+            </p>
+          )}
+          {personAway && (
+            <p
+              className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-2 text-xs text-amber-800 dark:text-amber-300"
+              data-testid="invite-unavailable"
+            >
+              <CalendarOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              Essa pessoa marcou que não pode servir em {unavailableRange(personAway)}
+              {personAway.reason ? ` (${personAway.reason})` : ""}. Você ainda pode convidar.
             </p>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
