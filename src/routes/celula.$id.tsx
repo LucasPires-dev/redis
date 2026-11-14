@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Clock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AuthShell } from "@/components/membership/AuthShell";
 import { usePublicCell } from "@/lib/api/explore";
+import { hasAccessToken } from "@/lib/api/client";
+import { JoinCellPanel } from "@/components/cells/JoinCellPanel";
 
 // A cell's public page: only its church, weekday and time. Cells meet in
 // homes, so the address and the people stay with the cell's leadership.
@@ -15,6 +18,9 @@ export const Route = createFileRoute("/celula/$id")({
 function PublicCellPage() {
   const { id } = Route.useParams();
   const { data: cell, isLoading, isError } = usePublicCell(id);
+  // The token lives in localStorage: only known after hydration.
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => setSignedIn(hasAccessToken()), []);
 
   if (isLoading) {
     return (
@@ -60,7 +66,8 @@ function PublicCellPage() {
           Os encontros acontecem em casas. O endereço é passado pela liderança da célula a quem
           quiser participar.
         </p>
-        <Button asChild variant="outline" className="h-11 w-full">
+        <JoinCellPanel cellId={id} signedIn={signedIn} />
+        <Button asChild variant="ghost" className="w-full">
           <Link to="/explorar">Ver mais do que está aberto</Link>
         </Button>
       </div>
