@@ -26,6 +26,7 @@ import { Route as AppProducaoRouteImport } from './routes/app.producao'
 import { Route as AppResponsaveisRouteImport } from './routes/app.responsaveis'
 import { Route as CertificadoCodeRouteImport } from './routes/certificado.$code'
 import { Route as ConviteCodeRouteImport } from './routes/convite.$code'
+import { Route as EventoIdRouteImport } from './routes/evento.$id'
 import { Route as AppCampusIdRouteImport } from './routes/app.campus_.$id'
 import { Route as AppCelulasIndexRouteImport } from './routes/app.celulas.index'
 import { Route as AppCelulasCoordenacaoRouteImport } from './routes/app.celulas.coordenacao'
@@ -140,6 +141,11 @@ const CertificadoCodeRoute = CertificadoCodeRouteImport.update({
 const ConviteCodeRoute = ConviteCodeRouteImport.update({
   id: '/convite/$code',
   path: '/convite/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventoIdRoute = EventoIdRouteImport.update({
+  id: '/evento/$id',
+  path: '/evento/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppCampusIdRoute = AppCampusIdRouteImport.update({
@@ -314,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/app/responsaveis': typeof AppResponsaveisRoute
   '/certificado/$code': typeof CertificadoCodeRoute
   '/convite/$code': typeof ConviteCodeRoute
+  '/evento/$id': typeof EventoIdRoute
   '/app/': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
@@ -359,6 +366,7 @@ export interface FileRoutesByTo {
   '/app/responsaveis': typeof AppResponsaveisRoute
   '/certificado/$code': typeof CertificadoCodeRoute
   '/convite/$code': typeof ConviteCodeRoute
+  '/evento/$id': typeof EventoIdRoute
   '/app': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
@@ -409,6 +417,7 @@ export interface FileRoutesById {
   '/app/responsaveis': typeof AppResponsaveisRoute
   '/certificado/$code': typeof CertificadoCodeRoute
   '/convite/$code': typeof ConviteCodeRoute
+  '/evento/$id': typeof EventoIdRoute
   '/app/': typeof AppIndexRoute
   '/app/campus_/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
@@ -460,6 +469,7 @@ export interface FileRouteTypes {
     | '/app/responsaveis'
     | '/certificado/$code'
     | '/convite/$code'
+    | '/evento/$id'
     | '/app/'
     | '/app/campus/$id'
     | '/app/celulas/coordenacao'
@@ -505,6 +515,7 @@ export interface FileRouteTypes {
     | '/app/responsaveis'
     | '/certificado/$code'
     | '/convite/$code'
+    | '/evento/$id'
     | '/app'
     | '/app/campus/$id'
     | '/app/celulas/coordenacao'
@@ -554,6 +565,7 @@ export interface FileRouteTypes {
     | '/app/responsaveis'
     | '/certificado/$code'
     | '/convite/$code'
+    | '/evento/$id'
     | '/app/'
     | '/app/campus_/$id'
     | '/app/celulas/coordenacao'
@@ -594,6 +606,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   CertificadoCodeRoute: typeof CertificadoCodeRoute
   ConviteCodeRoute: typeof ConviteCodeRoute
+  EventoIdRoute: typeof EventoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -715,6 +728,13 @@ declare module '@tanstack/react-router' {
       path: '/convite/$code'
       fullPath: '/convite/$code'
       preLoaderRoute: typeof ConviteCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evento/$id': {
+      id: '/evento/$id'
+      path: '/evento/$id'
+      fullPath: '/evento/$id'
+      preLoaderRoute: typeof EventoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/campus_/$id': {
@@ -1058,6 +1078,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   CertificadoCodeRoute: CertificadoCodeRoute,
   ConviteCodeRoute: ConviteCodeRoute,
+  EventoIdRoute: EventoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

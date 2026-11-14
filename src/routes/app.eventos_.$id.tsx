@@ -1,5 +1,4 @@
 import { toast } from "sonner";
-import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Calendar, Building2, Clapperboard, ScanLine, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,12 +15,13 @@ import {
   useMyRegistration,
   canSelfCancel,
   formatTicketPrice,
-  useRegisterForEvent,
   useCancelRegistration,
   useRegistrationStats,
   useTicketConfig,
   PAYMENT_STATUS_LABEL,
+  type EventTicketConfig,
 } from "@/lib/api/payments";
+import { SignUpPanel } from "@/components/events/SignUpPanel";
 import { RouteError } from "@/components/RouteError";
 import { TicketButton } from "@/components/events/TicketDialog";
 import { DetailSkeleton } from "@/components/skeletons";
@@ -149,26 +149,11 @@ function RegistrationSection({ eventId, canCheckIn }: { eventId: string; canChec
   const { data: config, isLoading } = useTicketConfig(eventId);
   const { data: stats } = useRegistrationStats(eventId);
   const { data: myReg } = useMyRegistration(eventId);
-  const register = useRegisterForEvent();
   const cancel = useCancelRegistration();
-  const cpf = useCpfPrompt();
-
-  const signUp = (cpfValue?: string) =>
-    register.mutate(
-      { eventId, cpf: cpfValue },
-      {
-        onSuccess: (reg) => {
-          toast.success(
-            reg.payment_url ? "Inscrição feita! Conclua o pagamento." : "Inscrição confirmada!",
-          );
-        },
-        onError: (e) => cpf.handleError(e, "Não foi possível fazer a inscrição.", (c) => signUp(c)),
-      },
-    );
 
   if (isLoading || !config) return null;
 
-  const priceFmt = formatTicketPrice(config.price_cents);
+  const priceFmt = priceLabel(config);
 
   return (
     <DetailSection title="Inscrição">
@@ -197,18 +182,24 @@ function RegistrationSection({ eventId, canCheckIn }: { eventId: string; canChec
             </div>
           )}
 
-          {!myReg && (
-            <Button className="w-full" disabled={register.isPending} onClick={() => signUp()}>
-              Inscrever-se
-            </Button>
+          {config.description && (
+            <p className="text-sm text-muted-foreground">{config.description}</p>
           )}
-          {cpf.dialog}
+
+          {!myReg && <SignUpPanel eventId={eventId} config={config} />}
 
           {myReg && (
             <div className="flex items-center justify-between rounded-lg border p-3">
-              <div>
+              <div className="space-y-1">
                 <p className="text-sm font-medium">Sua inscrição</p>
                 <Badge variant="outline">{PAYMENT_STATUS_LABEL[myReg.payment_status]}</Badge>
+                {(myReg.ticket_type || myReg.seats > 1) && (
+                  <p className="text-xs text-muted-foreground">
+                    {myReg.ticket_type?.name}
+                    {myReg.ticket_type && myReg.seats > 1 && " · "}
+                    {myReg.seats > 1 && `${myReg.seats} pessoas`}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap justify-end gap-2">
                 <TicketButton registration={myReg} />
@@ -251,4 +242,13 @@ function RegistrationSection({ eventId, canCheckIn }: { eventId: string; canChec
       </Card>
     </DetailSection>
   );
+}
+
+/** "Gratuito", "R$ 50,00" or, with several tickets, "A partir de R$ 25,00". */
+function priceLabel(config: EventTicketConfig) {
+  const prices = config.types.filter((t) => t.on_sale).map((t) => t.price_cents);
+  if (prices.length === 0) return formatTicketPrice(config.price_cents);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return min === max ? formatTicketPrice(min) : `A partir de ${formatTicketPrice(min)}`;
 }
