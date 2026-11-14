@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { VisibilityField } from "@/components/VisibilityField";
+import type { Visibility } from "@/lib/visibility";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -99,6 +101,7 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
   const [endDate, setEndDate] = useState("");
   const [description, setDescription] = useState("");
   const [selfEnrollment, setSelfEnrollment] = useState(false);
+  const [visibility, setVisibility] = useState<Visibility>("members");
   const [capacity, setCapacity] = useState("");
   const [deadline, setDeadline] = useState("");
   const [reservationDays, setReservationDays] = useState("3");
@@ -120,6 +123,7 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
     setEndDate(c?.end_date ?? "");
     setDescription(c?.description ?? "");
     setSelfEnrollment(c?.self_enrollment ?? false);
+    setVisibility(c?.visibility ?? "members");
     setCapacity(c?.max_capacity != null ? String(c.max_capacity) : "");
     setDeadline(c?.enrollment_deadline ?? "");
     setReservationDays(String(c?.reservation_days ?? 3));
@@ -184,6 +188,7 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
       end_date: endDate || null,
       description: description.trim(),
       self_enrollment: selfEnrollment,
+      visibility,
       max_capacity: capacity ? Number(capacity) : null,
       enrollment_deadline: deadline || null,
       reservation_days: Number(reservationDays) || 3,
@@ -342,6 +347,17 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
                 onCheckedChange={setSelfEnrollment}
               />
             </div>
+
+            <VisibilityField
+              id="class-visibility"
+              value={visibility}
+              onChange={setVisibility}
+              hints={{
+                members: "Só quem é da igreja encontra a turma e se matricula.",
+                public:
+                  "Qualquer pessoa, de outra igreja ou sem igreja, encontra a turma e se matricula.",
+              }}
+            />
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">

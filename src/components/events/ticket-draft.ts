@@ -14,7 +14,6 @@ export interface TicketDraft {
   description: string;
   /** Companions per registration ("0": none). */
   maxCompanions: string;
-  isPublic: boolean;
 }
 
 export type TicketErrors = Partial<
@@ -28,7 +27,6 @@ export const EMPTY_TICKET: TicketDraft = {
   deadline: "",
   description: "",
   maxCompanions: "0",
-  isPublic: false,
 };
 
 /** ISO date → `datetime-local` value in the browser's timezone. */
@@ -46,7 +44,6 @@ export function ticketDraftFromConfig(config: EventTicketConfig): TicketDraft {
     deadline: config.registration_deadline ? toLocalInput(config.registration_deadline) : "",
     description: config.description ?? "",
     maxCompanions: String(config.max_companions ?? 0),
-    isPublic: !!config.is_public,
   };
 }
 
@@ -57,7 +54,6 @@ export function ticketDraftToPayload(draft: TicketDraft) {
     registration_deadline: draft.deadline ? new Date(draft.deadline).toISOString() : null,
     description: draft.description.trim(),
     max_companions: draft.maxCompanions ? Number(draft.maxCompanions) : 0,
-    is_public: draft.isPublic,
   };
 }
 

@@ -26,8 +26,6 @@ export interface EventTicketConfig {
   description: string;
   /** Companions (each with their own ticket) one person may bring. */
   max_companions: number;
-  /** Open to anyone with the link /evento/:id. */
-  is_public: boolean;
   types: TicketType[];
   /** Places still open for the viewer (null: no limit). */
   free_seats: number | null;
@@ -92,7 +90,6 @@ export interface CreateTicketConfigInput {
   registration_deadline?: string | null;
   description?: string;
   max_companions?: number;
-  is_public?: boolean;
 }
 
 export function useTicketConfig(eventId: string | undefined) {
@@ -438,6 +435,7 @@ export interface PublicEvent {
   starts_at: string;
   ends_at: string | null;
   campus: { name: string; city: string } | null;
+  church: string | null;
   ticket: {
     description: string;
     price_cents: number;

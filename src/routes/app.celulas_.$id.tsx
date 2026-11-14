@@ -56,6 +56,7 @@ import {
 import { formatDate } from "@/lib/api/seasons";
 import type { PersonMini } from "@/lib/api/people";
 import { buildRoster } from "@/lib/roster";
+import { VISIBILITY_LABEL } from "@/lib/visibility";
 
 export const Route = createFileRoute("/app/celulas_/$id")({
   head: () => ({ meta: [{ title: "Célula — Redis" }] }),
@@ -193,6 +194,7 @@ function CellDetail() {
               label="Público-alvo"
               value={cell.target_audience ? CELL_AUDIENCE_LABEL[cell.target_audience] : "—"}
             />
+            <Info label="Quem pode ver" value={VISIBILITY_LABEL[cell.visibility]} />
             <Info label="Endereço" value={cell.address || "—"} />
             <Info
               label="Campus"

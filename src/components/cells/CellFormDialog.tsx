@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { VisibilityField } from "@/components/VisibilityField";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,7 @@ function emptyForm(): CellInput {
     meeting_day: null,
     meeting_time: null,
     target_audience: "",
+    visibility: "members",
     address: "",
     description: "",
     start_date: null,
@@ -92,6 +94,7 @@ function fromCell(cell: Cell): CellInput {
     meeting_day: cell.meeting_day,
     meeting_time: cell.meeting_time,
     target_audience: cell.target_audience,
+    visibility: cell.visibility,
     address: cell.address,
     description: cell.description,
     start_date: cell.start_date,
@@ -341,6 +344,17 @@ export function CellFormDialog({ open, onOpenChange, cell }: Props) {
             </Select>
             <FieldError message={errors.target_audience} />
           </div>
+
+          <VisibilityField
+            id="cell-visibility"
+            value={form.visibility}
+            onChange={(v) => set("visibility", v)}
+            hints={{
+              members: "Só quem é da igreja encontra a célula.",
+              public:
+                "Qualquer pessoa encontra a célula, vendo só a igreja, o dia e o horário. Endereço e líderes ficam reservados.",
+            }}
+          />
 
           <div className="space-y-1.5">
             <Label>Período (opcional)</Label>

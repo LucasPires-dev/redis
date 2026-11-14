@@ -33,7 +33,8 @@ describe("Complete registrations", () => {
           title: TITLE,
           event_type: "conference",
           starts_at: new Date(Date.now() + 10 * 86400000).toISOString(),
-          ticket: { price_cents: 0, max_capacity: 3, max_companions: 1, is_public: true },
+          visibility: "public",
+          ticket: { price_cents: 0, max_capacity: 3, max_companions: 1 },
         },
       }).then(({ body: event }) => {
         eventId = event.id;
