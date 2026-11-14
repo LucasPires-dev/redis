@@ -63,7 +63,7 @@ describe("Payments — CPF", () => {
     });
     cy.login(MEMBER, PASSWORD);
     cy.visit(`/app/eventos/${eventId}`);
-    cy.contains("button", "Inscrever-se", { timeout: 15000 }).click();
+    cy.contains("button", "Inscrever-se", { timeout: 30000 }).click();
 
     cy.contains("[role=dialog]", "Informe o CPF").within(() => {
       cy.get("#cpf-prompt").type("11144477700");

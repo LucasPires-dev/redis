@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { AlertTriangle, Clapperboard, Plus, Repeat, Send, Ticket, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  Clapperboard,
+  Plus,
+  Repeat,
+  Send,
+  Share2,
+  Ticket,
+  Users,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +71,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { TicketFields } from "@/components/events/TicketFields";
+import { SignUpPanel } from "@/components/events/SignUpPanel";
+import { TicketTypesManager } from "@/components/events/TicketTypesManager";
 import {
   EMPTY_TICKET,
   ticketDraftFromConfig,
@@ -76,7 +87,7 @@ import {
   canSelfCancel,
   formatBRL,
   formatTicketPrice,
-  useRegisterForEvent,
+  publicEventPath,
   useRegistrationStats,
   useRegistrations,
   useTicketConfig,
@@ -795,11 +806,27 @@ function TicketConfigSection({
               </div>
             </div>
             <div>
+              <div className="text-xs text-muted-foreground">Acompanhantes</div>
+              <div className="text-sm font-medium">
+                {config.max_companions ? `Até ${config.max_companions}` : "Não"}
+              </div>
+            </div>
+            <div className="col-span-2 sm:col-span-4">
               <div className="text-xs text-muted-foreground">Descrição</div>
               <div className="text-sm font-medium">{config.description || "—"}</div>
             </div>
+            {config.is_public && (
+              <div className="col-span-2 sm:col-span-4">
+                <PublicLink eventId={eventId} />
+              </div>
+            )}
           </CardContent>
         </Card>
+      )}
+      {config && (
+        <div className="mt-3">
+          <TicketTypesManager config={config} />
+        </div>
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -826,27 +853,47 @@ function TicketConfigSection({
   );
 }
 
+/** The event's public link, to share (copy, or the phone's share sheet). */
+function PublicLink({ eventId }: { eventId: string }) {
+  const url =
+    typeof window === "undefined" ? "" : `${window.location.origin}${publicEventPath(eventId)}`;
+  async function share() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copiado.");
+    } catch {
+      // Share sheet closed, or no clipboard: the link stays visible to copy by hand.
+    }
+  }
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs text-muted-foreground">Link público</div>
+      <div className="flex gap-2">
+        <Input readOnly value={url} className="text-xs" data-testid="public-link" />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="shrink-0 gap-1.5"
+          onClick={share}
+        >
+          <Share2 className="h-4 w-4" /> Compartilhar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function RegistrationSection({ eventId, isManager }: { eventId: string; isManager: boolean }) {
   const { data: config, isLoading: configLoading } = useTicketConfig(eventId);
   const { data: stats } = useRegistrationStats(eventId);
   const { data: myReg } = useMyRegistration(eventId);
   const { data: allRegs } = useRegistrations(isManager ? eventId : undefined);
-  const register = useRegisterForEvent();
   const cancel = useCancelRegistration();
-  const cpf = useCpfPrompt();
-
-  const signUp = (cpfValue?: string) =>
-    register.mutate(
-      { eventId, cpf: cpfValue },
-      {
-        onSuccess: (reg) => {
-          toast.success(
-            reg.payment_url ? "Inscrição feita! Conclua o pagamento." : "Inscrição confirmada!",
-          );
-        },
-        onError: (e) => cpf.handleError(e, "Não foi possível fazer a inscrição.", (c) => signUp(c)),
-      },
-    );
 
   if (configLoading || !config) return null;
 
@@ -868,9 +915,10 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
           <StatCard label="Confirmados" value={stats.confirmed} />
           <StatCard label="Pendentes" value={stats.pending} />
           <StatCard
-            label="Capacidade"
-            value={stats.capacity != null ? `${stats.total}/${stats.capacity}` : stats.total}
+            label="Vagas ocupadas"
+            value={stats.capacity != null ? `${stats.seats}/${stats.capacity}` : stats.seats}
           />
+          {stats.waitlist > 0 && <StatCard label="Lista de espera" value={stats.waitlist} />}
           {config.price_cents > 0 && (
             <StatCard label="Receita" value={formatBRL(stats.revenue_cents)} />
           )}
@@ -882,25 +930,20 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.min(100, (stats.total / stats.capacity) * 100)}%` }}
+              style={{ width: `${Math.min(100, (stats.seats / stats.capacity) * 100)}%` }}
             />
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {stats.total} de {stats.capacity} vagas preenchidas
+            {stats.seats} de {stats.capacity} vagas preenchidas
           </p>
         </div>
       )}
 
       {!myReg && (
-        <Button
-          className="mt-3 w-full gap-1.5"
-          disabled={register.isPending}
-          onClick={() => signUp()}
-        >
-          <Users className="h-4 w-4" /> Inscrever-se
-        </Button>
+        <div className="mt-3">
+          <SignUpPanel eventId={eventId} config={config} />
+        </div>
       )}
-      {cpf.dialog}
 
       {myReg && (
         <Card className="mt-3">
@@ -943,8 +986,17 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
           <h4 className="text-sm font-medium text-muted-foreground">Todos os inscritos</h4>
           {allRegs.map((r) => (
             <Card key={r.id}>
-              <CardContent className="flex items-center justify-between p-3">
-                <div className="text-sm">{r.person.name}</div>
+              <CardContent className="flex items-center justify-between gap-3 p-3">
+                <div className="min-w-0 text-sm">
+                  <div className="truncate">{r.person.name}</div>
+                  {(r.ticket_type || r.guests.length > 0) && (
+                    <div className="truncate text-xs text-muted-foreground">
+                      {[r.ticket_type?.name, ...r.guests.map((g) => `+ ${g.name}`)]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                  )}
+                </div>
                 <Badge variant="outline">{PAYMENT_STATUS_LABEL[r.payment_status]}</Badge>
               </CardContent>
             </Card>

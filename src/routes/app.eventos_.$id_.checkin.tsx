@@ -248,7 +248,9 @@ function DoorItem({
     <li className="flex items-center justify-between gap-3 px-4 py-3" data-testid="door-row">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{r.person.name}</p>
-        <p className="truncate text-xs text-muted-foreground">{r.person.email}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {r.guest_of ? `Acompanhante de ${r.guest_of}` : r.person.email}
+        </p>
       </div>
       {r.payment_status !== "confirmed" ? (
         <Badge variant="outline" className="shrink-0">

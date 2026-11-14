@@ -11,8 +11,13 @@ import { register, useInviteLookup } from "@/lib/api/membership";
 
 export const Route = createFileRoute("/cadastro")({
   head: () => ({ meta: [{ title: "Criar conta — Redis" }] }),
-  validateSearch: (search: Record<string, unknown>): { convite?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { convite?: string; evento?: string } => ({
     convite: typeof search.convite === "string" && search.convite ? search.convite : undefined,
+    // Came from an event's public link: back to it after signing up.
+    evento:
+      typeof search.evento === "string" && /^[0-9a-f-]{36}$/i.test(search.evento)
+        ? search.evento
+        : undefined,
   }),
   component: SignUp,
 });
@@ -33,7 +38,7 @@ function fieldErrors(error: unknown): Partial<Record<Field, string>> {
 function SignUp() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { convite } = Route.useSearch();
+  const { convite, evento } = Route.useSearch();
   const invite = useInviteLookup(convite);
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
@@ -58,7 +63,8 @@ function SignUp() {
         invite_code: invite.data ? convite : undefined,
       });
       queryClient.clear();
-      navigate({ to: "/app" });
+      if (evento) navigate({ to: "/app/eventos/$id", params: { id: evento } });
+      else navigate({ to: "/app" });
     } catch (err) {
       const byField = fieldErrors(err);
       setErrors(byField);
@@ -72,7 +78,11 @@ function SignUp() {
     }
   }
 
-  const loginSearch = convite ? { redirect: `/convite/${convite}` } : {};
+  const loginSearch = convite
+    ? { redirect: `/convite/${convite}` }
+    : evento
+      ? { redirect: `/app/eventos/${evento}` }
+      : {};
 
   return (
     <AuthShell>
