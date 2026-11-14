@@ -40,6 +40,7 @@ import { hasAccessToken } from "@/lib/api/client";
 import { RouteError } from "@/components/RouteError";
 import { LinkCampusScreen } from "@/components/membership/LinkCampusScreen";
 import { PendingJoinRequestsPill } from "@/components/membership/PendingJoinRequestsPill";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { isUnlinked } from "@/lib/api/membership";
 import {
   canManageResponsibles,
@@ -247,6 +248,7 @@ function TopBar() {
       <SidebarTrigger />
       <div className="flex-1" />
       <PendingJoinRequestsPill />
+      <NotificationBell />
     </header>
   );
 }

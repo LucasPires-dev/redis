@@ -20,6 +20,7 @@ import { Route as AppCursosRouteImport } from './routes/app.cursos'
 import { Route as AppEventosRouteImport } from './routes/app.eventos'
 import { Route as AppMeusCursosRouteImport } from './routes/app.meus-cursos'
 import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
+import { Route as AppNotificacoesRouteImport } from './routes/app.notificacoes'
 import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
 import { Route as AppProducaoRouteImport } from './routes/app.producao'
 import { Route as AppResponsaveisRouteImport } from './routes/app.responsaveis'
@@ -44,6 +45,7 @@ import { Route as AppEventosInscricoesRouteImport } from './routes/app.eventos.i
 import { Route as AppEventosProducaoRouteImport } from './routes/app.eventos.producao'
 import { Route as AppEventosIdRouteImport } from './routes/app.eventos_.$id'
 import { Route as AppMinisteriosKindRouteImport } from './routes/app.ministerios_.$kind'
+import { Route as AppNotificacoesPreferenciasRouteImport } from './routes/app.notificacoes_.preferencias'
 import { Route as AppPessoasIdRouteImport } from './routes/app.pessoas_.$id'
 import { Route as AppProducaoDemandasRouteImport } from './routes/app.producao_.demandas'
 import { Route as AppReconciliacaoDashboardRouteImport } from './routes/app.reconciliacao_.dashboard'
@@ -106,6 +108,11 @@ const AppMeusCursosRoute = AppMeusCursosRouteImport.update({
 const AppMinisteriosRoute = AppMinisteriosRouteImport.update({
   id: '/ministerios',
   path: '/ministerios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificacoesRoute = AppNotificacoesRouteImport.update({
+  id: '/notificacoes',
+  path: '/notificacoes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPessoasRoute = AppPessoasRouteImport.update({
@@ -228,6 +235,12 @@ const AppMinisteriosKindRoute = AppMinisteriosKindRouteImport.update({
   path: '/ministerios/$kind',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNotificacoesPreferenciasRoute =
+  AppNotificacoesPreferenciasRouteImport.update({
+    id: '/notificacoes_/preferencias',
+    path: '/notificacoes/preferencias',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppPessoasIdRoute = AppPessoasIdRouteImport.update({
   id: '/pessoas_/$id',
   path: '/pessoas/$id',
@@ -283,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/app/eventos': typeof AppEventosRouteWithChildren
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/notificacoes': typeof AppNotificacoesRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
@@ -305,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/app/eventos/producao': typeof AppEventosProducaoRoute
   '/app/eventos/$id': typeof AppEventosIdRoute
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
+  '/app/notificacoes/preferencias': typeof AppNotificacoesPreferenciasRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
   '/app/producao/demandas': typeof AppProducaoDemandasRoute
   '/app/reconciliacao/dashboard': typeof AppReconciliacaoDashboardRoute
@@ -324,6 +339,7 @@ export interface FileRoutesByTo {
   '/app/campus': typeof AppCampusRoute
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/notificacoes': typeof AppNotificacoesRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
@@ -346,6 +362,7 @@ export interface FileRoutesByTo {
   '/app/eventos/producao': typeof AppEventosProducaoRoute
   '/app/eventos/$id': typeof AppEventosIdRoute
   '/app/ministerios/$kind': typeof AppMinisteriosKindRoute
+  '/app/notificacoes/preferencias': typeof AppNotificacoesPreferenciasRoute
   '/app/pessoas/$id': typeof AppPessoasIdRoute
   '/app/producao/demandas': typeof AppProducaoDemandasRoute
   '/app/reconciliacao/dashboard': typeof AppReconciliacaoDashboardRoute
@@ -370,6 +387,7 @@ export interface FileRoutesById {
   '/app/eventos': typeof AppEventosRouteWithChildren
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
+  '/app/notificacoes': typeof AppNotificacoesRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
@@ -392,6 +410,7 @@ export interface FileRoutesById {
   '/app/eventos/producao': typeof AppEventosProducaoRoute
   '/app/eventos_/$id': typeof AppEventosIdRoute
   '/app/ministerios_/$kind': typeof AppMinisteriosKindRoute
+  '/app/notificacoes_/preferencias': typeof AppNotificacoesPreferenciasRoute
   '/app/pessoas_/$id': typeof AppPessoasIdRoute
   '/app/producao_/demandas': typeof AppProducaoDemandasRoute
   '/app/reconciliacao_/dashboard': typeof AppReconciliacaoDashboardRoute
@@ -417,6 +436,7 @@ export interface FileRouteTypes {
     | '/app/eventos'
     | '/app/meus-cursos'
     | '/app/ministerios'
+    | '/app/notificacoes'
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
@@ -439,6 +459,7 @@ export interface FileRouteTypes {
     | '/app/eventos/producao'
     | '/app/eventos/$id'
     | '/app/ministerios/$kind'
+    | '/app/notificacoes/preferencias'
     | '/app/pessoas/$id'
     | '/app/producao/demandas'
     | '/app/reconciliacao/dashboard'
@@ -458,6 +479,7 @@ export interface FileRouteTypes {
     | '/app/campus'
     | '/app/meus-cursos'
     | '/app/ministerios'
+    | '/app/notificacoes'
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
@@ -480,6 +502,7 @@ export interface FileRouteTypes {
     | '/app/eventos/producao'
     | '/app/eventos/$id'
     | '/app/ministerios/$kind'
+    | '/app/notificacoes/preferencias'
     | '/app/pessoas/$id'
     | '/app/producao/demandas'
     | '/app/reconciliacao/dashboard'
@@ -503,6 +526,7 @@ export interface FileRouteTypes {
     | '/app/eventos'
     | '/app/meus-cursos'
     | '/app/ministerios'
+    | '/app/notificacoes'
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
@@ -525,6 +549,7 @@ export interface FileRouteTypes {
     | '/app/eventos/producao'
     | '/app/eventos_/$id'
     | '/app/ministerios_/$kind'
+    | '/app/notificacoes_/preferencias'
     | '/app/pessoas_/$id'
     | '/app/producao_/demandas'
     | '/app/reconciliacao_/dashboard'
@@ -624,6 +649,13 @@ declare module '@tanstack/react-router' {
       path: '/ministerios'
       fullPath: '/app/ministerios'
       preLoaderRoute: typeof AppMinisteriosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/notificacoes': {
+      id: '/app/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/app/notificacoes'
+      preLoaderRoute: typeof AppNotificacoesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/pessoas': {
@@ -794,6 +826,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMinisteriosKindRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/notificacoes_/preferencias': {
+      id: '/app/notificacoes_/preferencias'
+      path: '/notificacoes/preferencias'
+      fullPath: '/app/notificacoes/preferencias'
+      preLoaderRoute: typeof AppNotificacoesPreferenciasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/pessoas_/$id': {
       id: '/app/pessoas_/$id'
       path: '/pessoas/$id'
@@ -916,6 +955,7 @@ interface AppRouteChildren {
   AppEventosRoute: typeof AppEventosRouteWithChildren
   AppMeusCursosRoute: typeof AppMeusCursosRoute
   AppMinisteriosRoute: typeof AppMinisteriosRoute
+  AppNotificacoesRoute: typeof AppNotificacoesRoute
   AppPessoasRoute: typeof AppPessoasRoute
   AppProducaoRoute: typeof AppProducaoRoute
   AppResponsaveisRoute: typeof AppResponsaveisRoute
@@ -926,6 +966,7 @@ interface AppRouteChildren {
   AppCursosIdRoute: typeof AppCursosIdRoute
   AppEventosIdRoute: typeof AppEventosIdRoute
   AppMinisteriosKindRoute: typeof AppMinisteriosKindRoute
+  AppNotificacoesPreferenciasRoute: typeof AppNotificacoesPreferenciasRoute
   AppPessoasIdRoute: typeof AppPessoasIdRoute
   AppProducaoDemandasRoute: typeof AppProducaoDemandasRoute
   AppReconciliacaoDashboardRoute: typeof AppReconciliacaoDashboardRoute
@@ -943,6 +984,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEventosRoute: AppEventosRouteWithChildren,
   AppMeusCursosRoute: AppMeusCursosRoute,
   AppMinisteriosRoute: AppMinisteriosRoute,
+  AppNotificacoesRoute: AppNotificacoesRoute,
   AppPessoasRoute: AppPessoasRoute,
   AppProducaoRoute: AppProducaoRoute,
   AppResponsaveisRoute: AppResponsaveisRoute,
@@ -953,6 +995,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCursosIdRoute: AppCursosIdRoute,
   AppEventosIdRoute: AppEventosIdRoute,
   AppMinisteriosKindRoute: AppMinisteriosKindRoute,
+  AppNotificacoesPreferenciasRoute: AppNotificacoesPreferenciasRoute,
   AppPessoasIdRoute: AppPessoasIdRoute,
   AppProducaoDemandasRoute: AppProducaoDemandasRoute,
   AppReconciliacaoDashboardRoute: AppReconciliacaoDashboardRoute,
