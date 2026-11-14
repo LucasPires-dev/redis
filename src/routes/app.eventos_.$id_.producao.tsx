@@ -73,6 +73,7 @@ import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { TicketFields } from "@/components/events/TicketFields";
 import { SignUpPanel } from "@/components/events/SignUpPanel";
 import { TicketTypesManager } from "@/components/events/TicketTypesManager";
+import { DuplicateEventDialog, RepeatEventDialog } from "@/components/events/EventCopyDialogs";
 import {
   EMPTY_TICKET,
   ticketDraftFromConfig,
@@ -178,7 +179,14 @@ function EventRundown() {
             {event.campus ? ` · ${event.campus.name}` : " · Todos os campi"}
           </>
         }
-        actions={<Badge variant="outline">{EVENT_STATUS_LABEL[event.status]}</Badge>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{EVENT_STATUS_LABEL[event.status]}</Badge>
+            {event.series && <Badge variant="secondary">Recorrente</Badge>}
+            {event.can_manage && <DuplicateEventDialog event={event} />}
+            {event.can_manage && !event.series && <RepeatEventDialog event={event} />}
+          </div>
+        }
       />
 
       {myKinds.length > 1 && (

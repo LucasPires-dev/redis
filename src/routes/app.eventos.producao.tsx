@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { capabilitiesOf, useAuth } from "@/lib/api/auth";
 import { MINISTRY_LABEL } from "@/lib/api/ministries";
 import { EVENT_STATUS_LABEL, useDemands, useEvents } from "@/lib/api/production";
+import { SeriesList } from "@/components/events/SeriesList";
 
 // "Produção": the production overview — pending demands and the next events'
 // production panels. For whoever produces or serves in a ministry.
@@ -60,6 +61,8 @@ function ProductionHome() {
           </Card>
         </Link>
       </div>
+
+      <SeriesList />
 
       <section>
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">

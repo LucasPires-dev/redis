@@ -41,6 +41,7 @@ import { Route as AppCursosRelatoriosRouteImport } from './routes/app.cursos.rel
 import { Route as AppCursosTurmasRouteImport } from './routes/app.cursos.turmas'
 import { Route as AppCursosIdRouteImport } from './routes/app.cursos_.$id'
 import { Route as AppEventosIndexRouteImport } from './routes/app.eventos.index'
+import { Route as AppEventosCalendarioRouteImport } from './routes/app.eventos.calendario'
 import { Route as AppEventosDemandasRouteImport } from './routes/app.eventos.demandas'
 import { Route as AppEventosEscalasRouteImport } from './routes/app.eventos.escalas'
 import { Route as AppEventosInscricoesRouteImport } from './routes/app.eventos.inscricoes'
@@ -218,6 +219,11 @@ const AppEventosIndexRoute = AppEventosIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppEventosRoute,
 } as any)
+const AppEventosCalendarioRoute = AppEventosCalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => AppEventosRoute,
+} as any)
 const AppEventosDemandasRoute = AppEventosDemandasRouteImport.update({
   id: '/demandas',
   path: '/demandas',
@@ -333,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/app/cursos/relatorios': typeof AppCursosRelatoriosRoute
   '/app/cursos/turmas': typeof AppCursosTurmasRoute
   '/app/cursos/$id': typeof AppCursosIdRoute
+  '/app/eventos/calendario': typeof AppEventosCalendarioRoute
   '/app/eventos/demandas': typeof AppEventosDemandasRoute
   '/app/eventos/escalas': typeof AppEventosEscalasRoute
   '/app/eventos/inscricoes': typeof AppEventosInscricoesRoute
@@ -379,6 +386,7 @@ export interface FileRoutesByTo {
   '/app/cursos/relatorios': typeof AppCursosRelatoriosRoute
   '/app/cursos/turmas': typeof AppCursosTurmasRoute
   '/app/cursos/$id': typeof AppCursosIdRoute
+  '/app/eventos/calendario': typeof AppEventosCalendarioRoute
   '/app/eventos/demandas': typeof AppEventosDemandasRoute
   '/app/eventos/escalas': typeof AppEventosEscalasRoute
   '/app/eventos/inscricoes': typeof AppEventosInscricoesRoute
@@ -430,6 +438,7 @@ export interface FileRoutesById {
   '/app/cursos/relatorios': typeof AppCursosRelatoriosRoute
   '/app/cursos/turmas': typeof AppCursosTurmasRoute
   '/app/cursos_/$id': typeof AppCursosIdRoute
+  '/app/eventos/calendario': typeof AppEventosCalendarioRoute
   '/app/eventos/demandas': typeof AppEventosDemandasRoute
   '/app/eventos/escalas': typeof AppEventosEscalasRoute
   '/app/eventos/inscricoes': typeof AppEventosInscricoesRoute
@@ -482,6 +491,7 @@ export interface FileRouteTypes {
     | '/app/cursos/relatorios'
     | '/app/cursos/turmas'
     | '/app/cursos/$id'
+    | '/app/eventos/calendario'
     | '/app/eventos/demandas'
     | '/app/eventos/escalas'
     | '/app/eventos/inscricoes'
@@ -528,6 +538,7 @@ export interface FileRouteTypes {
     | '/app/cursos/relatorios'
     | '/app/cursos/turmas'
     | '/app/cursos/$id'
+    | '/app/eventos/calendario'
     | '/app/eventos/demandas'
     | '/app/eventos/escalas'
     | '/app/eventos/inscricoes'
@@ -578,6 +589,7 @@ export interface FileRouteTypes {
     | '/app/cursos/relatorios'
     | '/app/cursos/turmas'
     | '/app/cursos_/$id'
+    | '/app/eventos/calendario'
     | '/app/eventos/demandas'
     | '/app/eventos/escalas'
     | '/app/eventos/inscricoes'
@@ -835,6 +847,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEventosIndexRouteImport
       parentRoute: typeof AppEventosRoute
     }
+    '/app/eventos/calendario': {
+      id: '/app/eventos/calendario'
+      path: '/calendario'
+      fullPath: '/app/eventos/calendario'
+      preLoaderRoute: typeof AppEventosCalendarioRouteImport
+      parentRoute: typeof AppEventosRoute
+    }
     '/app/eventos/demandas': {
       id: '/app/eventos/demandas'
       path: '/demandas'
@@ -989,6 +1008,7 @@ const AppCursosRouteWithChildren = AppCursosRoute._addFileChildren(
 )
 
 interface AppEventosRouteChildren {
+  AppEventosCalendarioRoute: typeof AppEventosCalendarioRoute
   AppEventosDemandasRoute: typeof AppEventosDemandasRoute
   AppEventosEscalasRoute: typeof AppEventosEscalasRoute
   AppEventosInscricoesRoute: typeof AppEventosInscricoesRoute
@@ -997,6 +1017,7 @@ interface AppEventosRouteChildren {
 }
 
 const AppEventosRouteChildren: AppEventosRouteChildren = {
+  AppEventosCalendarioRoute: AppEventosCalendarioRoute,
   AppEventosDemandasRoute: AppEventosDemandasRoute,
   AppEventosEscalasRoute: AppEventosEscalasRoute,
   AppEventosInscricoesRoute: AppEventosInscricoesRoute,

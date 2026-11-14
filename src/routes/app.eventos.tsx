@@ -39,6 +39,7 @@ function EventsArea() {
       <AreaTabs
         tabs={[
           { to: "/app/eventos", label: "Próximos", exact: true },
+          { to: "/app/eventos/calendario", label: "Calendário" },
           {
             to: "/app/eventos/inscricoes",
             label: (
