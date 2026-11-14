@@ -118,3 +118,23 @@ export async function apiList<T>(path: string): Promise<T[]> {
   const page = await apiFetch<Paginated<T>>(path);
   return page.results;
 }
+
+// One readable line out of an API error — DRF validation bodies look like
+// {"field": ["message"]}, {"detail": "message"} or, for nested serializers,
+// {"ticket": {"price_cents": ["message"]}}.
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return firstMessage(error.detail) ?? fallback;
+  return fallback;
+}
+
+function firstMessage(detail: unknown): string | undefined {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) return firstMessage(detail[0]);
+  if (detail && typeof detail === "object") {
+    for (const value of Object.values(detail as Record<string, unknown>)) {
+      const text = firstMessage(value);
+      if (text) return text;
+    }
+  }
+  return undefined;
+}

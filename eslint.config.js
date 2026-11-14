@@ -36,5 +36,19 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // Cypress specs run in the browser with Mocha/Chai-style globals
+    files: ["cypress/**/*.ts", "cypress.config.ts"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.mocha,
+        cy: "readonly",
+        Cypress: "readonly",
+        expect: "readonly",
+        assert: "readonly",
+      },
+    },
+  },
   eslintPluginPrettier,
 );

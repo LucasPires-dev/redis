@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiList } from "./client";
 import type { PersonMini } from "./people";
 
@@ -105,6 +105,17 @@ export function useCampuses() {
   return useQuery({
     queryKey: ["campuses"],
     queryFn: () => apiList<CampusMini>("/api/campuses/"),
+  });
+}
+
+export function useCreateCampus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; city: string }) =>
+      apiFetch<CampusMini>("/api/campuses/", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campuses"] });
+    },
   });
 }
 

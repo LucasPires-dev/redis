@@ -2,11 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { HeartHandshake, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { RouteError } from "@/components/RouteError";
+import { CardGridSkeleton } from "@/components/skeletons";
 import { MINISTRY_LABEL, useMinistries, type MinistryKind } from "@/lib/api/ministries";
 
 export const Route = createFileRoute("/app/ministerios")({
   head: () => ({ meta: [{ title: "Ministérios — Redis" }] }),
   component: MinistryPage,
+  errorComponent: RouteError,
 });
 
 function MinistryPage() {
@@ -24,6 +27,8 @@ function MinistryPage() {
           Ministérios da igreja. Clique para ver detalhes por campus.
         </p>
       </div>
+
+      {isLoading && <CardGridSkeleton />}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {kinds.map((kind) => {
@@ -61,7 +66,6 @@ function MinistryPage() {
         {!isLoading && kinds.length === 0 && (
           <p className="text-sm text-muted-foreground">Nenhum ministério visível para seu perfil.</p>
         )}
-        {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
       </div>
     </div>
   );

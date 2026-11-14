@@ -12,12 +12,15 @@ import {
   useMinistryGeneralLeaderships,
   type MinistryKind,
 } from "@/lib/api/ministries";
+import { RouteError } from "@/components/RouteError";
+import { DetailSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/app/ministerios_/$kind")({
   head: ({ params }) => ({
     meta: [{ title: `${MINISTRY_LABEL[params.kind as MinistryKind] ?? "Ministério"} — Redis` }],
   }),
   component: MinistryDetail,
+  errorComponent: RouteError,
   notFoundComponent: () => (
     <div className="p-10 text-sm text-muted-foreground">Ministério não encontrado.</div>
   ),
@@ -53,7 +56,7 @@ function MinistryDetail() {
   }, [isLoading, onlyCampusId, k, navigate]);
 
   if (!isLoading && onlyRow) {
-    return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
+    return <DetailSkeleton />;
   }
 
   return (

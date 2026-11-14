@@ -13,10 +13,12 @@ import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { useCampuses } from "@/lib/api/ministries";
 import { useReconciliationDashboard, type ReconciliationBucket } from "@/lib/api/reconciliation";
+import { RouteError } from "@/components/RouteError";
 
 export const Route = createFileRoute("/app/reconciliacao_/dashboard")({
   head: () => ({ meta: [{ title: "Reconciliação — Dashboard — Redis" }] }),
   component: ReconciliacaoDashboard,
+  errorComponent: RouteError,
 });
 
 function ReconciliacaoDashboard() {

@@ -52,6 +52,26 @@ reatribuível, não um campo fixo na pessoa. Ele dá acesso a todo ministério, 
 atividade do campus liderado (`scope_ministries`/`scope_cells`/`scope_teams`/`scope_activities`
 já incluem essa condição), e aparece em `/api/auth/me/` como `led_campuses`.
 
+## Células, temporadas e encontros (API real)
+
+As células funcionam por **temporada** (`Season`), definida para a igreja toda. A temporada
+atual não é guardada: é a que contém a data de hoje (`GET /api/seasons/current/`). Cada
+temporada tem suas próprias células; renovar uma célula (`POST /api/cells/:id/renew/`) cria
+uma célula nova ligada à anterior (`previous_cell`), preservando membros, líderes e encontros
+da temporada passada como histórico.
+
+| Quem | Pode |
+|---|---|
+| Gestor / Responsável geral pelas células (`CellGeneralLeadership`, `is_cells_general_leader` no `/me`) | Criar e editar temporadas, ver e gerenciar todas as células, criar células, atribuir líderes, renovar células, definir o responsável pelas células de qualquer campus. |
+| Líder de campus | Definir o responsável pelas células do seu campus, e tudo o que esse responsável pode no campus. |
+| Responsável pelas células do campus (`CampusCellsLeadership`, `led_campuses_cells` no `/me`) | No seu campus: ver e gerenciar todas as células, criar células, atribuir líderes, renovar células. Não mexe em temporadas. Precisa ser do próprio campus. |
+| Líder/colíder da célula | Editar a célula, gerenciar membros e registrar encontros com presença. |
+| Membro | Ver a célula e seus encontros. |
+
+Regras: membros podem ser de qualquer campus; líderes precisam ser do campus da célula.
+Presença em encontro só aceita membros/líderes da célula — visitantes entram como número
+(`visitors_count`).
+
 O restante deste documento — `RoleKey`, o seletor de papel no topo do app, `visiblePeople`/
 `visibleEvents` — continua sendo só um protótipo de frontend (`mock-store.ts`), usado apenas
 pelas telas ainda não migradas para a API real (`/app/campus`, `/app/cursos`, `/app/eventos`).

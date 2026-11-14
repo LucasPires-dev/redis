@@ -5,10 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/api/auth";
 import { MINISTRY_LABEL } from "@/lib/api/ministries";
 import { useDemands, useEvents } from "@/lib/api/production";
+import { RouteError } from "@/components/RouteError";
 
 export const Route = createFileRoute("/app/producao")({
   head: () => ({ meta: [{ title: "Produção — Redis" }] }),
   component: ProductionHome,
+  errorComponent: RouteError,
 });
 
 function ProductionHome() {

@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/api/auth";
+import { RouteError } from "@/components/RouteError";
 import { MINISTRY_LABEL, PRODUCTION_MINISTRY_KINDS, type MinistryKind } from "@/lib/api/ministries";
 import {
   useAcceptDemand,
@@ -39,6 +40,7 @@ import {
 export const Route = createFileRoute("/app/producao_/demandas")({
   head: () => ({ meta: [{ title: "Demandas — Redis" }] }),
   component: DemandsPage,
+  errorComponent: RouteError,
 });
 
 const DEMAND_TYPE_LABEL: Record<DemandType, string> = {
@@ -143,7 +145,7 @@ function DemandList({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-sm font-medium">
-                  {MINISTRY_LABEL[d.from_ministry_kind]} → {MINISTRY_LABEL[d.to_ministry_kind]}
+                  {d.from_ministry_kind ? MINISTRY_LABEL[d.from_ministry_kind] : "Evento"} → {MINISTRY_LABEL[d.to_ministry_kind]}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {DEMAND_TYPE_LABEL[d.demand_type]}
