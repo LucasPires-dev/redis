@@ -18,6 +18,8 @@ function queryKeyFor(kind: string, eventId: string): unknown[] | undefined {
       return ["production-checklist-items", eventId];
     case "demand":
       return ["production-demands"];
+    case "checkin":
+      return ["door-list", eventId];
     default:
       return undefined;
   }

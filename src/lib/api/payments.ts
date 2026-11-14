@@ -28,12 +28,16 @@ export interface EventRegistration {
   amount_cents: number;
   payment_url: string;
   paid_at: string | null;
+  /** What the person shows at the door (QR code or typed). */
+  ticket_code: string;
+  checked_in_at: string | null;
   created_at: string;
 }
 
 export interface RegistrationStats {
   total: number;
   confirmed: number;
+  checked_in: number;
   pending: number;
   cancelled: number;
   capacity: number | null;
@@ -198,4 +202,63 @@ export function formatBRL(cents: number): string {
 /** Like formatBRL, but a 0 price reads "Gratuito". */
 export function formatTicketPrice(cents: number): string {
   return cents ? formatBRL(cents) : "Gratuito";
+}
+
+// ── Check-in at the door ─────────────────────────────────────────────────────
+
+export interface DoorRow {
+  id: string;
+  person: PersonMini;
+  payment_status: EventRegistration["payment_status"];
+  checked_in_at: string | null;
+}
+
+export interface DoorList {
+  confirmed: number;
+  checked_in: number;
+  registrations: DoorRow[];
+}
+
+export interface CheckinResult {
+  registration: DoorRow;
+  already_checked_in: boolean;
+}
+
+export type CheckinTarget = { code: string } | { registration_id: string };
+
+/** "ABCDE-FGHJK": a ticket code split in two, easier to read out. */
+export function formatTicketCode(code: string) {
+  return code.length > 5 ? `${code.slice(0, 5)}-${code.slice(5)}` : code;
+}
+
+export function useDoorList(eventId: string) {
+  return useQuery({
+    queryKey: ["door-list", eventId],
+    queryFn: () => apiFetch<DoorList>(`/api/payments/registrations/door-list/?event=${eventId}`),
+    // Other devices at the door check people in too (also pushed live).
+    refetchInterval: 30_000,
+  });
+}
+
+function useDoorAction(eventId: string, path: "checkin" | "undo-checkin") {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (target: CheckinTarget) =>
+      apiFetch<CheckinResult>(`/api/payments/registrations/${path}/`, {
+        method: "POST",
+        body: JSON.stringify({ event_id: eventId, ...target }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["door-list", eventId] });
+      qc.invalidateQueries({ queryKey: ["registration-stats", eventId] });
+    },
+  });
+}
+
+export function useCheckin(eventId: string) {
+  return useDoorAction(eventId, "checkin");
+}
+
+export function useUndoCheckin(eventId: string) {
+  return useDoorAction(eventId, "undo-checkin");
 }
