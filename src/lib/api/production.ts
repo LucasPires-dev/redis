@@ -66,6 +66,8 @@ export interface Event {
   can_check_in: boolean;
   /** The recurring event it was created from, if any. */
   series: string | null;
+  /** People counted in the room (events without registration). */
+  headcount: number | null;
   created_at: string;
 }
 

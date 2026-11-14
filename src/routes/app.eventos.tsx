@@ -68,6 +68,8 @@ function EventsArea() {
           },
           { to: "/app/eventos/producao", label: "Produção", show: caps.production },
           { to: "/app/eventos/demandas", label: "Demandas", show: caps.production },
+          // Reports are for whoever organizes events.
+          { to: "/app/eventos/relatorios", label: "Relatórios", show: caps.create },
         ]}
       />
 
