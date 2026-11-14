@@ -54,6 +54,7 @@ function SignUp() {
   const invite = useInviteLookup(convite);
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [birthDate, setBirthDate] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -71,6 +72,7 @@ function SignUp() {
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
+        birth_date: birthDate || null,
         password: form.password,
         invite_code: invite.data ? convite : undefined,
       });
@@ -170,6 +172,15 @@ function SignUp() {
               className="h-11"
               value={form.phone}
               onChange={(e) => set("phone", e.target.value)}
+            />
+          </FormField>
+          <FormField id="birth-date" label="Data de nascimento (opcional)">
+            <Input
+              id="birth-date"
+              type="date"
+              className="h-11"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
             />
           </FormField>
           <FormField
