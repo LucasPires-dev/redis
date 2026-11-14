@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PublicLink } from "@/components/PublicLink";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -926,47 +927,10 @@ function VisibilitySection({ event }: { event: Event }) {
             }
             hints={EVENT_VISIBILITY_HINTS}
           />
-          {event.visibility === "public" && event.ticket_config && (
-            <PublicLink eventId={event.id} />
-          )}
+          {event.visibility === "public" && <PublicLink path={publicEventPath(event.id)} />}
         </CardContent>
       </Card>
     </DetailSection>
-  );
-}
-
-/** The event's public link, to share (copy, or the phone's share sheet). */
-function PublicLink({ eventId }: { eventId: string }) {
-  const url =
-    typeof window === "undefined" ? "" : `${window.location.origin}${publicEventPath(eventId)}`;
-  async function share() {
-    try {
-      if (navigator.share) {
-        await navigator.share({ url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      toast.success("Link copiado.");
-    } catch {
-      // Share sheet closed, or no clipboard: the link stays visible to copy by hand.
-    }
-  }
-  return (
-    <div className="space-y-1.5">
-      <div className="text-xs text-muted-foreground">Link público</div>
-      <div className="flex gap-2">
-        <Input readOnly value={url} className="text-xs" data-testid="public-link" />
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="shrink-0 gap-1.5"
-          onClick={share}
-        >
-          <Share2 className="h-4 w-4" /> Compartilhar
-        </Button>
-      </div>
-    </div>
   );
 }
 

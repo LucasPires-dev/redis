@@ -11,12 +11,19 @@ import { register, useInviteLookup } from "@/lib/api/membership";
 
 export const Route = createFileRoute("/cadastro")({
   head: () => ({ meta: [{ title: "Criar conta — Redis" }] }),
-  validateSearch: (search: Record<string, unknown>): { convite?: string; evento?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { convite?: string; evento?: string; turma?: string } => ({
     convite: typeof search.convite === "string" && search.convite ? search.convite : undefined,
     // Came from an event's public link: back to it after signing up.
     evento:
       typeof search.evento === "string" && /^[0-9a-f-]{36}$/i.test(search.evento)
         ? search.evento
+        : undefined,
+    // Came from a course class's public page: to the open classes after.
+    turma:
+      typeof search.turma === "string" && /^[0-9a-f-]{36}$/i.test(search.turma)
+        ? search.turma
         : undefined,
   }),
   component: SignUp,
@@ -38,7 +45,7 @@ function fieldErrors(error: unknown): Partial<Record<Field, string>> {
 function SignUp() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { convite, evento } = Route.useSearch();
+  const { convite, evento, turma } = Route.useSearch();
   const invite = useInviteLookup(convite);
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
@@ -64,6 +71,7 @@ function SignUp() {
       });
       queryClient.clear();
       if (evento) navigate({ to: "/app/eventos/$id", params: { id: evento } });
+      else if (turma) navigate({ to: "/app/cursos" });
       else navigate({ to: "/app" });
     } catch (err) {
       const byField = fieldErrors(err);
@@ -82,7 +90,9 @@ function SignUp() {
     ? { redirect: `/convite/${convite}` }
     : evento
       ? { redirect: `/app/eventos/${evento}` }
-      : {};
+      : turma
+        ? { redirect: "/app/cursos" }
+        : {};
 
   return (
     <AuthShell>

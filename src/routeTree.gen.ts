@@ -12,21 +12,25 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as CadastroRouteImport } from './routes/cadastro'
+import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppCampusRouteImport } from './routes/app.campus'
 import { Route as AppCelulasRouteImport } from './routes/app.celulas'
 import { Route as AppCursosRouteImport } from './routes/app.cursos'
 import { Route as AppEventosRouteImport } from './routes/app.eventos'
+import { Route as AppExplorarRouteImport } from './routes/app.explorar'
 import { Route as AppMeusCursosRouteImport } from './routes/app.meus-cursos'
 import { Route as AppMinisteriosRouteImport } from './routes/app.ministerios'
 import { Route as AppNotificacoesRouteImport } from './routes/app.notificacoes'
 import { Route as AppPessoasRouteImport } from './routes/app.pessoas'
 import { Route as AppProducaoRouteImport } from './routes/app.producao'
 import { Route as AppResponsaveisRouteImport } from './routes/app.responsaveis'
+import { Route as CelulaIdRouteImport } from './routes/celula.$id'
 import { Route as CertificadoCodeRouteImport } from './routes/certificado.$code'
 import { Route as ConviteCodeRouteImport } from './routes/convite.$code'
 import { Route as EventoIdRouteImport } from './routes/evento.$id'
+import { Route as TurmaIdRouteImport } from './routes/turma.$id'
 import { Route as AppCampusIdRouteImport } from './routes/app.campus_.$id'
 import { Route as AppCelulasIndexRouteImport } from './routes/app.celulas.index'
 import { Route as AppCelulasCoordenacaoRouteImport } from './routes/app.celulas.coordenacao'
@@ -76,6 +80,11 @@ const CadastroRoute = CadastroRouteImport.update({
   path: '/cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExplorarRoute = ExplorarRouteImport.update({
+  id: '/explorar',
+  path: '/explorar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -104,6 +113,11 @@ const AppCursosRoute = AppCursosRouteImport.update({
 const AppEventosRoute = AppEventosRouteImport.update({
   id: '/eventos',
   path: '/eventos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppExplorarRoute = AppExplorarRouteImport.update({
+  id: '/explorar',
+  path: '/explorar',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMeusCursosRoute = AppMeusCursosRouteImport.update({
@@ -136,6 +150,11 @@ const AppResponsaveisRoute = AppResponsaveisRouteImport.update({
   path: '/responsaveis',
   getParentRoute: () => AppRoute,
 } as any)
+const CelulaIdRoute = CelulaIdRouteImport.update({
+  id: '/celula/$id',
+  path: '/celula/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CertificadoCodeRoute = CertificadoCodeRouteImport.update({
   id: '/certificado/$code',
   path: '/certificado/$code',
@@ -149,6 +168,11 @@ const ConviteCodeRoute = ConviteCodeRouteImport.update({
 const EventoIdRoute = EventoIdRouteImport.update({
   id: '/evento/$id',
   path: '/evento/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TurmaIdRoute = TurmaIdRouteImport.update({
+  id: '/turma/$id',
+  path: '/turma/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppCampusIdRoute = AppCampusIdRouteImport.update({
@@ -325,20 +349,24 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/cadastro': typeof CadastroRoute
+  '/explorar': typeof ExplorarRoute
   '/login': typeof LoginRoute
   '/app/campus': typeof AppCampusRoute
   '/app/celulas': typeof AppCelulasRouteWithChildren
   '/app/cursos': typeof AppCursosRouteWithChildren
   '/app/eventos': typeof AppEventosRouteWithChildren
+  '/app/explorar': typeof AppExplorarRoute
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/notificacoes': typeof AppNotificacoesRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
+  '/celula/$id': typeof CelulaIdRoute
   '/certificado/$code': typeof CertificadoCodeRoute
   '/convite/$code': typeof ConviteCodeRoute
   '/evento/$id': typeof EventoIdRoute
+  '/turma/$id': typeof TurmaIdRoute
   '/app/': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
@@ -377,17 +405,21 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
+  '/explorar': typeof ExplorarRoute
   '/login': typeof LoginRoute
   '/app/campus': typeof AppCampusRoute
+  '/app/explorar': typeof AppExplorarRoute
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/notificacoes': typeof AppNotificacoesRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
+  '/celula/$id': typeof CelulaIdRoute
   '/certificado/$code': typeof CertificadoCodeRoute
   '/convite/$code': typeof ConviteCodeRoute
   '/evento/$id': typeof EventoIdRoute
+  '/turma/$id': typeof TurmaIdRoute
   '/app': typeof AppIndexRoute
   '/app/campus/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
@@ -428,20 +460,24 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/cadastro': typeof CadastroRoute
+  '/explorar': typeof ExplorarRoute
   '/login': typeof LoginRoute
   '/app/campus': typeof AppCampusRoute
   '/app/celulas': typeof AppCelulasRouteWithChildren
   '/app/cursos': typeof AppCursosRouteWithChildren
   '/app/eventos': typeof AppEventosRouteWithChildren
+  '/app/explorar': typeof AppExplorarRoute
   '/app/meus-cursos': typeof AppMeusCursosRoute
   '/app/ministerios': typeof AppMinisteriosRoute
   '/app/notificacoes': typeof AppNotificacoesRoute
   '/app/pessoas': typeof AppPessoasRoute
   '/app/producao': typeof AppProducaoRoute
   '/app/responsaveis': typeof AppResponsaveisRoute
+  '/celula/$id': typeof CelulaIdRoute
   '/certificado/$code': typeof CertificadoCodeRoute
   '/convite/$code': typeof ConviteCodeRoute
   '/evento/$id': typeof EventoIdRoute
+  '/turma/$id': typeof TurmaIdRoute
   '/app/': typeof AppIndexRoute
   '/app/campus_/$id': typeof AppCampusIdRoute
   '/app/celulas/coordenacao': typeof AppCelulasCoordenacaoRoute
@@ -483,20 +519,24 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/cadastro'
+    | '/explorar'
     | '/login'
     | '/app/campus'
     | '/app/celulas'
     | '/app/cursos'
     | '/app/eventos'
+    | '/app/explorar'
     | '/app/meus-cursos'
     | '/app/ministerios'
     | '/app/notificacoes'
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
+    | '/celula/$id'
     | '/certificado/$code'
     | '/convite/$code'
     | '/evento/$id'
+    | '/turma/$id'
     | '/app/'
     | '/app/campus/$id'
     | '/app/celulas/coordenacao'
@@ -535,17 +575,21 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/cadastro'
+    | '/explorar'
     | '/login'
     | '/app/campus'
+    | '/app/explorar'
     | '/app/meus-cursos'
     | '/app/ministerios'
     | '/app/notificacoes'
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
+    | '/celula/$id'
     | '/certificado/$code'
     | '/convite/$code'
     | '/evento/$id'
+    | '/turma/$id'
     | '/app'
     | '/app/campus/$id'
     | '/app/celulas/coordenacao'
@@ -585,20 +629,24 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/cadastro'
+    | '/explorar'
     | '/login'
     | '/app/campus'
     | '/app/celulas'
     | '/app/cursos'
     | '/app/eventos'
+    | '/app/explorar'
     | '/app/meus-cursos'
     | '/app/ministerios'
     | '/app/notificacoes'
     | '/app/pessoas'
     | '/app/producao'
     | '/app/responsaveis'
+    | '/celula/$id'
     | '/certificado/$code'
     | '/convite/$code'
     | '/evento/$id'
+    | '/turma/$id'
     | '/app/'
     | '/app/campus_/$id'
     | '/app/celulas/coordenacao'
@@ -639,10 +687,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   CadastroRoute: typeof CadastroRoute
+  ExplorarRoute: typeof ExplorarRoute
   LoginRoute: typeof LoginRoute
+  CelulaIdRoute: typeof CelulaIdRoute
   CertificadoCodeRoute: typeof CertificadoCodeRoute
   ConviteCodeRoute: typeof ConviteCodeRoute
   EventoIdRoute: typeof EventoIdRoute
+  TurmaIdRoute: typeof TurmaIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -666,6 +717,13 @@ declare module '@tanstack/react-router' {
       path: '/cadastro'
       fullPath: '/cadastro'
       preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explorar': {
+      id: '/explorar'
+      path: '/explorar'
+      fullPath: '/explorar'
+      preLoaderRoute: typeof ExplorarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -710,6 +768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEventosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/explorar': {
+      id: '/app/explorar'
+      path: '/explorar'
+      fullPath: '/app/explorar'
+      preLoaderRoute: typeof AppExplorarRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/meus-cursos': {
       id: '/app/meus-cursos'
       path: '/meus-cursos'
@@ -752,6 +817,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppResponsaveisRouteImport
       parentRoute: typeof AppRoute
     }
+    '/celula/$id': {
+      id: '/celula/$id'
+      path: '/celula/$id'
+      fullPath: '/celula/$id'
+      preLoaderRoute: typeof CelulaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/certificado/$code': {
       id: '/certificado/$code'
       path: '/certificado/$code'
@@ -771,6 +843,13 @@ declare module '@tanstack/react-router' {
       path: '/evento/$id'
       fullPath: '/evento/$id'
       preLoaderRoute: typeof EventoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/turma/$id': {
+      id: '/turma/$id'
+      path: '/turma/$id'
+      fullPath: '/turma/$id'
+      preLoaderRoute: typeof TurmaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/campus_/$id': {
@@ -1074,6 +1153,7 @@ interface AppRouteChildren {
   AppCelulasRoute: typeof AppCelulasRouteWithChildren
   AppCursosRoute: typeof AppCursosRouteWithChildren
   AppEventosRoute: typeof AppEventosRouteWithChildren
+  AppExplorarRoute: typeof AppExplorarRoute
   AppMeusCursosRoute: typeof AppMeusCursosRoute
   AppMinisteriosRoute: typeof AppMinisteriosRoute
   AppNotificacoesRoute: typeof AppNotificacoesRoute
@@ -1105,6 +1185,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCelulasRoute: AppCelulasRouteWithChildren,
   AppCursosRoute: AppCursosRouteWithChildren,
   AppEventosRoute: AppEventosRouteWithChildren,
+  AppExplorarRoute: AppExplorarRoute,
   AppMeusCursosRoute: AppMeusCursosRoute,
   AppMinisteriosRoute: AppMinisteriosRoute,
   AppNotificacoesRoute: AppNotificacoesRoute,
@@ -1138,10 +1219,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   CadastroRoute: CadastroRoute,
+  ExplorarRoute: ExplorarRoute,
   LoginRoute: LoginRoute,
+  CelulaIdRoute: CelulaIdRoute,
   CertificadoCodeRoute: CertificadoCodeRoute,
   ConviteCodeRoute: ConviteCodeRoute,
   EventoIdRoute: EventoIdRoute,
+  TurmaIdRoute: TurmaIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

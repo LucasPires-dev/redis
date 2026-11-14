@@ -11,6 +11,8 @@ import {
   ChevronsUpDown,
   LogOut,
   UserCog,
+  Compass,
+  Link2,
 } from "lucide-react";
 import { RedisLogo } from "@/components/brand/RedisLogo";
 import {
@@ -63,6 +65,8 @@ const NAV: {
   hideForMinistryLeader?: boolean;
   /** Show only when this predicate returns true (checked in AppSidebar). */
   visibleWhen?: "responsibleManager";
+  /** Also for accounts not linked to a church yet (public things only). */
+  openToUnlinked?: boolean;
 }[] = [
   {
     to: "/app",
@@ -78,10 +82,12 @@ const NAV: {
   { to: "/app/celulas", label: "Células", icon: Sparkles },
   // Everyone: upcoming events and own registrations; producers and ministry
   // people get the Produção and Demandas tabs inside (see app.eventos.tsx).
-  { to: "/app/eventos", label: "Eventos", icon: Calendar },
+  { to: "/app/eventos", label: "Eventos", icon: Calendar, openToUnlinked: true },
   // Everyone: open classes and own enrollments; teachers and coordinators get
   // extra tabs inside (see app.cursos.tsx).
-  { to: "/app/cursos", label: "Cursos", icon: GraduationCap },
+  { to: "/app/cursos", label: "Cursos", icon: GraduationCap, openToUnlinked: true },
+  // What any church opened to everyone.
+  { to: "/app/explorar", label: "Explorar", icon: Compass, openToUnlinked: true },
   // Appointing responsibles: manager, campus leaders and general area responsibles.
   {
     to: "/app/responsaveis",
@@ -91,8 +97,17 @@ const NAV: {
   },
 ];
 
+/** Where an account without a church may go: public events and classes, its
+ *  own registrations and enrollments, and its notices. */
+const UNLINKED_PATHS = ["/app/explorar", "/app/eventos", "/app/cursos", "/app/notificacoes"];
+
+function openToUnlinked(pathname: string) {
+  return UNLINKED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 function AppShell() {
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { me, isAuthenticated, isLoading, logout } = useAuth();
 
   useEffect(() => {
@@ -115,7 +130,8 @@ function AppShell() {
     );
   }
 
-  if (isUnlinked(me)) {
+  const unlinked = isUnlinked(me);
+  if (unlinked && !openToUnlinked(pathname)) {
     return (
       <LinkCampusScreen
         me={me!}
@@ -133,6 +149,7 @@ function AppShell() {
         <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
+          {unlinked && <UnlinkedBanner />}
           <main className="flex-1 overflow-auto">
             <Outlet />
           </main>
@@ -146,7 +163,9 @@ function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { me } = useAuth();
   const restrictedNav = isMinistryLeaderOnly(me) || isReconciliadorOnly(me);
+  const unlinked = isUnlinked(me);
   const items = NAV.filter((item) => {
+    if (unlinked) return !!item.openToUnlinked;
     if (item.visibleWhen === "responsibleManager" && !canManageResponsibles(me)) return false;
     return !item.hideForMinistryLeader || !restrictedNav;
   });
@@ -239,6 +258,21 @@ function UserMenu() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** An account without a church: the way to link it, on every screen it can open. */
+function UnlinkedBanner() {
+  return (
+    <div
+      className="flex items-center justify-between gap-3 border-b border-border bg-primary/5 px-4 py-2 text-sm"
+      data-testid="unlinked-banner"
+    >
+      <span className="text-muted-foreground">Sua conta ainda não está ligada a uma igreja.</span>
+      <Link to="/app" className="inline-flex shrink-0 items-center gap-1 font-medium text-primary">
+        <Link2 className="h-4 w-4" /> Vincular
+      </Link>
+    </div>
   );
 }
 

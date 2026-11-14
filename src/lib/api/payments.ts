@@ -436,6 +436,7 @@ export interface PublicEvent {
   ends_at: string | null;
   campus: { name: string; city: string } | null;
   church: string | null;
+  /** Null: an event without registration. */
   ticket: {
     description: string;
     price_cents: number;
@@ -448,7 +449,7 @@ export interface PublicEvent {
       sales_end: string | null;
       sold_out: boolean;
     }[];
-  };
+  } | null;
   sold_out: boolean;
   registration_open: boolean;
 }

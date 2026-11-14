@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { PublicLink } from "@/components/PublicLink";
+import { publicCellPath } from "@/lib/api/explore";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -221,6 +223,11 @@ function CellDetail() {
                   </Link>
                 }
               />
+            )}
+            {cell.visibility === "public" && cell.can_manage && (
+              <div className="sm:col-span-2 lg:col-span-4">
+                <PublicLink path={publicCellPath(cell.id)} label="Página pública da célula" />
+              </div>
             )}
           </CardContent>
         </Card>
