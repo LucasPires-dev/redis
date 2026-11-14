@@ -9,10 +9,8 @@
  */
 
 function visitCellAmor() {
-  cy.visit("/app/celulas/coordination");
-  cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-    "be.visible",
-  );
+  cy.visit("/app/celulas/coordenacao");
+  cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
   cy.contains("Célula Amor").closest("a").click();
   cy.contains("Liderança", { timeout: 10000 }).should("be.visible");
 }
@@ -26,9 +24,7 @@ describe("Cell detail — Edit dialog", () => {
   it("opens edit dialog with pre-filled cell name", () => {
     cy.contains("button", "Editar").click();
     cy.get("[role='dialog']").should("be.visible");
-    cy.get("[role='dialog']")
-      .contains("Editar célula")
-      .should("be.visible");
+    cy.get("[role='dialog']").contains("Editar célula").should("be.visible");
     cy.get("#cell-name").should("have.value", "Célula Amor");
   });
 
@@ -112,9 +108,7 @@ describe("Cell detail — Assign leader/co-leader", () => {
   it("shows the 'Adicionar liderança' section with role selector", () => {
     cy.contains("Adicionar liderança").should("be.visible");
     // Default role is "Líder"
-    cy.contains("Adicionar liderança")
-      .closest("[class*='p-4']")
-      .contains("Líder");
+    cy.contains("Adicionar liderança").closest("[class*='p-4']").contains("Líder");
   });
 
   it("can switch role to Colíder in the selector", () => {
@@ -123,27 +117,19 @@ describe("Cell detail — Assign leader/co-leader", () => {
       .find("button[role='combobox']")
       .click();
     cy.get("[role='option']").contains("Colíder").click();
-    cy.contains("Adicionar liderança")
-      .closest("[class*='p-4']")
-      .contains("Colíder");
+    cy.contains("Adicionar liderança").closest("[class*='p-4']").contains("Colíder");
   });
 
   it("PersonSearch shows results when typing 2+ chars", () => {
     // Type in the leadership search input
-    cy.contains("Adicionar liderança")
-      .closest("[class*='p-4']")
-      .find("input")
-      .type("Kar");
+    cy.contains("Adicionar liderança").closest("[class*='p-4']").find("input").type("Kar");
 
     // Should show results after debounce
     cy.contains("Karen Oliveira", { timeout: 5000 }).should("be.visible");
   });
 
   it("PersonSearch shows 'Ninguém encontrado' for no match", () => {
-    cy.contains("Adicionar liderança")
-      .closest("[class*='p-4']")
-      .find("input")
-      .type("zzzzz");
+    cy.contains("Adicionar liderança").closest("[class*='p-4']").find("input").type("zzzzz");
 
     cy.contains("Ninguém encontrado", { timeout: 5000 }).should("be.visible");
   });
@@ -152,10 +138,7 @@ describe("Cell detail — Assign leader/co-leader", () => {
     cy.on("window:confirm", () => true);
 
     // Search for Karen and assign as leader
-    cy.contains("Adicionar liderança")
-      .closest("[class*='p-4']")
-      .find("input")
-      .type("Karen");
+    cy.contains("Adicionar liderança").closest("[class*='p-4']").find("input").type("Karen");
 
     cy.contains("button", "Karen Oliveira").click();
     cy.contains(/agora é líder/i, { timeout: 5000 }).should("be.visible");
@@ -200,9 +183,7 @@ describe("Cell detail — Assign leader/co-leader", () => {
       .should("contain.text", "Isabela Santos");
 
     // Remove Isabela
-    cy.get(
-      "button[aria-label='Remover Isabela Santos da liderança']",
-    ).click();
+    cy.get("button[aria-label='Remover Isabela Santos da liderança']").click();
     cy.contains("Liderança removida", { timeout: 10000 }).should("be.visible");
   });
 });
@@ -233,9 +214,7 @@ describe("Cell detail — Add/Remove members", () => {
     // Use Gabriela who is not a member of Célula Amor
     cy.get("input[placeholder*='Adicionar membro']").type("Gabriela");
     cy.contains("button", "Gabriela Pinto", { timeout: 5000 }).click();
-    cy.contains(/adicionado.*à célula/i, { timeout: 5000 }).should(
-      "be.visible",
-    );
+    cy.contains(/adicionado.*à célula/i, { timeout: 5000 }).should("be.visible");
 
     // Verify Gabriela appears in the members section
     cy.contains("h2", /Membros/i)
@@ -254,9 +233,7 @@ describe("Cell detail — Add/Remove members", () => {
     // Add Leonardo (not currently a member of Célula Amor)
     cy.get("input[placeholder*='Adicionar membro']").type("Leonardo");
     cy.contains("button", "Leonardo Dias", { timeout: 5000 }).click();
-    cy.contains(/adicionado.*à célula/i, { timeout: 5000 }).should(
-      "be.visible",
-    );
+    cy.contains(/adicionado.*à célula/i, { timeout: 5000 }).should("be.visible");
 
     // Verify Leonardo appears
     cy.contains("h2", /Membros/i)
@@ -318,14 +295,12 @@ describe("Cell detail — Renew dialog", () => {
     cy.get("[role='dialog']").then(($dialog) => {
       if ($dialog.text().includes("Não há temporada posterior")) {
         // No future season available — expected message shown
-        cy.wrap($dialog)
-          .contains("Não há temporada posterior")
-          .should("be.visible");
+        cy.wrap($dialog).contains("Não há temporada posterior").should("be.visible");
       } else {
         // Future season available — checkbox shown
-        cy.wrap($dialog).contains(/Levar os \d+ membros atuais/).should(
-          "be.visible",
-        );
+        cy.wrap($dialog)
+          .contains(/Levar os \d+ membros atuais/)
+          .should("be.visible");
       }
     });
   });
@@ -390,8 +365,6 @@ describe("Cell detail — Remove leader X button", () => {
   });
 
   it("shows X button next to co-leader Ana Silva", () => {
-    cy.get("button[aria-label='Remover Ana Silva da liderança']").should(
-      "exist",
-    );
+    cy.get("button[aria-label='Remover Ana Silva da liderança']").should("exist");
   });
 });

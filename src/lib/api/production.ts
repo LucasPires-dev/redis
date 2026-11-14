@@ -14,6 +14,13 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   special_service: "Culto Especial",
 };
 
+export const EVENT_STATUS_LABEL: Record<EventStatus, string> = {
+  planning: "Planejamento",
+  confirmed: "Confirmado",
+  in_progress: "Em andamento",
+  closed: "Encerrado",
+};
+
 export const PRODUCER_EVENT_TYPES: EventType[] = ["conference", "special_service", "training"];
 export type ItemStatusValue = "ok" | "attention" | "problem";
 export type DemandType =
@@ -53,6 +60,8 @@ export interface Event {
   rundown_items: RundownItem[];
   /** Registration summary; null when the event has no registration. */
   ticket_config: EventTicketSummary | null;
+  /** Whether the viewer can edit the event and its production (same rule as the API). */
+  can_manage: boolean;
   created_at: string;
 }
 
@@ -88,6 +97,10 @@ export interface Demand {
   status: DemandStatus;
   rejection_reason: string;
   created_by: PersonMini | null;
+  /** Viewer leads the receiving ministry: can accept, reject and complete. */
+  can_answer: boolean;
+  /** Viewer is on the sending side (or produces the event): can edit/cancel. */
+  can_edit: boolean;
   created_at: string;
   updated_at: string;
 }

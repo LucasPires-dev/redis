@@ -1,28 +1,27 @@
 describe("Cell Coordination Page", () => {
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/celulas/coordination");
+    cy.visit("/app/celulas/coordenacao");
     // Wait for the page to finish loading (the loading state shows "Carregando…")
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
   });
 
   // ─── Page load & access ────────────────────────────────────────────
 
-  it("renders the page header with campus subtitle", () => {
-    cy.contains("Coordenação de Células").should("be.visible");
+  it("opens on the Coordenação tab, next to Minhas células", () => {
+    cy.contains("[aria-current=page]", "Coordenação").should("be.visible");
+    cy.get("nav[aria-label='Seções']").contains("a", "Minhas células").should("be.visible");
     cy.contains("Central").should("be.visible");
   });
 
-  it("shows a back link to Células", () => {
-    cy.contains("a", "Células")
-      .should("have.attr", "href")
-      .and("include", "/celulas");
+  it("keeps a single Células entry in the sidebar", () => {
+    cy.get("[data-sidebar=sidebar]").contains("a", "Células").should("be.visible");
+    cy.get("[data-sidebar=sidebar]").should("not.contain", "Coord. Células");
   });
 
-  it("shows Coord. Células in the sidebar", () => {
-    cy.contains("Coord. Células").should("be.visible");
+  it("the old address redirects to the Coordenação tab", () => {
+    cy.visit("/app/celulas/coordination");
+    cy.location("pathname").should("eq", "/app/celulas/coordenacao");
   });
 
   // ─── KPIs ──────────────────────────────────────────────────────────
@@ -65,9 +64,7 @@ describe("Cell Coordination Page", () => {
   });
 
   it("shows leader name on cells with a leader", () => {
-    cy.contains("Célula Amor")
-      .closest("a")
-      .should("contain.text", "Lucas c. Pires");
+    cy.contains("Célula Amor").closest("a").should("contain.text", "Lucas c. Pires");
   });
 
   it("shows 'Sem líder' badge on leaderless cells", () => {
@@ -76,9 +73,7 @@ describe("Cell Coordination Page", () => {
   });
 
   it("does NOT show 'Sem líder' on cells with a leader", () => {
-    cy.contains("Célula Amor")
-      .closest("a")
-      .should("not.contain.text", "Sem líder");
+    cy.contains("Célula Amor").closest("a").should("not.contain.text", "Sem líder");
   });
 
   it("shows meeting day badge on cards", () => {
@@ -174,19 +169,16 @@ describe("Cell Coordination Page", () => {
     cy.url().should("match", /\/app\/celulas\/[a-f0-9-]+/);
   });
 
-  it("back link goes to cells list", () => {
-    cy.contains("a", "Células").click();
-    cy.url().should("include", "/app/celulas");
-    cy.url().should("not.include", "coordination");
+  it("the Minhas células tab goes to the personal list", () => {
+    cy.get("nav[aria-label='Seções']").contains("a", "Minhas células").click();
+    cy.location("pathname").should("eq", "/app/celulas");
   });
 
   // ─── Edge cases & stress ───────────────────────────────────────────
 
   it("survives a page refresh", () => {
     cy.reload();
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Amor").should("be.visible");
   });
 
@@ -215,14 +207,14 @@ describe("Cell Coordination Page", () => {
     cy.get("[role='dialog']").should("not.exist");
 
     // Page is intact
-    cy.contains("Coordenação de Células").should("be.visible");
+    cy.contains("[aria-current=page]", "Coordenação").should("be.visible");
     cy.contains("Célula Amor").should("be.visible");
   });
 });
 
 describe("Cell Coordination — Access Control", () => {
   it("redirects unauthenticated users to login", () => {
-    cy.visit("/app/celulas/coordination");
+    cy.visit("/app/celulas/coordenacao");
     cy.url().should("include", "/login");
   });
 });

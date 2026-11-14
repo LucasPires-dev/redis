@@ -8,13 +8,9 @@ import { DetailHeader } from "@/components/detail/DetailHeader";
 import { StatCard } from "@/components/detail/StatCard";
 import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { CourseClassFormDialog } from "@/components/courses/CourseClassFormDialog";
-import {
-  useCourse,
-  useCourseClasses,
-  WEEKDAY_LABEL,
-  TEACHER_ROLE_LABEL,
-} from "@/lib/api/courses";
+import { useCourse, useCourseClasses, WEEKDAY_LABEL, TEACHER_ROLE_LABEL } from "@/lib/api/courses";
 import { RouteError } from "@/components/RouteError";
+import { capabilitiesOf, useAuth } from "@/lib/api/auth";
 import { DetailSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/app/cursos_/$id")({
@@ -31,6 +27,13 @@ function CourseDetail() {
   const { data: course, isLoading } = useCourse(id);
   const { data: classes } = useCourseClasses(id);
   const [showNewClass, setShowNewClass] = useState(false);
+  const { me } = useAuth();
+  // Back to the tab the person came from: Gestão for coordinators, Minhas turmas for teachers.
+  const backTo = capabilitiesOf(me).courses.coordinate
+    ? "/app/cursos/gestao"
+    : capabilitiesOf(me).courses.teach
+      ? "/app/cursos/turmas"
+      : "/app/cursos";
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -44,7 +47,7 @@ function CourseDetail() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <DetailHeader
-        backTo="/app/cursos"
+        backTo={backTo}
         backLabel="Cursos"
         icon={<GraduationCap className="h-6 w-6" />}
         title={course.name}
@@ -68,11 +71,7 @@ function CourseDetail() {
           label="Turmas"
           value={totalClasses}
         />
-        <StatCard
-          icon={<BookOpen className="h-4 w-4" />}
-          label="Aulas"
-          value={totalLessons}
-        />
+        <StatCard icon={<BookOpen className="h-4 w-4" />} label="Aulas" value={totalLessons} />
       </div>
 
       <CourseClassFormDialog open={showNewClass} onOpenChange={setShowNewClass} courseId={id} />
@@ -81,9 +80,11 @@ function CourseDetail() {
         title="Turmas"
         count={totalClasses}
         action={
-          <Button size="sm" variant="outline" onClick={() => setShowNewClass(true)}>
-            <Plus className="mr-1.5 h-4 w-4" /> Nova turma
-          </Button>
+          course.can_add_class ? (
+            <Button size="sm" variant="outline" onClick={() => setShowNewClass(true)}>
+              <Plus className="mr-1.5 h-4 w-4" /> Nova turma
+            </Button>
+          ) : undefined
         }
       >
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -124,9 +125,7 @@ function CourseDetail() {
               </Card>
             </Link>
           ))}
-          {(classes ?? []).length === 0 && (
-            <EmptyState>Nenhuma turma cadastrada ainda.</EmptyState>
-          )}
+          {(classes ?? []).length === 0 && <EmptyState>Nenhuma turma cadastrada ainda.</EmptyState>}
         </div>
       </DetailSection>
     </div>

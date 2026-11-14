@@ -15,6 +15,14 @@ export interface EventTicketConfig {
 export interface EventRegistration {
   id: string;
   person: PersonMini;
+  event: {
+    id: string;
+    title: string;
+    event_type: string;
+    starts_at: string;
+    status: string;
+    campus_name: string | null;
+  };
   payment_status: "pending" | "confirmed" | "cancelled" | "refunded";
   /** What this registration was charged, frozen at registration time. */
   amount_cents: number;
@@ -112,6 +120,17 @@ export function useMyRegistration(eventId: string | undefined) {
   });
 }
 
+/** Every registration of the caller, across events ("Minhas inscrições"). */
+export function useMyRegistrations() {
+  return useQuery({
+    queryKey: ["registrations", "mine"],
+    queryFn: () =>
+      apiFetch<{ results: EventRegistration[] }>("/api/payments/registrations/").then(
+        (page) => page.results,
+      ),
+  });
+}
+
 export function useRegisterForEvent() {
   const qc = useQueryClient();
   return useMutation({
@@ -122,7 +141,7 @@ export function useRegisterForEvent() {
       }),
     onSuccess: (_d, { eventId, cpf }) => {
       if (cpf) qc.invalidateQueries({ queryKey: ["me"] });
-      qc.invalidateQueries({ queryKey: ["registrations", eventId] });
+      qc.invalidateQueries({ queryKey: ["registrations"] });
       qc.invalidateQueries({ queryKey: ["my-registration", eventId] });
       qc.invalidateQueries({ queryKey: ["registration-stats", eventId] });
     },

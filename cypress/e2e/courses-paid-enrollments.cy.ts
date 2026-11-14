@@ -1,4 +1,4 @@
-// Paid course enrollments: class fees, the member's "Meus cursos" page and the
+// Paid course enrollments: class fees, the member's tabs of the Cursos area and the
 // coordinators' "Financeiro" tab (scholarship, in-person payment, expenses,
 // material, cancellation with refund).
 // Runs against the real backend seeded with `manage.py seed_initial_church`.
@@ -144,7 +144,7 @@ describe("Courses — paid enrollments", () => {
 
   it("member enrolls in a free class by themselves", () => {
     cy.login(MEMBER, PASSWORD);
-    cy.visit("/app/meus-cursos");
+    cy.visit("/app/cursos");
     cy.contains("[data-testid=open-class]", FREE_CLASS, { timeout: 15000 })
       .should("contain", "Gratuito")
       .contains("button", "Inscrever-me")
@@ -156,7 +156,7 @@ describe("Courses — paid enrollments", () => {
 
   it("member picks paid items and gives the CPF; a failed charge keeps nothing", () => {
     cy.login(MEMBER, PASSWORD);
-    cy.visit("/app/meus-cursos");
+    cy.visit("/app/cursos");
     cy.contains("[data-testid=open-class]", PAID_CLASS, { timeout: 15000 })
       .should("contain", `a partir de ${R}30,00`)
       .contains("button", "Inscrever-me")
@@ -264,8 +264,7 @@ describe("Courses — paid enrollments", () => {
 
   it("member sees the paid enrollment and can't cancel it alone", () => {
     cy.login(MEMBER, PASSWORD);
-    cy.visit("/app/meus-cursos");
-    cy.contains("[role=tab]", "Minhas matrículas", { timeout: 15000 }).click();
+    cy.visit("/app/cursos/matriculas");
     cy.contains("[data-testid=my-enrollment]", PAID_CLASS)
       .should("contain", "Paga")
       .and("contain", "Bolsa")

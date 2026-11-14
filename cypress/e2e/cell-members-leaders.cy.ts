@@ -13,10 +13,8 @@
 describe("Coordination page — member counts & leaders on cards", () => {
   beforeEach(() => {
     cy.login();
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
   });
 
   it("KPI total members reflects all members across cells", () => {
@@ -37,17 +35,11 @@ describe("Coordination page — member counts & leaders on cards", () => {
 
   it("cards show leader names (not co-leaders)", () => {
     // Cards only show leaders, not co-leaders
-    cy.contains("Célula Amor")
-      .closest("a")
-      .should("contain.text", "Lucas c. Pires");
+    cy.contains("Célula Amor").closest("a").should("contain.text", "Lucas c. Pires");
 
-    cy.contains("Célula Esperança")
-      .closest("a")
-      .should("contain.text", "Lucas c. Pires");
+    cy.contains("Célula Esperança").closest("a").should("contain.text", "Lucas c. Pires");
 
-    cy.contains("Célula Fé")
-      .closest("a")
-      .should("contain.text", "Lucas c. Pires");
+    cy.contains("Célula Fé").closest("a").should("contain.text", "Lucas c. Pires");
   });
 
   it("leaderless cells show 'Sem líder' badge", () => {
@@ -75,10 +67,8 @@ describe("Cell detail page — leadership section", () => {
   });
 
   it("shows leader and co-leader for Célula Amor", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Amor").closest("a").click();
     cy.url().should("match", /\/app\/celulas\/[a-f0-9-]+/);
 
@@ -97,10 +87,8 @@ describe("Cell detail page — leadership section", () => {
   });
 
   it("shows leader and co-leader for Célula Esperança", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Esperança").closest("a").click();
 
     cy.contains(".text-xs", /L[íi]deres/i)
@@ -113,10 +101,8 @@ describe("Cell detail page — leadership section", () => {
   });
 
   it("shows leader but no co-leader for Célula Fé", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Fé").closest("a").click();
 
     cy.contains(".text-xs", /L[íi]deres/i)
@@ -129,10 +115,8 @@ describe("Cell detail page — leadership section", () => {
   });
 
   it("shows no leader and no co-leader for Célula Graça", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Graça").closest("a").click();
 
     cy.contains(".text-xs", /L[íi]deres/i)
@@ -151,10 +135,8 @@ describe("Cell detail page — members roster", () => {
   });
 
   it("Célula Amor shows all members with correct role badges", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Amor").closest("a").click();
 
     // Members section header
@@ -180,18 +162,14 @@ describe("Cell detail page — members roster", () => {
       .contains("Colíder");
 
     // Regular members should be visible (no role badge)
-    ["Bruno Costa", "Carla Mendes", "Daniel Souza", "Elena Rocha"].forEach(
-      (name) => {
-        cy.get("@membrosSection").contains(name).should("be.visible");
-      },
-    );
+    ["Bruno Costa", "Carla Mendes", "Daniel Souza", "Elena Rocha"].forEach((name) => {
+      cy.get("@membrosSection").contains(name).should("be.visible");
+    });
   });
 
   it("Célula Graça shows 3 members, none with leader badges", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Graça").closest("a").click();
 
     cy.contains("Ana Silva").should("be.visible");
@@ -199,16 +177,12 @@ describe("Cell detail page — members roster", () => {
     cy.contains("Carla Mendes").should("be.visible");
 
     // No "Líder" badge anywhere in the members section
-    cy.contains("Membros")
-      .closest("section, div")
-      .should("not.contain.text", "Líder");
+    cy.contains("Membros").closest("section, div").should("not.contain.text", "Líder");
   });
 
   it("Célula Luz shows 2 members only", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Luz").closest("a").click();
 
     cy.contains("Daniel Souza").should("be.visible");
@@ -220,10 +194,8 @@ describe("Cell detail page — members roster", () => {
   });
 
   it("member cards show email addresses", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Amor").closest("a").click();
 
     cy.contains("ana@test.com").should("be.visible");
@@ -231,10 +203,8 @@ describe("Cell detail page — members roster", () => {
   });
 
   it("member cards link to person detail", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Amor").closest("a").click();
 
     cy.contains("a", "Ana Silva")
@@ -249,10 +219,8 @@ describe("Cell detail page — management buttons", () => {
   });
 
   it("shows Editar and Renovar buttons for a cell the user can manage", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Amor").closest("a").click();
 
     cy.contains("button", "Editar").should("be.visible");
@@ -260,10 +228,8 @@ describe("Cell detail page — management buttons", () => {
   });
 
   it("shows add member search for a managed cell", () => {
-    cy.visit("/app/celulas/coordination");
-    cy.contains("Coordenação de Células", { timeout: 15000 }).should(
-      "be.visible",
-    );
+    cy.visit("/app/celulas/coordenacao");
+    cy.contains("[aria-current=page]", "Coordenação", { timeout: 15000 }).should("be.visible");
     cy.contains("Célula Amor").closest("a").click();
 
     // The PersonSearch input for adding members

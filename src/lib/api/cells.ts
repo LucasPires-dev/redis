@@ -99,6 +99,8 @@ export interface CellFilters {
   season?: string;
   meetingDay?: MeetingDay;
   campusId?: string;
+  /** Only the cells the caller leads, co-leads or belongs to. */
+  mine?: boolean;
 }
 
 export function useCells(filters: CellFilters = {}) {
@@ -106,6 +108,7 @@ export function useCells(filters: CellFilters = {}) {
   if (filters.season) params.set("season", filters.season);
   if (filters.meetingDay) params.set("meeting_day", String(filters.meetingDay));
   if (filters.campusId) params.set("campus", filters.campusId);
+  if (filters.mine) params.set("mine", "true");
   return useQuery({
     queryKey: ["cells", "list", filters],
     queryFn: () => apiList<Cell>(`/api/cells/?${params}`),
