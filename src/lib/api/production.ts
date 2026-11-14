@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Visibility } from "@/lib/visibility";
 import { apiFetch, apiList } from "./client";
 import type { CampusMini, MinistryKind } from "./ministries";
 import type { PersonMini } from "./people";
@@ -53,6 +54,10 @@ export interface Event {
   event_type: EventType;
   campus: CampusMini | null;
   ministry_kind: MinistryKind | null;
+  /** The church it belongs to (the campus's, or the creator's for a general event). */
+  church: { id: string; name: string } | null;
+  /** Members of the church only, or everyone. */
+  visibility: Visibility;
   starts_at: string;
   ends_at: string | null;
   status: EventStatus;
@@ -265,9 +270,23 @@ export interface CreateEventInput {
   event_type: EventType;
   campus_id?: string | null;
   ministry_kind?: MinistryKind | null;
+  visibility?: Visibility;
   starts_at: string;
   ends_at?: string | null;
   ticket?: CreateEventTicketInput | null;
+}
+
+/** Who may see the event (organizers). */
+export function useSetEventVisibility() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ eventId, visibility }: { eventId: string; visibility: Visibility }) =>
+      apiFetch<Event>(`/api/production-events/${eventId}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ visibility }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["production-events"] }),
+  });
 }
 
 export function useCreateEvent() {

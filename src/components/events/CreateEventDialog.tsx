@@ -39,6 +39,8 @@ import {
 import { ApiError, apiErrorMessage } from "@/lib/api/client";
 import { formatTicketPrice } from "@/lib/api/payments";
 import { TicketFields } from "@/components/events/TicketFields";
+import { VisibilityField } from "@/components/VisibilityField";
+import { EVENT_VISIBILITY_HINTS, type Visibility } from "@/lib/visibility";
 import {
   EMPTY_TICKET,
   ticketDraftToPayload,
@@ -138,6 +140,7 @@ function CreateEventDialogFor({ me }: { me: Me }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [visibility, setVisibility] = useState<Visibility>("members");
   const [eventType, setEventType] = useState<EventType>(types[0]);
   const [campusId, setCampusId] = useState(me.campus?.id ?? "");
   const [ministryKind, setMinistryKind] = useState<MinistryKind | "">("");
@@ -180,6 +183,7 @@ function CreateEventDialogFor({ me }: { me: Me }) {
   function reset() {
     setTitle("");
     setDescription("");
+    setVisibility("members");
     setEventType(types[0]);
     setMinistryKind("");
     setStartsAt("");
@@ -201,6 +205,7 @@ function CreateEventDialogFor({ me }: { me: Me }) {
         event_type: eventType,
         campus_id: campusValue === ALL_CAMPUSES ? null : campusValue,
         ministry_kind: needsMinistry ? (ministryKind as MinistryKind) : null,
+        visibility,
         starts_at: new Date(startsAt).toISOString(),
         ends_at: endsAt ? new Date(endsAt).toISOString() : null,
         ticket: ticketPayload,
@@ -351,6 +356,12 @@ function CreateEventDialogFor({ me }: { me: Me }) {
               rows={2}
             />
           </div>
+          <VisibilityField
+            id="event-visibility"
+            value={visibility}
+            onChange={setVisibility}
+            hints={EVENT_VISIBILITY_HINTS}
+          />
 
           <div className="rounded-lg border">
             <div className="flex items-start justify-between gap-4 p-4">

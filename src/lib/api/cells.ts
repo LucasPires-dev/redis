@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Visibility } from "@/lib/visibility";
 import { apiFetch, apiList } from "./client";
 import type { CampusMini, MinistryKind } from "./ministries";
 import type { PersonMini } from "./people";
@@ -70,6 +71,8 @@ export interface Cell {
   meeting_time: string | null;
   // Empty only on cells created before it was required.
   target_audience: CellAudience | "";
+  /** Members of the church only, or everyone (a public page with church, day and time). */
+  visibility: Visibility;
   // Required fields still empty; while any is missing the cell isn't active
   // (no meetings, no renewal, not offered to new converts).
   missing_fields: CellRequiredField[];
@@ -438,6 +441,7 @@ export interface CellInput {
   meeting_time: string | null;
   // Day, time and audience are required by the API; the form starts them empty.
   target_audience: CellAudience | "";
+  visibility: Visibility;
   address: string;
   description: string;
   start_date: string | null;

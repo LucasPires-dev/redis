@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Visibility } from "@/lib/visibility";
 import { apiDownload, apiFetch, apiList } from "./client";
 import type { CampusMini } from "./ministries";
 import type { PersonMini } from "./people";
@@ -167,6 +168,8 @@ export interface OpenClass {
   course_name: string;
   course_description: string;
   campus: CampusMini;
+  church_name: string;
+  visibility: Visibility;
   name: string;
   description: string;
   weekday: number | null;
@@ -256,6 +259,7 @@ export interface CourseClass {
   /** Share of the lessons a student must attend to complete the class. */
   min_attendance_percent: number;
   self_enrollment: boolean;
+  visibility: Visibility;
   max_capacity: number | null;
   enrollment_deadline: string | null;
   reservation_days: number;
@@ -280,6 +284,7 @@ export interface CourseClassInput {
   end_date?: string | null;
   description?: string;
   self_enrollment?: boolean;
+  visibility?: Visibility;
   max_capacity?: number | null;
   enrollment_deadline?: string | null;
   reservation_days?: number;

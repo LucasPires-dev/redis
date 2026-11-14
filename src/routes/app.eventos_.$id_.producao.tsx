@@ -69,12 +69,16 @@ import {
   useAcceptDemand,
   useCompleteDemand,
   useRejectDemand,
+  useSetEventVisibility,
+  type Event,
 } from "@/lib/api/production";
 import { useEventRealtime } from "@/lib/api/realtime";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { TicketFields } from "@/components/events/TicketFields";
+import { PublicBadge, VisibilityField } from "@/components/VisibilityField";
+import { EVENT_VISIBILITY_HINTS } from "@/lib/visibility";
 import { SignUpPanel } from "@/components/events/SignUpPanel";
 import { TicketTypesManager } from "@/components/events/TicketTypesManager";
 import { DuplicateEventDialog, RepeatEventDialog } from "@/components/events/EventCopyDialogs";
@@ -188,6 +192,7 @@ function EventRundown() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">{EVENT_STATUS_LABEL[event.status]}</Badge>
             {event.series && <Badge variant="secondary">Recorrente</Badge>}
+            {event.visibility === "public" && <PublicBadge />}
             {event.can_manage && <DuplicateEventDialog event={event} />}
             {event.can_manage && !event.series && <RepeatEventDialog event={event} />}
             {event.can_manage && (
@@ -396,6 +401,8 @@ function EventRundown() {
         campusId={event.campus?.id}
         isManager={event.can_manage}
       />
+
+      {event.can_manage && <VisibilitySection event={event} />}
 
       <TicketConfigSection
         eventId={event.id}
@@ -859,11 +866,6 @@ function TicketConfigSection({
               <div className="text-xs text-muted-foreground">Descrição</div>
               <div className="text-sm font-medium">{config.description || "—"}</div>
             </div>
-            {config.is_public && (
-              <div className="col-span-2 sm:col-span-4">
-                <PublicLink eventId={eventId} />
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
@@ -893,6 +895,42 @@ function TicketConfigSection({
           </Button>
         </DialogContent>
       </Dialog>
+    </DetailSection>
+  );
+}
+
+/** Organizers choose who may see the event; a public one with registration has a link to share. */
+function VisibilitySection({ event }: { event: Event }) {
+  const setVisibility = useSetEventVisibility();
+  return (
+    <DetailSection title="Quem pode ver">
+      <Card>
+        <CardContent className="space-y-3 p-4" data-testid="event-visibility">
+          <VisibilityField
+            id="event-visibility-edit"
+            value={event.visibility}
+            disabled={setVisibility.isPending}
+            onChange={(visibility) =>
+              setVisibility.mutate(
+                { eventId: event.id, visibility },
+                {
+                  onSuccess: () =>
+                    toast.success(
+                      visibility === "public"
+                        ? "Evento aberto a todos os públicos."
+                        : "Evento só para os membros da igreja.",
+                    ),
+                  onError: (e) => toast.error(apiErrorMessage(e, "Não foi possível alterar.")),
+                },
+              )
+            }
+            hints={EVENT_VISIBILITY_HINTS}
+          />
+          {event.visibility === "public" && event.ticket_config && (
+            <PublicLink eventId={event.id} />
+          )}
+        </CardContent>
+      </Card>
     </DetailSection>
   );
 }

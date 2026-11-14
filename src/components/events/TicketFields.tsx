@@ -1,7 +1,6 @@
 import { Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
@@ -41,7 +40,6 @@ export function TicketFields({
     deadline: `${idPrefix}-deadline`,
     description: `${idPrefix}-description`,
     companions: `${idPrefix}-companions`,
-    isPublic: `${idPrefix}-public`,
   };
 
   return (
@@ -142,20 +140,6 @@ export function TicketFields({
         <p className="text-xs text-muted-foreground">
           Cada acompanhante ganha o próprio ingresso e ocupa uma vaga. 0 = sem acompanhantes.
         </p>
-      </div>
-
-      <div className="flex items-start justify-between gap-3 rounded-lg border p-3">
-        <div className="space-y-0.5">
-          <Label htmlFor={ids.isPublic}>Link público</Label>
-          <p className="text-xs text-muted-foreground">
-            Qualquer pessoa com o link vê o evento e se inscreve, mesmo de fora do campus.
-          </p>
-        </div>
-        <Switch
-          id={ids.isPublic}
-          checked={value.isPublic}
-          onCheckedChange={(v) => set("isPublic", v)}
-        />
       </div>
 
       <div className="space-y-1.5">
