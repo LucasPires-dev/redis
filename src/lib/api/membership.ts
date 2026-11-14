@@ -29,6 +29,7 @@ export interface RegisterInput {
   email: string;
   password: string;
   phone?: string;
+  birth_date?: string | null;
   invite_code?: string;
 }
 

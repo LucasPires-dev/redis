@@ -36,6 +36,7 @@ import { DetailSkeleton } from "@/components/skeletons";
 import { CellMeetingsSection } from "@/components/cells/CellMeetingsSection";
 import { CellVisitorsSection } from "@/components/cells/CellVisitorsSection";
 import { CellJoinRequestsSection } from "@/components/cells/CellJoinRequestsSection";
+import { CellBirthdaysSection } from "@/components/cells/CellBirthdaysSection";
 import { CellHealthSection } from "@/components/cells/CellHealthSection";
 import { CellMultiplicationSection } from "@/components/cells/CellMultiplicationSection";
 import { CellSupervisionSection } from "@/components/cells/CellSupervisionSection";
@@ -308,6 +309,7 @@ function CellDetail() {
       <CellMeetingsSection cell={cell} roster={roster} />
 
       {cell.can_manage && <CellJoinRequestsSection cellId={cell.id} />}
+      {cell.can_manage && <CellBirthdaysSection cellId={cell.id} />}
       {cell.can_manage && <CellVisitorsSection cell={cell} />}
     </div>
   );

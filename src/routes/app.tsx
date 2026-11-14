@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -11,6 +11,7 @@ import {
   ChevronsUpDown,
   LogOut,
   UserCog,
+  UserRound,
   Compass,
   Link2,
 } from "lucide-react";
@@ -40,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { hasAccessToken } from "@/lib/api/client";
 import { RouteError } from "@/components/RouteError";
+import { ProfileDialog } from "@/components/ProfileDialog";
 import { LinkCampusScreen } from "@/components/membership/LinkCampusScreen";
 import { PendingJoinRequestsPill } from "@/components/membership/PendingJoinRequestsPill";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -221,6 +223,7 @@ function AppSidebar() {
 function UserMenu() {
   const navigate = useNavigate();
   const { me, logout } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
   const initials = me
     ? me.name
         .split(" ")
@@ -248,6 +251,9 @@ function UserMenu() {
       <DropdownMenuContent side="right" align="end" className="w-56">
         <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setProfileOpen(true)}>
+          <UserRound className="mr-2 h-4 w-4" /> Meu perfil
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
             logout();
@@ -257,6 +263,7 @@ function UserMenu() {
           <LogOut className="mr-2 h-4 w-4" /> Sair
         </DropdownMenuItem>
       </DropdownMenuContent>
+      {me && <ProfileDialog me={me} open={profileOpen} onOpenChange={setProfileOpen} />}
     </DropdownMenu>
   );
 }

@@ -32,6 +32,8 @@ export interface Me {
   name: string;
   email: string;
   phone: string;
+  /** Optional ("YYYY-MM-DD"); leaders only see the day and month. */
+  birth_date: string | null;
   /** Whether a CPF is on file (needed to pay online; the CPF itself is never returned). */
   has_cpf: boolean;
   campus: CampusMini | null;
