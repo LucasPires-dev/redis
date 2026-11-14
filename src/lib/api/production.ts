@@ -64,6 +64,8 @@ export interface Event {
   can_manage: boolean;
   /** Check people in at the door (managers and the confirmed roster). */
   can_check_in: boolean;
+  /** The recurring event it was created from, if any. */
+  series: string | null;
   created_at: string;
 }
 
@@ -203,6 +205,124 @@ export function useCreateEvent() {
       apiFetch<Event>("/api/production-events/", { method: "POST", body: JSON.stringify(input) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["production-events"] }),
   });
+}
+
+/** Events between two days (inclusive, "YYYY-MM-DD"), for the calendar. */
+export function useEventsInRange(from: string, to: string) {
+  return useQuery({
+    queryKey: ["production-events", { from, to }],
+    queryFn: () => apiList<Event>(`/api/production-events/?from=${from}&to=${to}&page_size=500`),
+  });
+}
+
+export interface DuplicateEventInput {
+  eventId: string;
+  starts_at: string;
+  title?: string;
+  copy_roster: boolean;
+}
+
+/** A copy on another date: rundown, checklist, ticket and (optionally) the roster. */
+export function useDuplicateEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ eventId, ...body }: DuplicateEventInput) =>
+      apiFetch<Event>(`/api/production-events/${eventId}/duplicate/`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["production-events"] }),
+  });
+}
+
+// ── Recurring events ─────────────────────────────────────────────────────────
+
+/** Python's weekday(): 0 = Monday … 6 = Sunday. */
+export const WEEKDAY_LABEL = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+
+export interface EventSeries {
+  id: string;
+  title: string;
+  description: string;
+  event_type: EventType;
+  campus: CampusMini | null;
+  ministry_kind: MinistryKind | null;
+  weekday: number;
+  /** "19:00:00" */
+  start_time: string;
+  duration_minutes: number;
+  every_weeks: number;
+  starts_on: string;
+  ends_on: string | null;
+  template: Pick<Event, "id" | "title" | "starts_at"> | null;
+  copy_roster: boolean;
+  weeks_ahead: number;
+  is_active: boolean;
+  /** Next dates ("YYYY-MM-DD"), up to 4. */
+  next_dates: string[];
+  /** Occurrences already created ahead. */
+  upcoming: number;
+  created_at: string;
+}
+
+export interface EventSeriesInput {
+  title: string;
+  description?: string;
+  event_type: EventType;
+  campus_id: string | null;
+  ministry_kind: MinistryKind | null;
+  weekday: number;
+  start_time: string;
+  duration_minutes: number;
+  every_weeks: number;
+  starts_on: string;
+  ends_on: string | null;
+  template_id: string | null;
+  copy_roster: boolean;
+}
+
+export function useEventSeries() {
+  return useQuery({
+    queryKey: ["production-series"],
+    queryFn: () => apiList<EventSeries>("/api/production-series/"),
+  });
+}
+
+function useSeriesMutation<V, R>(fn: (vars: V) => Promise<R>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["production-series"] });
+      queryClient.invalidateQueries({ queryKey: ["production-events"] });
+    },
+  });
+}
+
+export function useCreateSeries() {
+  return useSeriesMutation((input: EventSeriesInput) =>
+    apiFetch<EventSeries>("/api/production-series/", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  );
+}
+
+export function useUpdateSeries() {
+  return useSeriesMutation(
+    ({ id, ...body }: Partial<EventSeriesInput> & { id: string; is_active?: boolean }) =>
+      apiFetch<EventSeries>(`/api/production-series/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
+  );
+}
+
+/** Ends the series: its upcoming occurrences without registrations go too. */
+export function useEndSeries() {
+  return useSeriesMutation((id: string) =>
+    apiFetch<void>(`/api/production-series/${id}/`, { method: "DELETE" }),
+  );
 }
 
 export interface CreateRundownItemInput {

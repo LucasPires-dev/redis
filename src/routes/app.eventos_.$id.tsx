@@ -24,6 +24,7 @@ import {
 import { SignUpPanel } from "@/components/events/SignUpPanel";
 import { RouteError } from "@/components/RouteError";
 import { TicketButton } from "@/components/events/TicketDialog";
+import { AddToCalendar } from "@/components/events/AddToCalendar";
 import { DetailSkeleton } from "@/components/skeletons";
 
 export const Route = createFileRoute("/app/eventos_/$id")({
@@ -73,9 +74,11 @@ function EventDetail() {
           </span>
         }
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">{EVENT_TYPE_LABEL[event.event_type]}</Badge>
             <Badge variant="secondary">{EVENT_STATUS_LABEL[event.status] ?? event.status}</Badge>
+            {event.series && <Badge variant="outline">Recorrente</Badge>}
+            <AddToCalendar event={{ ...event, location: event.campus?.name ?? undefined }} />
           </div>
         }
       />
