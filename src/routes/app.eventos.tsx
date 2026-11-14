@@ -4,9 +4,10 @@ import { AreaTabs } from "@/components/AreaTabs";
 import { RouteError } from "@/components/RouteError";
 import { capabilitiesOf, useAuth } from "@/lib/api/auth";
 import { useMyRegistrations } from "@/lib/api/payments";
+import { useMyRoster, useMySwaps } from "@/lib/api/production";
 
 // The Eventos area: one screen for everyone. Personal tabs (upcoming events,
-// own registrations) are always there; "Produção" and "Demandas" are added for
+// own registrations, own roster) are always there; "Produção" and "Demandas" are added for
 // producers and ministry people — a producer registered for an event keeps both.
 export const Route = createFileRoute("/app/eventos")({
   head: () => ({ meta: [{ title: "Eventos — Redis" }] }),
@@ -19,6 +20,12 @@ function EventsArea() {
   const caps = capabilitiesOf(me).events;
   const { data: mine } = useMyRegistrations();
   const owing = (mine ?? []).filter((r) => r.payment_status === "pending").length;
+  const { data: roster } = useMyRoster();
+  const { data: swaps } = useMySwaps();
+  // Waiting for my answer: invitations and swaps asked of me.
+  const toAnswer =
+    (roster ?? []).filter((e) => e.status === "invited").length +
+    (swaps ?? []).filter((s) => s.substitute.id === me?.id).length;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
@@ -40,6 +47,19 @@ function EventsArea() {
                 {owing > 0 && (
                   <Badge variant="destructive" className="ml-1.5 h-5 px-1.5 text-[10px]">
                     {owing}
+                  </Badge>
+                )}
+              </>
+            ),
+          },
+          {
+            to: "/app/eventos/escalas",
+            label: (
+              <>
+                Minhas escalas
+                {toAnswer > 0 && (
+                  <Badge variant="destructive" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                    {toAnswer}
                   </Badge>
                 )}
               </>

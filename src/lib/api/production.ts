@@ -84,10 +84,7 @@ export interface CreateEventTicketInput {
 
 export interface Demand {
   id: string;
-  event: Pick<
-    Event,
-    "id" | "title" | "event_type" | "campus" | "ministry_kind" | "starts_at" | "status"
-  > | null;
+  event: EventMini | null;
   from_ministry_kind: MinistryKind | null;
   from_campus: CampusMini | null;
   to_ministry_kind: MinistryKind;
@@ -107,14 +104,55 @@ export interface Demand {
   updated_at: string;
 }
 
+export type EventMini = Pick<
+  Event,
+  "id" | "title" | "event_type" | "campus" | "ministry_kind" | "starts_at" | "status"
+>;
+
+/** Another event at the same time where the person is already serving. */
+export interface RosterConflict {
+  id: string;
+  title: string;
+  starts_at: string;
+}
+
 export interface RosterEntry {
   id: string;
+  event: EventMini;
   ministry: { id: string; name: string; kind: MinistryKind };
   person: PersonMini;
   function: string;
   status: RosterStatus;
   responded_at: string | null;
   created_at: string;
+  conflicts: RosterConflict[];
+  /** A swap waiting for the substitute's answer. */
+  pending_swap: { id: string; substitute: { id: string; name: string } } | null;
+}
+
+export type SwapStatus = "pending" | "accepted" | "declined" | "cancelled";
+
+export interface RosterSwap {
+  id: string;
+  entry: {
+    id: string;
+    event: EventMini;
+    ministry: { id: string; name: string; kind: MinistryKind };
+    function: string;
+  };
+  requested_by: PersonMini;
+  substitute: PersonMini;
+  message: string;
+  status: SwapStatus;
+  responded_at: string | null;
+  created_at: string;
+}
+
+export interface SwapCandidate {
+  id: string;
+  name: string;
+  /** Already serving somewhere else at that time. */
+  conflict: boolean;
 }
 
 export interface ChecklistItem {
@@ -302,25 +340,82 @@ export function useInviteToRoster() {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["production-roster-entries", variables.event_id],
-      });
-    },
+    onSuccess: () => invalidateRoster(queryClient),
   });
 }
 
-function useRosterResponse(action: "confirm" | "decline", eventId: string | undefined) {
+function invalidateRoster(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["production-roster-entries"] });
+  queryClient.invalidateQueries({ queryKey: ["my-roster"] });
+  queryClient.invalidateQueries({ queryKey: ["roster-swaps"] });
+}
+
+function useRosterResponse(action: "confirm" | "decline", _eventId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (entryId: string) =>
       apiFetch<RosterEntry>(`/api/production-roster-entries/${entryId}/${action}/`, {
         method: "POST",
       }),
-    onSuccess: () => {
-      if (eventId)
-        queryClient.invalidateQueries({ queryKey: ["production-roster-entries", eventId] });
-    },
+    onSuccess: () => invalidateRoster(queryClient),
+  });
+}
+
+/** Where I serve: upcoming events, soonest first. */
+export function useMyRoster() {
+  return useQuery({
+    queryKey: ["my-roster"],
+    queryFn: () => apiFetch<RosterEntry[]>("/api/production-roster-entries/mine/"),
+  });
+}
+
+/** Before inviting: events at the same time where the person already serves. */
+export function useRosterConflicts(eventId: string, ministryId: string, personId: string) {
+  return useQuery({
+    queryKey: ["roster-conflicts", eventId, ministryId, personId],
+    queryFn: () =>
+      apiFetch<RosterConflict[]>(
+        `/api/production-roster-entries/conflicts/?event=${eventId}&ministry=${ministryId}&person=${personId}`,
+      ),
+    enabled: !!(eventId && ministryId && personId),
+  });
+}
+
+export function useSwapCandidates(entryId: string | undefined) {
+  return useQuery({
+    queryKey: ["swap-candidates", entryId],
+    queryFn: () =>
+      apiFetch<SwapCandidate[]>(`/api/production-roster-entries/${entryId}/swap-candidates/`),
+    enabled: !!entryId,
+  });
+}
+
+export function useRequestSwap() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { entryId: string; substitute_id: string; message?: string }) =>
+      apiFetch<RosterSwap>(`/api/production-roster-entries/${input.entryId}/swap/`, {
+        method: "POST",
+        body: JSON.stringify({ substitute_id: input.substitute_id, message: input.message ?? "" }),
+      }),
+    onSuccess: () => invalidateRoster(queryClient),
+  });
+}
+
+/** Pending swaps I asked for or that were asked of me. */
+export function useMySwaps() {
+  return useQuery({
+    queryKey: ["roster-swaps"],
+    queryFn: () => apiList<RosterSwap>("/api/production-roster-swaps/"),
+  });
+}
+
+export function useAnswerSwap(action: "accept" | "decline" | "cancel") {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (swapId: string) =>
+      apiFetch<RosterSwap>(`/api/production-roster-swaps/${swapId}/${action}/`, { method: "POST" }),
+    onSuccess: () => invalidateRoster(queryClient),
   });
 }
 
