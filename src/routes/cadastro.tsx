@@ -13,7 +13,7 @@ export const Route = createFileRoute("/cadastro")({
   head: () => ({ meta: [{ title: "Criar conta — Redis" }] }),
   validateSearch: (
     search: Record<string, unknown>,
-  ): { convite?: string; evento?: string; turma?: string } => ({
+  ): { convite?: string; evento?: string; turma?: string; celula?: string } => ({
     convite: typeof search.convite === "string" && search.convite ? search.convite : undefined,
     // Came from an event's public link: back to it after signing up.
     evento:
@@ -24,6 +24,11 @@ export const Route = createFileRoute("/cadastro")({
     turma:
       typeof search.turma === "string" && /^[0-9a-f-]{36}$/i.test(search.turma)
         ? search.turma
+        : undefined,
+    // Came from a cell's public page: back to it to ask to join.
+    celula:
+      typeof search.celula === "string" && /^[0-9a-f-]{36}$/i.test(search.celula)
+        ? search.celula
         : undefined,
   }),
   component: SignUp,
@@ -45,7 +50,7 @@ function fieldErrors(error: unknown): Partial<Record<Field, string>> {
 function SignUp() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { convite, evento, turma } = Route.useSearch();
+  const { convite, evento, turma, celula } = Route.useSearch();
   const invite = useInviteLookup(convite);
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
@@ -72,6 +77,7 @@ function SignUp() {
       queryClient.clear();
       if (evento) navigate({ to: "/app/eventos/$id", params: { id: evento } });
       else if (turma) navigate({ to: "/app/cursos" });
+      else if (celula) navigate({ to: "/celula/$id", params: { id: celula } });
       else navigate({ to: "/app" });
     } catch (err) {
       const byField = fieldErrors(err);
@@ -92,7 +98,9 @@ function SignUp() {
       ? { redirect: `/app/eventos/${evento}` }
       : turma
         ? { redirect: "/app/cursos" }
-        : {};
+        : celula
+          ? { redirect: `/celula/${celula}` }
+          : {};
 
   return (
     <AuthShell>
