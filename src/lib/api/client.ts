@@ -105,6 +105,36 @@ export async function apiFetch<T>(
   return body as T;
 }
 
+/** Downloads a file the API serves (needs the auth header, so no plain link). */
+export async function apiDownload(path: string, filename: string, _isRetry = false): Promise<void> {
+  const tokens = getTokens();
+  const headers = new Headers();
+  if (tokens?.access) headers.set("Authorization", `Bearer ${tokens.access}`);
+  const res = await fetch(`${BASE_URL}${path}`, { headers });
+  if (res.status === 401 && !_isRetry) {
+    const newAccess = await refreshAccessToken();
+    if (newAccess) return apiDownload(path, filename, true);
+    clearTokens();
+    throw new AuthError(401, "Sessão expirada. Faça login novamente.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    let body: unknown = text;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      // not JSON: keep the text
+    }
+    throw new ApiError(res.status, body);
+  }
+  const url = URL.createObjectURL(await res.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export interface Paginated<T> {
   count: number;
   next: string | null;

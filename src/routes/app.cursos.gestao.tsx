@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CourseFormDialog } from "@/components/courses/CourseFormDialog";
+import { TracksManagement } from "@/components/courses/Tracks";
 import { EmptyState } from "@/components/detail/DetailSection";
 import { CardGridSkeleton } from "@/components/skeletons";
 import { capabilitiesOf, useAuth } from "@/lib/api/auth";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/app/cursos/gestao")({
 function CoursesManagement() {
   const { me } = useAuth();
   const coordinate = capabilitiesOf(me).courses.coordinate;
+  const coordinateAll = capabilitiesOf(me).courses.coordinate_all;
   const { data: courses, isLoading } = useCourses();
   const [showNew, setShowNew] = useState(false);
 
@@ -73,6 +75,10 @@ function CoursesManagement() {
             </Card>
           </Link>
         ))}
+      </div>
+
+      <div className="pt-4">
+        <TracksManagement canManage={coordinateAll} />
       </div>
     </div>
   );

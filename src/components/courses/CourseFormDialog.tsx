@@ -58,6 +58,14 @@ export function CourseFormDialog({ open, onOpenChange }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // The campuses may arrive after the dialog opens: a local coordinator (who
+  // has no "Geral" option) then gets their campus instead of an empty select.
+  useEffect(() => {
+    if (open && !canChurchWide && campusId === NONE && defaultCampus !== NONE) {
+      setCampusId(defaultCampus);
+    }
+  }, [open, canChurchWide, campusId, defaultCampus]);
+
   const valid = name.trim().length > 0;
 
   const submit = () => {

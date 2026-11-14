@@ -11,6 +11,9 @@ import { useCampuses, useMinistries, MINISTRY_LABEL } from "@/lib/api/ministries
 import { usePeople } from "@/lib/api/people";
 import { useCells, formatSchedule } from "@/lib/api/cells";
 import { useEvents, EVENT_TYPE_LABEL } from "@/lib/api/production";
+import { useMe } from "@/lib/api/auth";
+import { canManageCampusMembers } from "@/lib/api/membership";
+import { CampusMembersSection } from "@/components/membership/CampusMembersSection";
 
 export const Route = createFileRoute("/app/campus_/$id")({
   head: () => ({ meta: [{ title: "Campus — Redis" }] }),
@@ -23,6 +26,7 @@ export const Route = createFileRoute("/app/campus_/$id")({
 
 function CampusDetail() {
   const { id } = Route.useParams();
+  const { data: me } = useMe();
   const { data: campuses, isLoading } = useCampuses();
   const { data: allPeople } = usePeople();
   const { data: allMinistries } = useMinistries();
@@ -61,6 +65,10 @@ function CampusDetail() {
           value={eventList.length}
         />
       </div>
+
+      {canManageCampusMembers(me, campus.id) && (
+        <CampusMembersSection campusId={campus.id} campusName={campus.name} />
+      )}
 
       <DetailSection title="Ministérios" count={ministries.length}>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">

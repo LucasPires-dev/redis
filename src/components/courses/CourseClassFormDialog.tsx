@@ -104,6 +104,7 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
   const [reservationDays, setReservationDays] = useState("3");
   const [maxInstallments, setMaxInstallments] = useState("1");
   const [refundBeforeStart, setRefundBeforeStart] = useState(true);
+  const [minAttendance, setMinAttendance] = useState("75");
   const [items, setItems] = useState<ItemDraft[]>([]);
 
   // Reset only when opening (or switching class) — not when campuses/me load,
@@ -124,6 +125,7 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
     setReservationDays(String(c?.reservation_days ?? 3));
     setMaxInstallments(String(c?.max_installments ?? 1));
     setRefundBeforeStart(c?.refund_before_start ?? true);
+    setMinAttendance(String(c?.min_attendance_percent ?? 75));
     setItems((c?.fee_items ?? []).map(toDraft));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, courseClass?.id]);
@@ -157,8 +159,19 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
       : "";
   const hasPaidItems = parsedItems.some(({ cents }) => cents > 0);
 
+  const minAttendanceValue = Number(minAttendance);
+  const minAttendanceError =
+    minAttendance === "" ||
+    !Number.isInteger(minAttendanceValue) ||
+    minAttendanceValue < 0 ||
+    minAttendanceValue > 100;
+
   const valid =
-    name.trim().length > 0 && campusId.length > 0 && itemErrors.size === 0 && !priceError;
+    name.trim().length > 0 &&
+    campusId.length > 0 &&
+    itemErrors.size === 0 &&
+    !priceError &&
+    !minAttendanceError;
 
   const submit = () => {
     const payload: CourseClassInput = {
@@ -176,6 +189,7 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
       reservation_days: Number(reservationDays) || 3,
       max_installments: Number(maxInstallments) || 1,
       refund_before_start: refundBeforeStart,
+      min_attendance_percent: minAttendanceValue,
       fee_items: parsedItems.map(({ draft, cents }, order) => ({
         ...(draft.id ? { id: draft.id } : {}),
         name: draft.name.trim(),
@@ -281,6 +295,24 @@ export function CourseClassFormDialog({ open, onOpenChange, courseId, courseClas
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="class-min-attendance">Frequência mínima para concluir (%)</Label>
+            <Input
+              id="class-min-attendance"
+              type="number"
+              min={0}
+              max={100}
+              className="w-32"
+              value={minAttendance}
+              onChange={(e) => setMinAttendance(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {minAttendanceError
+                ? "Informe um número de 0 a 100."
+                : "Ao concluir a turma, quem atingiu essa presença já vem marcado."}
+            </p>
           </div>
 
           <div className="space-y-1.5">

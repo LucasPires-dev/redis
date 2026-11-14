@@ -2,7 +2,17 @@
 // own enrollments. Shown to everyone (coordinators and teachers included).
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CalendarDays, ExternalLink, GraduationCap, MapPin, Users } from "lucide-react";
+import {
+  Award,
+  CalendarDays,
+  Check,
+  ExternalLink,
+  GraduationCap,
+  MapPin,
+  Minus,
+  Users,
+  X,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,12 +44,19 @@ import {
   type FeeSelection,
 } from "@/lib/fee-selection";
 import { FeeChoicesPicker } from "@/components/courses/FeeChoicesPicker";
+import { MyTracks } from "@/components/courses/Tracks";
+import { MaterialLinks } from "@/components/courses/LessonMaterials";
+import { formatDateTime } from "@/lib/utils";
 import { PaymentStatusBadge } from "@/components/courses/PaymentStatusBadge";
+import { attendanceLabel, attendanceTone } from "@/lib/attendance";
+import { CertificateButton } from "@/components/courses/CertificateButton";
 import {
+  holdsSeat,
   isOpenPayment,
   useCancelEnrollment,
   useMyEnrollments,
   useOpenClasses,
+  useOwnWaitlist,
   usePayEnrollment,
   useSelfEnroll,
   WEEKDAY_LABEL,
@@ -66,6 +83,16 @@ function schedule(c: { weekday: number | null; start_time: string | null }) {
 export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
   const { data: classes, isLoading } = useOpenClasses();
   const [enrolling, setEnrolling] = useState<OpenClass | null>(null);
+  const line = useOwnWaitlist();
+  const toggleLine = (c: OpenClass, join: boolean) =>
+    line.mutate(
+      { classId: c.id, join },
+      {
+        onSuccess: () =>
+          toast.success(join ? "Você entrou na lista de espera" : "Você saiu da lista de espera"),
+        onError: (e) => toast.error(apiErrorMessage(e, "Não foi possível.")),
+      },
+    );
 
   if (isLoading) return <CardGridSkeleton />;
   if (!classes?.length) return <EmptyState>Nenhuma turma com inscrições abertas agora.</EmptyState>;
@@ -75,6 +102,9 @@ export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {classes.map((c) => {
           const full = c.seats_left === 0;
+          const missing = c.missing_prerequisites;
+          const waiting = c.my_waitlist;
+          const offered = !!waiting?.offer_expires_at;
           return (
             <Card key={c.id} data-testid="open-class">
               <CardContent className="flex h-full flex-col gap-3 p-5">
@@ -117,6 +147,29 @@ export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
                     </li>
                   )}
                 </ul>
+                {c.prerequisites.length > 0 && (
+                  <p
+                    className={
+                      missing.length
+                        ? "text-xs text-amber-700 dark:text-amber-400"
+                        : "text-xs text-muted-foreground"
+                    }
+                    data-testid="open-class-prerequisites"
+                  >
+                    {missing.length
+                      ? `Conclua antes: ${missing.map((p) => p.name).join(", ")}`
+                      : `Requer: ${c.prerequisites.map((p) => p.name).join(", ")} ✓`}
+                  </p>
+                )}
+                {offered && (
+                  <p
+                    className="rounded-md bg-emerald-500/10 px-2 py-1.5 text-xs font-medium text-emerald-800 dark:text-emerald-300"
+                    data-testid="waitlist-offer"
+                  >
+                    Abriu uma vaga para você! Ela fica reservada até{" "}
+                    {formatDateTime(waiting!.offer_expires_at!)}.
+                  </p>
+                )}
                 <div className="mt-auto pt-2">
                   {c.my_enrollment ? (
                     <div className="flex items-center gap-2">
@@ -125,10 +178,56 @@ export function OpenClasses({ onEnrolled }: { onEnrolled: () => void }) {
                         Ver matrícula
                       </Button>
                     </div>
-                  ) : (
-                    <Button size="sm" disabled={full} onClick={() => setEnrolling(c)}>
-                      {full ? "Sem vagas" : "Inscrever-me"}
+                  ) : waiting && !offered ? (
+                    <div
+                      className="flex flex-wrap items-center gap-2"
+                      data-testid="waitlist-status"
+                    >
+                      <Badge variant="secondary">
+                        Lista de espera · {waiting.position}º da fila
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="link"
+                        disabled={line.isPending}
+                        onClick={() => toggleLine(c, false)}
+                      >
+                        Sair da lista
+                      </Button>
+                    </div>
+                  ) : full && !missing.length ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={line.isPending}
+                      onClick={() => toggleLine(c, true)}
+                    >
+                      Entrar na lista de espera
                     </Button>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        disabled={full || missing.length > 0}
+                        onClick={() => setEnrolling(c)}
+                      >
+                        {full
+                          ? "Sem vagas"
+                          : missing.length
+                            ? "Pré-requisito pendente"
+                            : "Inscrever-me"}
+                      </Button>
+                      {offered && (
+                        <Button
+                          size="sm"
+                          variant="link"
+                          disabled={line.isPending}
+                          onClick={() => toggleLine(c, false)}
+                        >
+                          Não quero mais
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -264,13 +363,89 @@ function EnrollDialog({
 
 export function MyEnrollments() {
   const { data: mine, isLoading } = useMyEnrollments();
-  if (isLoading) return <CardGridSkeleton />;
-  if (!mine?.length) return <EmptyState>Você ainda não tem matrículas.</EmptyState>;
   return (
-    <div className="space-y-3">
-      {mine.map((e) => (
-        <MyEnrollmentCard key={e.id} enrollment={e} />
-      ))}
+    <div className="space-y-6">
+      <MyTracks />
+      {isLoading ? (
+        <CardGridSkeleton />
+      ) : !mine?.length ? (
+        <EmptyState>Você ainda não tem matrículas.</EmptyState>
+      ) : (
+        <div className="space-y-3">
+          {mine.map((e) => (
+            <MyEnrollmentCard key={e.id} enrollment={e} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The student's presence lesson by lesson, against the class's minimum. */
+function MyAttendance({ enrollment: e }: { enrollment: MyEnrollment }) {
+  const min = e.course_class.min_attendance_percent;
+  return (
+    <div className="space-y-2 rounded-md border p-3" data-testid="my-attendance">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+        <span>
+          Presença:{" "}
+          <span className={`font-medium ${attendanceTone(e.meets_attendance, e.attendance)}`}>
+            {attendanceLabel(e.attendance)}
+          </span>
+        </span>
+        <span className="text-xs text-muted-foreground">Mínimo para concluir: {min}%</span>
+      </div>
+      <ul className="flex flex-wrap gap-1.5">
+        {e.attendance.lessons.map((l) => {
+          const label = `Aula ${l.order}${l.title ? ` — ${l.title}` : ""}${
+            l.date ? ` (${formatDate(l.date)})` : ""
+          }: ${l.present == null ? "presença não registrada" : l.present ? "presente" : "falta"}`;
+          return (
+            <li
+              key={l.id}
+              title={label}
+              aria-label={label}
+              className={`grid h-7 w-7 place-items-center rounded-md border text-xs ${
+                l.present == null
+                  ? "text-muted-foreground"
+                  : l.present
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                    : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+              }`}
+            >
+              {l.present == null ? (
+                <Minus className="h-3 w-3" />
+              ) : l.present ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <X className="h-3.5 w-3.5" />
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {e.attendance.lessons.some((l) => l.materials.length > 0) && (
+        <div className="space-y-2 border-t pt-2" data-testid="my-materials">
+          <p className="text-xs font-medium text-muted-foreground">Materiais</p>
+          {e.attendance.lessons
+            .filter((l) => l.materials.length > 0)
+            .map((l) => (
+              <div key={l.id} className="space-y-0.5">
+                <p className="text-xs text-muted-foreground">
+                  Aula {l.order}
+                  {l.title ? ` — ${l.title}` : ""}
+                </p>
+                <MaterialLinks materials={l.materials} />
+              </div>
+            ))}
+        </div>
+      )}
+      {e.status === "active" && e.attendance.percent != null && !e.meets_attendance && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Sua presença está abaixo do mínimo. Fale com o professor se precisar de ajuda para repor
+          as aulas.
+        </p>
+      )}
     </div>
   );
 }
@@ -331,8 +506,36 @@ function MyEnrollmentCard({ enrollment: e }: { enrollment: MyEnrollment }) {
               </p>
             </div>
           </div>
-          <PaymentStatusBadge status={e.payment_status} overdue={e.has_overdue_installment} />
+          <div className="flex flex-wrap items-center gap-1.5">
+            {e.status === "completed" && (
+              <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+                <Award className="h-3 w-3" /> Concluído
+              </Badge>
+            )}
+            <PaymentStatusBadge status={e.payment_status} overdue={e.has_overdue_installment} />
+          </div>
         </div>
+
+        {holdsSeat(e) && e.attendance.lessons.length > 0 && <MyAttendance enrollment={e} />}
+
+        {e.status === "completed" && e.certificate_code && (
+          <div
+            className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-emerald-500/10 p-3"
+            data-testid="my-certificate"
+          >
+            <div className="text-sm">
+              <div className="font-medium">Parabéns, você concluiu este curso!</div>
+              <div className="text-xs text-muted-foreground">
+                Código do certificado: <span className="font-mono">{e.certificate_code}</span>
+              </div>
+            </div>
+            <CertificateButton
+              enrollmentId={e.id}
+              courseName={cls.course_name}
+              personName={e.person.name}
+            />
+          </div>
+        )}
 
         {e.items.length > 0 && (
           <div className="rounded-md bg-muted/50 p-3 text-sm">

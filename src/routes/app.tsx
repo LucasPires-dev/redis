@@ -38,6 +38,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { hasAccessToken } from "@/lib/api/client";
 import { RouteError } from "@/components/RouteError";
+import { LinkCampusScreen } from "@/components/membership/LinkCampusScreen";
+import { PendingJoinRequestsPill } from "@/components/membership/PendingJoinRequestsPill";
+import { isUnlinked } from "@/lib/api/membership";
 import {
   canManageResponsibles,
   deriveRoleLabel,
@@ -89,7 +92,7 @@ const NAV: {
 
 function AppShell() {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { me, isAuthenticated, isLoading, logout } = useAuth();
 
   useEffect(() => {
     if (!hasAccessToken()) {
@@ -108,6 +111,18 @@ function AppShell() {
       <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">
         Carregando…
       </div>
+    );
+  }
+
+  if (isUnlinked(me)) {
+    return (
+      <LinkCampusScreen
+        me={me!}
+        onLogout={() => {
+          logout();
+          navigate({ to: "/login" });
+        }}
+      />
     );
   }
 
@@ -231,6 +246,7 @@ function TopBar() {
     <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
       <SidebarTrigger />
       <div className="flex-1" />
+      <PendingJoinRequestsPill />
     </header>
   );
 }

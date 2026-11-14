@@ -48,6 +48,7 @@ function CoursesArea() {
           },
           { to: "/app/cursos/turmas", label: "Minhas turmas", show: caps.teach },
           { to: "/app/cursos/gestao", label: "Gestão", show: caps.coordinate },
+          { to: "/app/cursos/relatorios", label: "Relatórios", show: caps.coordinate },
         ]}
       />
 

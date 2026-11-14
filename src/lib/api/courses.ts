@@ -1,15 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, apiList } from "./client";
+import { apiDownload, apiFetch, apiList } from "./client";
 import type { CampusMini } from "./ministries";
 import type { PersonMini } from "./people";
 
 // ── Types ──────────────────────────────────────────────────────────────────
+
+export interface CourseMini {
+  id: string;
+  name: string;
+}
 
 export interface Course {
   id: string;
   name: string;
   description: string;
   campus: CampusMini | null;
+  /** Courses to complete before enrolling in this one. */
+  prerequisites: CourseMini[];
   class_count: number;
   total_enrolled: number;
   /** Edit/delete the course. */
@@ -32,6 +39,14 @@ export type EnrollmentStatus = "active" | "completed" | "dropped";
 export type PaymentStatus =
   "free" | "pending" | "partial" | "paid" | "waived" | "expired" | "cancelled" | "refunded";
 
+/** Lessons attended out of those whose attendance was taken for the student. */
+export interface AttendanceSummary {
+  present: number;
+  counted: number;
+  /** null while no lesson counted yet. */
+  percent: number | null;
+}
+
 export interface Enrollment {
   id: string;
   person: PersonMini;
@@ -41,6 +56,28 @@ export interface Enrollment {
   payment_status: PaymentStatus;
   payment_status_display: string;
   material_delivered_at: string | null;
+  /** Present in the class roster; null elsewhere. */
+  attendance: AttendanceSummary | null;
+  /** Reaches the class's minimum attendance (null when attendance isn't included). */
+  meets_attendance: boolean | null;
+  /** "ABCD-EFGH-JKLM" once completed: printed on the certificate. */
+  certificate_code: string | null;
+}
+
+/** What the public page shows for a valid certificate. */
+export interface CertificateCheck {
+  code: string;
+  person_name: string;
+  course_name: string;
+  class_name: string;
+  campus_name: string;
+  church_name: string;
+  start_date: string | null;
+  end_date: string | null;
+  completed_on: string;
+  lesson_count: number;
+  attendance_percent: number | null;
+  teachers: string[];
 }
 
 export interface ClassFeeItem {
@@ -89,7 +126,26 @@ export interface EnrollmentFinance extends Enrollment {
   has_overdue_installment: boolean;
 }
 
+export interface LessonPresence {
+  id: string;
+  order: number;
+  title: string;
+  date: string | null;
+  /** null: attendance not taken for the student in this lesson. */
+  present: boolean | null;
+  materials: LessonMaterialLink[];
+}
+
+/** A link handed out with a lesson (slides, handout, video). */
+export interface LessonMaterialLink {
+  id: string;
+  title: string;
+  url: string;
+}
+
 export interface MyEnrollment extends EnrollmentFinance {
+  attendance: AttendanceSummary & { lessons: LessonPresence[] };
+  meets_attendance: boolean;
   course_class: {
     id: string;
     name: string;
@@ -101,6 +157,7 @@ export interface MyEnrollment extends EnrollmentFinance {
     start_date: string | null;
     end_date: string | null;
     max_installments: number;
+    min_attendance_percent: number;
   };
   can_cancel: boolean;
 }
@@ -123,8 +180,30 @@ export interface OpenClass {
   refund_before_start: boolean;
   fee_items: ClassFeeItem[];
   base_price_cents: number;
+  /** For the person asking: a seat held for them on the waitlist counts as free. */
   seats_left: number | null;
   my_enrollment: { id: string; payment_status: PaymentStatus } | null;
+  /** The person's place on the waitlist (a full class), if they joined it. */
+  my_waitlist: MyWaitlist | null;
+  prerequisites: CourseMini[];
+  /** Prerequisites the person hasn't completed: they can't enroll yet. */
+  missing_prerequisites: CourseMini[];
+}
+
+export interface MyWaitlist {
+  /** 1 = next in line; null once a seat is held for them. */
+  position: number | null;
+  /** Set while a seat is held for the person: enroll before it. */
+  offer_expires_at: string | null;
+  joined_at: string;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  person: PersonMini;
+  position: number | null;
+  offer_expires_at: string | null;
+  created_at: string;
 }
 
 export interface FinanceSummary {
@@ -172,7 +251,10 @@ export interface CourseClass {
   description: string;
   teachers: Teacher[];
   enrolled_count: number;
+  completed_count: number;
   lesson_count: number;
+  /** Share of the lessons a student must attend to complete the class. */
+  min_attendance_percent: number;
   self_enrollment: boolean;
   max_capacity: number | null;
   enrollment_deadline: string | null;
@@ -182,6 +264,7 @@ export interface CourseClass {
   fee_items: ClassFeeItem[];
   base_price_cents: number;
   seats_left: number | null;
+  waitlist_count: number;
   can_manage: boolean;
   can_manage_finances: boolean;
   created_at: string;
@@ -202,6 +285,7 @@ export interface CourseClassInput {
   reservation_days?: number;
   max_installments?: number;
   refund_before_start?: boolean;
+  min_attendance_percent?: number;
   fee_items?: ClassFeeItem[];
 }
 
@@ -214,6 +298,7 @@ export interface Lesson {
   notes: string;
   attendance_count: number;
   total_enrolled: number;
+  materials: LessonMaterialLink[];
   created_at: string;
 }
 
@@ -312,6 +397,100 @@ export function useCreateCourse() {
       apiFetch<Course>("/api/courses/", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["courses"] }),
   });
+}
+
+/** Replaces the course's prerequisites. */
+export function useSetPrerequisites(courseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (prerequisiteIds: string[]) =>
+      apiFetch<Course>(`/api/courses/${courseId}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ prerequisite_ids: prerequisiteIds }),
+      }),
+    onSuccess: (course) => {
+      qc.setQueryData(["courses", courseId], course);
+      qc.invalidateQueries({ queryKey: ["courses"] });
+      qc.invalidateQueries({ queryKey: ["open-classes"] });
+    },
+  });
+}
+
+// ── Tracks (trilhas) ───────────────────────────────────────────────────────
+
+export type TrackStepState = "completed" | "in_progress" | "not_started";
+
+export const TRACK_STEP_STATE_LABEL: Record<TrackStepState, string> = {
+  completed: "Concluído",
+  in_progress: "Cursando",
+  not_started: "Não iniciado",
+};
+
+export interface CourseTrack {
+  id: string;
+  name: string;
+  description: string;
+  steps: { id: string; order: number; course: CourseMini }[];
+  /** Church-wide coordination keeps the tracks. */
+  can_manage: boolean;
+  my_progress: {
+    completed: number;
+    total: number;
+    next_course: CourseMini | null;
+    steps: {
+      id: string;
+      order: number;
+      course: CourseMini & { description: string };
+      state: TrackStepState;
+      /** Classes of this course open for enrollment now. */
+      open_classes: number;
+    }[];
+  };
+}
+
+export function useTracks() {
+  return useQuery({
+    queryKey: ["course-tracks"],
+    queryFn: () => apiList<CourseTrack>("/api/course-tracks/"),
+  });
+}
+
+export function useSaveTrack() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id?: string;
+      name: string;
+      description: string;
+      course_ids: string[];
+    }) =>
+      apiFetch<CourseTrack>(id ? `/api/course-tracks/${id}/` : "/api/course-tracks/", {
+        method: id ? "PATCH" : "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["course-tracks"] }),
+  });
+}
+
+export function useDeleteTrack() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`/api/course-tracks/${id}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["course-tracks"] }),
+  });
+}
+
+/** The prerequisites an API error says are missing (enrolling without them). */
+export function missingPrerequisitesOf(error: unknown): CourseMini[] | null {
+  if (!error || typeof error !== "object" || !("detail" in error)) return null;
+  const detail = (error as { detail: unknown }).detail;
+  if (detail && typeof detail === "object" && "missing_prerequisites" in detail) {
+    return (detail as { missing_prerequisites: CourseMini[] }).missing_prerequisites;
+  }
+  return null;
 }
 
 // ── Classes (turmas) ───────────────────────────────────────────────────────
@@ -437,6 +616,8 @@ export function useAddEnrollment() {
       send_charge?: boolean;
       /** The person's CPF, when they have none on file and a link is wanted. */
       cpf?: string;
+      /** Enroll even without the course's prerequisites. */
+      override_prerequisites?: boolean;
     }) =>
       apiFetch<Enrollment>(`/api/course-classes/${classId}/enrollments/`, {
         method: "POST",
@@ -463,6 +644,150 @@ export function useRemoveEnrollment() {
       qc.invalidateQueries({ queryKey: ["course-class", vars.classId] });
       qc.invalidateQueries({ queryKey: ["courses"] });
     },
+  });
+}
+
+/** Marks the given students as having completed the class. */
+export function useCompleteClass(classId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (personIds: string[]) =>
+      apiFetch<Enrollment[]>(`/api/course-classes/${classId}/complete/`, {
+        method: "POST",
+        body: JSON.stringify({ person_ids: personIds }),
+      }),
+    onSuccess: (roster) => {
+      qc.setQueryData(["course-class-enrollments", classId], roster);
+      qc.invalidateQueries({ queryKey: ["course-class-care", classId] });
+      qc.invalidateQueries({ queryKey: ["course-class", classId] });
+      qc.invalidateQueries({ queryKey: ["lessons", classId] });
+      qc.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+// ── Reports and students to care for ───────────────────────────────────────
+
+export type ClassState = "upcoming" | "ongoing" | "finished";
+
+export const CLASS_STATE_LABEL: Record<ClassState, string> = {
+  upcoming: "Próxima",
+  ongoing: "Em andamento",
+  finished: "Encerrada",
+};
+
+export interface CourseReportRow {
+  id: string;
+  course: { id: string; name: string };
+  name: string;
+  campus: { id: string; name: string };
+  start_date: string | null;
+  end_date: string | null;
+  state: ClassState;
+  min_attendance_percent: number;
+  capacity: number | null;
+  /** Holding a seat: active + completed. */
+  enrolled: number;
+  active: number;
+  completed: number;
+  /** Dropped, cancelled or refunded after enrolling (expired reservations don't count). */
+  dropouts: number;
+  /** Over everyone who started (enrolled + dropouts). */
+  completion_rate: number | null;
+  dropout_rate: number | null;
+  lesson_count: number;
+  lessons_held: number;
+  attendance_rate: number | null;
+  to_care: number;
+  is_paid: boolean;
+  expected_cents: number;
+  received_cents: number;
+  outstanding_cents: number;
+}
+
+export interface CourseReport {
+  campuses: { id: string; name: string }[];
+  totals: {
+    classes: number;
+    ongoing: number;
+    enrolled: number;
+    active: number;
+    completed: number;
+    dropouts: number;
+    completion_rate: number | null;
+    dropout_rate: number | null;
+    attendance_rate: number | null;
+    to_care: number;
+    expected_cents: number;
+    received_cents: number;
+    outstanding_cents: number;
+  };
+  classes: CourseReportRow[];
+}
+
+/** Coordination report; filters applied by the API (campus, class state). */
+export function useCourseReport(filters: { campus?: string; state?: ClassState }) {
+  const params = new URLSearchParams();
+  if (filters.campus) params.set("campus", filters.campus);
+  if (filters.state) params.set("state", filters.state);
+  return useQuery({
+    queryKey: ["course-report", filters.campus ?? "", filters.state ?? ""],
+    queryFn: () => apiFetch<CourseReport>(`/api/course-classes/report/?${params}`),
+  });
+}
+
+export type CareReason = "absences_in_a_row" | "below_minimum";
+
+export interface CareStudent {
+  person: PersonMini;
+  reasons: CareReason[];
+  absences_in_a_row: number;
+  attendance: AttendanceSummary;
+  last_present_on: string | null;
+}
+
+/** Active students who need attention (absences in a row, below the minimum). */
+export function useClassCare(classId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["course-class-care", classId],
+    queryFn: () => apiFetch<CareStudent[]>(`/api/course-classes/${classId}/care/`),
+    enabled: !!classId && enabled,
+  });
+}
+
+// ── Certificates ───────────────────────────────────────────────────────────
+
+function slug(text: string) {
+  return text
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** Downloads the completion certificate (PDF) of an enrollment. */
+export function downloadCertificate(enrollmentId: string, courseName: string, personName: string) {
+  return apiDownload(
+    `/api/course-enrollments/${enrollmentId}/certificate/`,
+    `certificado-${slug(courseName)}-${slug(personName)}.pdf`,
+  );
+}
+
+/** Public check of a certificate by its code (no login needed). */
+export function useCertificateCheck(code: string) {
+  return useQuery({
+    queryKey: ["certificate-check", code],
+    queryFn: () =>
+      apiFetch<CertificateCheck>(`/api/certificates/${encodeURIComponent(code)}/`).catch(
+        (e: unknown) => {
+          // Not found = not a valid certificate (an answer, not an error).
+          if (e && typeof e === "object" && "status" in e && e.status === 404) return null;
+          throw e;
+        },
+      ),
+    enabled: !!code,
+    retry: false,
   });
 }
 
@@ -518,6 +843,9 @@ export function useSaveAttendance() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["lesson-attendance", vars.lessonId] });
       qc.invalidateQueries({ queryKey: ["lessons", vars.classId] });
+      // Each student's attendance percentage in the roster, and who to care for.
+      qc.invalidateQueries({ queryKey: ["course-class-enrollments", vars.classId] });
+      qc.invalidateQueries({ queryKey: ["course-class-care", vars.classId] });
     },
   });
 }
@@ -541,6 +869,65 @@ export function useOpenClasses() {
   return useQuery({
     queryKey: ["open-classes"],
     queryFn: () => apiFetch<OpenClass[]>("/api/course-classes/open/"),
+  });
+}
+
+// ── Waitlist ───────────────────────────────────────────────────────────────
+
+/** Joins (or leaves) the waitlist of a full open class. */
+export function useOwnWaitlist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, join }: { classId: string; join: boolean }) =>
+      apiFetch<MyWaitlist | null>(`/api/course-classes/${classId}/waitlist/`, {
+        method: join ? "POST" : "DELETE",
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["open-classes"] }),
+  });
+}
+
+export function useWaitlistEntries(classId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["waitlist", classId],
+    queryFn: () => apiFetch<WaitlistEntry[]>(`/api/course-classes/${classId}/waitlist-entries/`),
+    enabled: !!classId && enabled,
+  });
+}
+
+export function useRemoveWaitlistEntry(classId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (entryId: string) =>
+      apiFetch<void>(`/api/course-classes/${classId}/waitlist-entries/${entryId}/`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["waitlist", classId] });
+      qc.invalidateQueries({ queryKey: ["course-class", classId] });
+    },
+  });
+}
+
+// ── Lesson materials ───────────────────────────────────────────────────────
+
+export function useAddMaterial(classId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lessonId, ...body }: { lessonId: string; title: string; url: string }) =>
+      apiFetch<LessonMaterialLink>(`/api/lessons/${lessonId}/materials/`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lessons", classId] }),
+  });
+}
+
+export function useRemoveMaterial(classId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lessonId, materialId }: { lessonId: string; materialId: string }) =>
+      apiFetch<void>(`/api/lessons/${lessonId}/materials/${materialId}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lessons", classId] }),
   });
 }
 
