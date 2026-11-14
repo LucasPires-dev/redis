@@ -52,9 +52,11 @@ function PublicEventPage() {
   }
 
   const { ticket } = event;
-  const prices = ticket.types.length
-    ? ticket.types.map((t) => t.price_cents)
-    : [ticket.price_cents];
+  const prices = ticket
+    ? ticket.types.length
+      ? ticket.types.map((t) => t.price_cents)
+      : [ticket.price_cents]
+    : [0];
   const minPrice = Math.min(...prices);
   const priceText =
     prices.length > 1 && Math.max(...prices) !== minPrice
@@ -66,56 +68,64 @@ function PublicEventPage() {
       <div className="space-y-6" data-testid="public-event">
         <div className="space-y-2">
           <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-            <Ticket className="h-3.5 w-3.5" /> Inscrições{" "}
-            {event.registration_open ? "abertas" : "encerradas"}
+            <Ticket className="h-3.5 w-3.5" />{" "}
+            {ticket
+              ? `Inscrições ${event.registration_open ? "abertas" : "encerradas"}`
+              : "Aberto a todos"}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight">{event.title}</h1>
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <CalendarDays className="h-4 w-4 shrink-0" /> {formatDateTime(event.starts_at)}
           </p>
-          {event.campus && (
+          {(event.church || event.campus) && (
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4 shrink-0" /> {event.campus.name}
-              {event.campus.city && ` · ${event.campus.city}`}
+              <MapPin className="h-4 w-4 shrink-0" />
+              {[event.church, event.campus?.name, event.campus?.city].filter(Boolean).join(" · ")}
             </p>
           )}
         </div>
 
         {event.description && <p className="whitespace-pre-wrap text-sm">{event.description}</p>}
 
-        <div className="space-y-2 rounded-lg border p-4">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-sm text-muted-foreground">Ingresso</span>
-            <span className="text-lg font-semibold">{priceText}</span>
+        {ticket && (
+          <div className="space-y-2 rounded-lg border p-4">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-sm text-muted-foreground">Ingresso</span>
+              <span className="text-lg font-semibold">{priceText}</span>
+            </div>
+            {ticket.types.length > 0 && (
+              <ul className="space-y-1 text-sm">
+                {ticket.types.map((t) => (
+                  <li key={t.id} className="flex justify-between gap-2">
+                    <span>
+                      {t.name}
+                      {t.sold_out && <span className="text-muted-foreground"> · esgotado</span>}
+                    </span>
+                    <span className="font-medium">{formatTicketPrice(t.price_cents)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {ticket.description && (
+              <p className="text-sm text-muted-foreground">{ticket.description}</p>
+            )}
+            {ticket.max_companions > 0 && (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Users className="h-3.5 w-3.5" /> Você pode levar até {ticket.max_companions}{" "}
+                acompanhante(s)
+              </p>
+            )}
+            {ticket.registration_deadline && (
+              <p className="text-xs text-muted-foreground">
+                Inscrições até {formatDateTime(ticket.registration_deadline)}
+              </p>
+            )}
           </div>
-          {ticket.types.length > 0 && (
-            <ul className="space-y-1 text-sm">
-              {ticket.types.map((t) => (
-                <li key={t.id} className="flex justify-between gap-2">
-                  <span>
-                    {t.name}
-                    {t.sold_out && <span className="text-muted-foreground"> · esgotado</span>}
-                  </span>
-                  <span className="font-medium">{formatTicketPrice(t.price_cents)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {ticket.description && (
-            <p className="text-sm text-muted-foreground">{ticket.description}</p>
-          )}
-          {ticket.max_companions > 0 && (
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Users className="h-3.5 w-3.5" /> Você pode levar até {ticket.max_companions}{" "}
-              acompanhante(s)
-            </p>
-          )}
-          {ticket.registration_deadline && (
-            <p className="text-xs text-muted-foreground">
-              Inscrições até {formatDateTime(ticket.registration_deadline)}
-            </p>
-          )}
-        </div>
+        )}
+
+        {!ticket && (
+          <p className="text-sm text-muted-foreground">Não precisa de inscrição: é só chegar.</p>
+        )}
 
         {event.registration_open &&
           (signedIn ? (

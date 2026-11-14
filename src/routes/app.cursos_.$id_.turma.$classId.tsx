@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { PublicLink } from "@/components/PublicLink";
+import { PublicBadge } from "@/components/VisibilityField";
+import { publicClassPath } from "@/lib/api/explore";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -106,6 +109,7 @@ function ClassDetail() {
         actions={
           <div className="flex items-center gap-2">
             <Badge variant="outline">{cc.campus.name}</Badge>
+            {cc.visibility === "public" && <PublicBadge />}
             {cc.can_manage_finances && (
               <Button size="sm" variant="outline" onClick={() => setShowEdit(true)}>
                 <Pencil className="mr-1.5 h-4 w-4" /> Editar turma
@@ -114,6 +118,10 @@ function ClassDetail() {
           </div>
         }
       />
+
+      {cc.visibility === "public" && cc.self_enrollment && cc.can_manage && (
+        <PublicLink path={publicClassPath(cc.id)} label="Página pública da turma" />
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard

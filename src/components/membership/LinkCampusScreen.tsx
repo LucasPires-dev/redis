@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Building2, Check, Clock, LogOut, Search, Ticket } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Building2, Check, Clock, Compass, LogOut, Search, Ticket } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ export function LinkCampusScreen({ me, onLogout }: { me: Me; onLogout: () => voi
 
         {pending ? <PendingRequest pending={pending} /> : <PickCampus />}
         <InviteCodeCard />
+        <WhileUnlinked />
       </main>
     </div>
   );
@@ -260,6 +262,35 @@ function InviteCodeCard() {
             {apiErrorMessage(join.error, "Não foi possível usar este código.")}
           </p>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Before the link: what is open to everyone, and the person's own sign-ups. */
+function WhileUnlinked() {
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4" data-testid="while-unlinked">
+        <div>
+          <h2 className="font-semibold">Enquanto isso</h2>
+          <p className="text-sm text-muted-foreground">
+            Veja eventos, cursos e células abertos a todos os públicos.
+          </p>
+        </div>
+        <Button asChild className="w-full gap-1.5">
+          <Link to="/app/explorar">
+            <Compass className="h-4 w-4" /> Explorar
+          </Link>
+        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/app/eventos/inscricoes">Minhas inscrições</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/app/cursos/matriculas">Minhas matrículas</Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
