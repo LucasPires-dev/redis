@@ -65,6 +65,9 @@ export interface EventRegistration {
   /** What the person shows at the door (QR code or typed). */
   ticket_code: string;
   checked_in_at: string | null;
+  /** Set when the organizers refunded it here. */
+  refunded_at: string | null;
+  refund_note: string;
   created_at: string;
 }
 
@@ -218,6 +221,27 @@ export function useCancelRegistration() {
       qc.invalidateQueries({ queryKey: ["my-registration"] });
       qc.invalidateQueries({ queryKey: ["registration-stats"] });
       qc.invalidateQueries({ queryKey: ["ticket-config"] });
+      qc.invalidateQueries({ queryKey: ["event-report"] });
+    },
+  });
+}
+
+/** Organizers give a paid registration's money back (`manual`: by hand,
+ * when Asaas can't — a boleto). */
+export function useRefundRegistration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; note: string; manual: boolean }) =>
+      apiFetch<EventRegistration>(`/api/payments/registrations/${id}/refund/`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["registrations"] });
+      qc.invalidateQueries({ queryKey: ["registration-stats"] });
+      qc.invalidateQueries({ queryKey: ["ticket-config"] });
+      qc.invalidateQueries({ queryKey: ["event-report"] });
+      qc.invalidateQueries({ queryKey: ["event-reports"] });
     },
   });
 }

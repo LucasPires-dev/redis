@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  BarChart3,
   Clapperboard,
   Plus,
   Repeat,
@@ -74,6 +75,7 @@ import { TicketFields } from "@/components/events/TicketFields";
 import { SignUpPanel } from "@/components/events/SignUpPanel";
 import { TicketTypesManager } from "@/components/events/TicketTypesManager";
 import { DuplicateEventDialog, RepeatEventDialog } from "@/components/events/EventCopyDialogs";
+import { RegistrationActions } from "@/components/events/RegistrationActions";
 import {
   EMPTY_TICKET,
   ticketDraftFromConfig,
@@ -185,6 +187,13 @@ function EventRundown() {
             {event.series && <Badge variant="secondary">Recorrente</Badge>}
             {event.can_manage && <DuplicateEventDialog event={event} />}
             {event.can_manage && !event.series && <RepeatEventDialog event={event} />}
+            {event.can_manage && (
+              <Button size="sm" variant="outline" className="gap-1.5" asChild>
+                <Link to="/app/eventos/$id/relatorio" params={{ id: event.id }}>
+                  <BarChart3 className="h-4 w-4" /> Relatório
+                </Link>
+              </Button>
+            )}
           </div>
         }
       />
@@ -990,22 +999,32 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
       )}
 
       {isManager && allRegs && allRegs.length > 0 && (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-2" data-testid="attendees">
           <h4 className="text-sm font-medium text-muted-foreground">Todos os inscritos</h4>
           {allRegs.map((r) => (
-            <Card key={r.id}>
+            <Card key={r.id} data-testid="attendee">
               <CardContent className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0 text-sm">
                   <div className="truncate">{r.person.name}</div>
-                  {(r.ticket_type || r.guests.length > 0) && (
+                  {(r.ticket_type || r.guests.length > 0 || r.amount_cents > 0) && (
                     <div className="truncate text-xs text-muted-foreground">
-                      {[r.ticket_type?.name, ...r.guests.map((g) => `+ ${g.name}`)]
+                      {[
+                        r.ticket_type?.name,
+                        ...r.guests.map((g) => `+ ${g.name}`),
+                        r.amount_cents > 0 && formatBRL(r.amount_cents),
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </div>
                   )}
+                  {r.refund_note && (
+                    <div className="truncate text-xs text-muted-foreground">{r.refund_note}</div>
+                  )}
                 </div>
-                <Badge variant="outline">{PAYMENT_STATUS_LABEL[r.payment_status]}</Badge>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Badge variant="outline">{PAYMENT_STATUS_LABEL[r.payment_status]}</Badge>
+                  <RegistrationActions registration={r} />
+                </div>
               </CardContent>
             </Card>
           ))}
