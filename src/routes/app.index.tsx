@@ -5,7 +5,12 @@ import { Users, Building2, HeartHandshake, Sparkles, Calendar, Droplet } from "l
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePeople } from "@/lib/api/people";
-import { useCampuses, useMinistries, MINISTRY_LABEL, type MinistryKind } from "@/lib/api/ministries";
+import {
+  useCampuses,
+  useMinistries,
+  MINISTRY_LABEL,
+  type MinistryKind,
+} from "@/lib/api/ministries";
 import { useCells } from "@/lib/api/cells";
 import { useEvents, EVENT_TYPE_LABEL } from "@/lib/api/production";
 
@@ -24,7 +29,7 @@ function Dashboard() {
   const personList = people ?? [];
   const events = realEvents ?? [];
   const baptized = personList.filter((p) => p.baptized).length;
-  const inCell = (cells ?? []).reduce((sum, c) => sum + c.member_count, 0);
+  const inCell = (cells ?? []).reduce((sum, c) => sum + c.participant_count, 0);
 
   const kinds = Object.keys(MINISTRY_LABEL) as MinistryKind[];
   const perMinistry = kinds.map((k) => ({
@@ -112,13 +117,13 @@ function Dashboard() {
                     })}
                   </div>
                 </div>
-                <Badge variant="secondary">
-                  {EVENT_TYPE_LABEL[e.event_type]}
-                </Badge>
+                <Badge variant="secondary">{EVENT_TYPE_LABEL[e.event_type]}</Badge>
               </div>
             ))}
             {events.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhum evento visível para seu perfil.</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhum evento visível para seu perfil.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -133,7 +138,17 @@ function Dashboard() {
   );
 }
 
-function Stat({ icon: Icon, label, value, hint }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number | string; hint?: string }) {
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number | string;
+  hint?: string;
+}) {
   return (
     <Card>
       <CardContent className="p-5">
@@ -148,7 +163,15 @@ function Stat({ icon: Icon, label, value, hint }: { icon: React.ComponentType<{ 
   );
 }
 
-function MiniStat({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number }) {
+function MiniStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+}) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
       <div className="grid h-9 w-9 place-items-center rounded-lg bg-accent text-accent-foreground">

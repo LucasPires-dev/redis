@@ -1,4 +1,4 @@
-import { Crown } from "lucide-react";
+import { Crown, GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { RosterRole } from "@/lib/roster";
 
@@ -7,6 +7,16 @@ export function RoleBadge({ role }: { role: RosterRole }) {
     return (
       <Badge variant="outline" className="gap-1 shrink-0">
         <Crown className="h-3 w-3" /> Líder
+      </Badge>
+    );
+  }
+  if (role === "trainee") {
+    return (
+      <Badge
+        variant="outline"
+        className="gap-1 shrink-0 border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-400"
+      >
+        <GraduationCap className="h-3 w-3" /> Em treinamento
       </Badge>
     );
   }

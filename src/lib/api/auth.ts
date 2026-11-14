@@ -62,13 +62,14 @@ export interface Me {
 }
 
 export interface Capabilities {
-  cells: { lead: boolean; coordinate: boolean };
+  /** supervise: supervises at least one cell (the "Supervisão" tab). */
+  cells: { lead: boolean; coordinate: boolean; supervise: boolean };
   courses: { teach: boolean; coordinate: boolean; coordinate_all: boolean };
   events: { create: boolean; produce: boolean; production: boolean };
 }
 
 const NO_CAPABILITIES: Capabilities = {
-  cells: { lead: false, coordinate: false },
+  cells: { lead: false, coordinate: false, supervise: false },
   courses: { teach: false, coordinate: false, coordinate_all: false },
   events: { create: false, produce: false, production: false },
 };

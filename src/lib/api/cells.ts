@@ -83,15 +83,98 @@ export interface Cell {
   effective_end: string | null;
   // Same cell in the previous season (history across seasons).
   previous_cell: string | null;
+  /** The cell this one was born from in a multiplication ("célula mãe"). */
+  parent_cell: { id: string; name: string } | null;
+  /** When the multiplication that created this cell happened. */
+  multiplied_on: string | null;
+  /** Multiplication plan: the planned date and who will lead the new cell. */
+  multiplication_date: string | null;
+  multiplication_leader: PersonMini | null;
   leaders: PersonMini[];
   co_leaders: PersonMini[];
+  /** Líderes em treinamento. */
+  trainees: PersonMini[];
   member_count: number;
+  /** Leaders, co-leaders and members, each once — what screens call "membros". */
+  participant_count: number;
   // Past scheduled meetings nobody registered yet.
   pending_meetings: number;
   // Whether the logged-in user may edit the cell, its members and meetings.
   can_manage: boolean;
   // Whether the logged-in user may assign its leaders and renew it.
   can_coordinate: boolean;
+  /** Whether the logged-in user may name its leaders in training (its leader or anyone above). */
+  can_appoint_trainee: boolean;
+  /** Who supervises the cell (between its leader and the campus coordination). */
+  supervisor: PersonMini | null;
+  /** Whether the logged-in user does the cell's supervision: its supervisor or
+   * coordination (registers visits, names its leaders). */
+  can_supervise: boolean;
+  /** Last supervision visit; only for whoever does supervision. */
+  last_supervision_visit: string | null;
+  /** How the cell is doing; only for whoever manages it (null otherwise). */
+  health: CellHealth | null;
+}
+
+export type CellHealthStatus = "critical" | "attention" | "healthy" | "new";
+
+export interface CellHealthReason {
+  level: "critical" | "attention";
+  text: string;
+}
+
+export interface CellHealth {
+  status: CellHealthStatus;
+  /** Average % of the cell present in the last 4 meetings held. */
+  attendance_rate: number | null;
+  /** % change in attendance against the 4 meetings before (null without history). */
+  trend: number | null;
+  /** Visitors (named or not) in the last 4 meetings held. */
+  recent_visitors: number;
+  reasons: CellHealthReason[];
+}
+
+export const CELL_HEALTH_LABEL: Record<CellHealthStatus, string> = {
+  critical: "Crítica",
+  attention: "Atenção",
+  healthy: "Saudável",
+  new: "Sem histórico",
+};
+
+/** Most urgent first, for sorting. */
+export const CELL_HEALTH_ORDER: Record<CellHealthStatus, number> = {
+  critical: 0,
+  attention: 1,
+  new: 2,
+  healthy: 3,
+};
+
+/** "Pessoas para cuidar": who the leader should reach out to. */
+export interface CellCare {
+  absent_members: {
+    person: { id: string; name: string; email: string; phone: string };
+    /** Held meetings missed in a row, up to the last one. */
+    absences: number;
+    last_attended: string | null;
+  }[];
+  visitors_not_returning: {
+    id: string;
+    name: string;
+    phone: string;
+    last_visit: string;
+    visit_count: number;
+    /** Held meetings since the last visit. */
+    missed: number;
+  }[];
+}
+
+// Under ["cells", id] so anything that refreshes the cell refreshes this too.
+export function useCellCare(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ["cells", id, "care"],
+    queryFn: () => apiFetch<CellCare>(`/api/cells/${id}/care/`),
+    enabled,
+  });
 }
 
 export interface CellFilters {
@@ -101,6 +184,8 @@ export interface CellFilters {
   campusId?: string;
   /** Only the cells the caller leads, co-leads or belongs to. */
   mine?: boolean;
+  /** Only the cells the caller supervises ("Supervisão" tab). */
+  supervised?: boolean;
 }
 
 export function useCells(filters: CellFilters = {}) {
@@ -109,6 +194,7 @@ export function useCells(filters: CellFilters = {}) {
   if (filters.meetingDay) params.set("meeting_day", String(filters.meetingDay));
   if (filters.campusId) params.set("campus", filters.campusId);
   if (filters.mine) params.set("mine", "true");
+  if (filters.supervised) params.set("supervised", "true");
   return useQuery({
     queryKey: ["cells", "list", filters],
     queryFn: () => apiList<Cell>(`/api/cells/?${params}`),
@@ -138,10 +224,17 @@ export interface CellMeeting {
   // false: the meeting didn't happen on this date (holiday, cancelled).
   held: boolean;
   cancel_reason: string;
+  /** What was studied/discussed. */
+  topic: string;
   notes: string;
+  /** People who made a decision for Christ. */
+  decisions_count: number;
   attendees: PersonMini[];
+  /** Guests registered by name (CellVisitor). */
+  visitors: CellVisitorMini[];
+  /** Guests counted by number only (not registered). */
   visitors_count: number;
-  // Registered attendees + visitors.
+  // Registered attendees + named visitors + visitors counted by number.
   attendance_count: number;
   created_by: PersonMini | null;
   created_at: string;
@@ -166,6 +259,7 @@ export interface CalendarSummary {
   upcoming: number;
   average_attendance: number | null;
   total_visitors: number;
+  total_decisions: number;
 }
 
 export interface CellCalendar {
@@ -186,14 +280,124 @@ export interface CellMeetingInput {
   date: string;
   held: boolean;
   cancel_reason: string;
+  topic: string;
   notes: string;
+  decisions_count: number;
   attendee_ids: string[];
+  visitor_ids: string[];
   visitors_count: number;
+}
+
+// --- Visitors (guests by name) ----------------------------------------------------
+
+export type VisitorStatus = "visiting" | "member" | "forwarded";
+
+export const VISITOR_STATUS_LABEL: Record<VisitorStatus, string> = {
+  visiting: "Visitante",
+  member: "Virou membro",
+  forwarded: "Na Reconciliação",
+};
+
+export interface CellVisitorMini {
+  id: string;
+  name: string;
+  status: VisitorStatus;
+}
+
+/** A cell's guest. Only whoever manages the cell gets these (contact data). */
+export interface CellVisitor extends CellVisitorMini {
+  cell: string;
+  phone: string;
+  email: string;
+  notes: string;
+  person: PersonMini | null;
+  /** Sent to the Reconciliação triage queue. */
+  forwarded: boolean;
+  visit_count: number;
+  first_visit: string | null;
+  last_visit: string | null;
+  created_at: string;
+}
+
+export function useCellVisitors(cellId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["cell-visitors", cellId],
+    queryFn: () => apiList<CellVisitor>(`/api/cell-visitors/?cell=${cellId}`),
+    enabled,
+  });
+}
+
+function invalidateVisitors(queryClient: ReturnType<typeof useQueryClient>, cellId: string) {
+  queryClient.invalidateQueries({ queryKey: ["cell-visitors", cellId] });
+  // "Pessoas para cuidar" lists visitors still visiting.
+  queryClient.invalidateQueries({ queryKey: ["cells", cellId, "care"] });
+}
+
+export function useCreateCellVisitor(cellId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; phone?: string; email?: string; notes?: string }) =>
+      apiFetch<CellVisitor>("/api/cell-visitors/", {
+        method: "POST",
+        body: JSON.stringify({ cell_id: cellId, ...input }),
+      }),
+    onSuccess: () => invalidateVisitors(queryClient, cellId),
+  });
+}
+
+export function useUpdateCellVisitor(cellId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...input
+    }: {
+      id: string;
+      name?: string;
+      phone?: string;
+      email?: string;
+      notes?: string;
+    }) =>
+      apiFetch<CellVisitor>(`/api/cell-visitors/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => invalidateVisitors(queryClient, cellId),
+  });
+}
+
+/** Hands the visitor to Reconciliação as a pending lead of the cell's campus. */
+export function useForwardCellVisitor(cellId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<CellVisitor>(`/api/cell-visitors/${id}/forward/`, { method: "POST" }),
+    onSuccess: () => invalidateVisitors(queryClient, cellId),
+  });
+}
+
+/** The visitor joins the cell: an existing person, or a new one by e-mail. */
+export function useMakeVisitorMember(cellId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: { id: string; person_id?: string; email?: string }) =>
+      apiFetch<CellVisitor>(`/api/cell-visitors/${id}/make-member/`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      invalidateVisitors(queryClient, cellId);
+      queryClient.invalidateQueries({ queryKey: ["cell-members", cellId] });
+      queryClient.invalidateQueries({ queryKey: ["cells"] });
+    },
+  });
 }
 
 // Meeting data changes the calendar and the cells' pending counts.
 function invalidateMeetings(queryClient: ReturnType<typeof useQueryClient>, cellId: string) {
   queryClient.invalidateQueries({ queryKey: ["cell-meetings", cellId] });
+  // Visit counts come from the meetings.
+  queryClient.invalidateQueries({ queryKey: ["cell-visitors", cellId] });
   queryClient.invalidateQueries({ queryKey: ["cells"] });
 }
 
@@ -289,10 +493,19 @@ export function useRemoveCellMember(cellId: string) {
 
 export type LeadershipRole = "leader" | "co_leader";
 
+/** A cell also has leaders in training, unlike ministries and campuses. */
+export type CellRole = LeadershipRole | "trainee";
+
+export const CELL_ROLE_LABEL: Record<CellRole, string> = {
+  leader: "Líder",
+  co_leader: "Colíder",
+  trainee: "Líder em treinamento",
+};
+
 export function useAssignCellLeader(cellId: string) {
   const invalidate = useInvalidateCell(cellId);
   return useMutation({
-    mutationFn: (input: { person_id: string; role: LeadershipRole }) =>
+    mutationFn: (input: { person_id: string; role: CellRole }) =>
       apiFetch(`/api/cells/${cellId}/leaderships/`, {
         method: "POST",
         body: JSON.stringify(input),
@@ -307,6 +520,158 @@ export function useRemoveCellLeader(cellId: string) {
     mutationFn: (personId: string) =>
       apiFetch<void>(`/api/cells/${cellId}/leaderships/${personId}/`, { method: "DELETE" }),
     onSuccess: invalidate,
+  });
+}
+
+// ─── Supervision ─────────────────────────────────────────────────────
+
+export function useSetCellSupervisor(cellId: string) {
+  const invalidate = useInvalidateCell(cellId);
+  return useMutation({
+    mutationFn: (personId: string | null) =>
+      apiFetch<Cell>(`/api/cells/${cellId}/supervisor/`, {
+        method: "PUT",
+        body: JSON.stringify({ person_id: personId }),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export type SupervisionVisitKind = "meeting" | "leadership";
+
+export const SUPERVISION_VISIT_KIND_LABEL: Record<SupervisionVisitKind, string> = {
+  meeting: "Visita ao encontro",
+  leadership: "Conversa com a liderança",
+};
+
+export interface SupervisionVisit {
+  id: string;
+  cell: { id: string; name: string };
+  date: string;
+  kind: SupervisionVisitKind;
+  kind_display: string;
+  notes: string;
+  created_by: PersonMini | null;
+  created_at: string;
+}
+
+export interface SupervisionVisitInput {
+  date: string;
+  kind: SupervisionVisitKind;
+  notes: string;
+}
+
+export function useSupervisionVisits(cellId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["cell-supervision-visits", cellId],
+    queryFn: () => apiList<SupervisionVisit>(`/api/cell-supervision-visits/?cell=${cellId}`),
+    enabled,
+  });
+}
+
+function useInvalidateVisits(cellId: string) {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ["cell-supervision-visits", cellId] });
+    // The cell carries the last visit's date.
+    queryClient.invalidateQueries({ queryKey: ["cells"] });
+  };
+}
+
+// Creates a visit, or updates it when `visitId` is given.
+export function useSaveSupervisionVisit(cellId: string) {
+  const invalidate = useInvalidateVisits(cellId);
+  return useMutation({
+    mutationFn: ({ visitId, ...input }: SupervisionVisitInput & { visitId?: string }) =>
+      visitId
+        ? apiFetch<SupervisionVisit>(`/api/cell-supervision-visits/${visitId}/`, {
+            method: "PATCH",
+            body: JSON.stringify(input),
+          })
+        : apiFetch<SupervisionVisit>("/api/cell-supervision-visits/", {
+            method: "POST",
+            body: JSON.stringify({ cell_id: cellId, ...input }),
+          }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteSupervisionVisit(cellId: string) {
+  const invalidate = useInvalidateVisits(cellId);
+  return useMutation({
+    mutationFn: (visitId: string) =>
+      apiFetch<void>(`/api/cell-supervision-visits/${visitId}/`, { method: "DELETE" }),
+    onSuccess: invalidate,
+  });
+}
+
+// ─── Multiplication ──────────────────────────────────────────────────
+
+export function useSetMultiplicationPlan(cellId: string) {
+  const invalidate = useInvalidateCell(cellId);
+  return useMutation({
+    mutationFn: (input: { date: string | null; leader_id: string | null }) =>
+      apiFetch<Cell>(`/api/cells/${cellId}/multiplication-plan/`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useClearMultiplicationPlan(cellId: string) {
+  const invalidate = useInvalidateCell(cellId);
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<Cell>(`/api/cells/${cellId}/multiplication-plan/`, { method: "DELETE" }),
+    onSuccess: invalidate,
+  });
+}
+
+export interface MultiplyCellInput {
+  name: string;
+  leader_id: string;
+  member_ids: string[];
+  meeting_day?: MeetingDay;
+  meeting_time?: string;
+  address?: string;
+}
+
+// People leave this cell for the new one: the cell, its members and every
+// list are refreshed (useInvalidateCell).
+export function useMultiplyCell(cellId: string) {
+  const invalidate = useInvalidateCell(cellId);
+  return useMutation({
+    mutationFn: (input: MultiplyCellInput) =>
+      apiFetch<Cell>(`/api/cells/${cellId}/multiply/`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export interface CellLineageItem {
+  id: string;
+  name: string;
+  season: string | null;
+  multiplied_on: string | null;
+}
+
+export interface CellLineage {
+  /** 1 for a cell nobody multiplied into, +1 per mother up the line. */
+  generation: number;
+  /** Mother first, then grandmother… */
+  ancestors: CellLineageItem[];
+  /** Cells born from this one (or from its earlier versions). */
+  daughters: (CellLineageItem & { leaders: string[] })[];
+}
+
+// Under ["cells", id] so a multiplication or renewal refreshes it.
+export function useCellLineage(cellId: string) {
+  return useQuery({
+    queryKey: ["cells", cellId, "lineage"],
+    queryFn: () => apiFetch<CellLineage>(`/api/cells/${cellId}/lineage/`),
   });
 }
 
@@ -377,5 +742,81 @@ export function useRemoveCampusCellsLeader(campusId: string) {
       }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["campus-cells-leaders", campusId] }),
+  });
+}
+
+// ─── Coordination report ─────────────────────────────────────────────
+
+/** One week of one cell (or of a sum of cells). */
+export interface CellReportWeek {
+  held: number;
+  attendance: number;
+  visitors: number;
+  decisions: number;
+}
+
+export interface CellReportRow {
+  id: string;
+  name: string;
+  campus: { id: string; name: string };
+  leaders: string[];
+  trainees: string[];
+  /** The mother cell, for the generations tree. */
+  parent: { id: string; name: string } | null;
+  multiplied_on: string | null;
+  /** Cells born from this one. */
+  multiplications: number;
+  /** Planned multiplication date, if any. */
+  multiplication_date: string | null;
+  supervisor: string | null;
+  last_supervision_visit: string | null;
+  participants: number;
+  meetings_held: number;
+  meetings_not_held: number;
+  meetings_pending: number;
+  /** Sum of people present over the meetings held. */
+  attendance: number;
+  avg_attendance: number | null;
+  /** Average % of the participants present. */
+  attendance_rate: number | null;
+  visitors: number;
+  decisions: number;
+  /** Visitors who became members of the cell. */
+  new_members: number;
+  forwarded: number;
+  health: CellHealthStatus;
+  /** Aligned with CellReport.weeks. */
+  series: CellReportWeek[];
+}
+
+export interface CampusReportRow {
+  id: string;
+  name: string;
+  cells: number;
+  participants: number;
+  meetings_held: number;
+  attendance: number;
+  avg_attendance: number | null;
+  visitors: number;
+  decisions: number;
+  new_members: number;
+  /** Active people of the campus, and how many are in a cell of the season. */
+  people: number;
+  people_in_cells: number;
+  coverage: number | null;
+}
+
+export interface CellReport {
+  /** Mondays (ISO dates) from the season's start to the current week. */
+  weeks: string[];
+  cells: CellReportRow[];
+  campuses: CampusReportRow[];
+}
+
+export function useCellReport(season: string, enabled = true) {
+  return useQuery({
+    queryKey: ["cells", "report", season],
+    queryFn: () => apiFetch<CellReport>(`/api/cells/report/?season=${encodeURIComponent(season)}`),
+    enabled,
   });
 }

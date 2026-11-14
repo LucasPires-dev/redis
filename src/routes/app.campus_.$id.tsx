@@ -39,7 +39,7 @@ function CampusDetail() {
   const cellList = cells ?? [];
   const eventList = events ?? [];
   const baptized = people.filter((p) => p.baptized).length;
-  const inCell = cellList.reduce((sum, c) => sum + c.member_count, 0);
+  const inCell = cellList.reduce((sum, c) => sum + c.participant_count, 0);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -102,7 +102,7 @@ function CampusDetail() {
                         {formatSchedule(c.meeting_day, c.meeting_time)}
                       </div>
                     </div>
-                    <Badge variant="outline">{c.member_count} membros</Badge>
+                    <Badge variant="outline">{c.participant_count} membros</Badge>
                   </div>
                 </CardContent>
               </Card>

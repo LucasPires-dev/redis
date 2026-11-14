@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CellIncompleteBadge } from "@/components/cells/CellIncompleteBadge";
+import { CellHealthBadge } from "@/components/cells/CellHealthBadge";
 import { EmptyState } from "@/components/detail/DetailSection";
 import { CardGridSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/lib/api/auth";
@@ -89,12 +90,13 @@ function MyCells() {
                         </Badge>
                       )}
                       <CellIncompleteBadge cell={c} />
+                      <CellHealthBadge cell={c} />
                     </div>
                   </div>
                   <h3 className="mt-4 text-lg font-semibold tracking-tight">{c.name}</h3>
                   <p className="text-sm text-muted-foreground">{c.campus.name}</p>
                   <div className="mt-3 text-sm">
-                    <span className="font-semibold tabular-nums">{c.member_count}</span>{" "}
+                    <span className="font-semibold tabular-nums">{c.participant_count}</span>{" "}
                     <span className="text-muted-foreground">membros</span>
                   </div>
                 </CardContent>
