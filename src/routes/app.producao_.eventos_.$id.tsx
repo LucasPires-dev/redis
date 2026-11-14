@@ -58,6 +58,7 @@ import {
 import { useEventRealtime } from "@/lib/api/realtime";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { TicketFields } from "@/components/events/TicketFields";
 import {
   EMPTY_TICKET,
@@ -812,6 +813,20 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
   const { data: allRegs } = useRegistrations(isManager ? eventId : undefined);
   const register = useRegisterForEvent();
   const cancel = useCancelRegistration();
+  const cpf = useCpfPrompt();
+
+  const signUp = (cpfValue?: string) =>
+    register.mutate(
+      { eventId, cpf: cpfValue },
+      {
+        onSuccess: (reg) => {
+          toast.success(
+            reg.payment_url ? "Inscrição feita! Conclua o pagamento." : "Inscrição confirmada!",
+          );
+        },
+        onError: (e) => cpf.handleError(e, "Não foi possível fazer a inscrição.", (c) => signUp(c)),
+      },
+    );
 
   if (configLoading || !config) return null;
 
@@ -860,23 +875,12 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
         <Button
           className="mt-3 w-full gap-1.5"
           disabled={register.isPending}
-          onClick={() =>
-            register.mutate(eventId, {
-              onSuccess: (reg) => {
-                toast.success(
-                  reg.payment_url
-                    ? "Inscrição feita! Conclua o pagamento."
-                    : "Inscrição confirmada!",
-                );
-              },
-              onError: (e) =>
-                toast.error(apiErrorMessage(e, "Não foi possível fazer a inscrição.")),
-            })
-          }
+          onClick={() => signUp()}
         >
           <Users className="h-4 w-4" /> Inscrever-se
         </Button>
       )}
+      {cpf.dialog}
 
       {myReg && (
         <Card className="mt-3">

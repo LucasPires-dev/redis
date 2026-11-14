@@ -44,9 +44,10 @@ export function useTicketConfig(eventId: string | undefined) {
   return useQuery({
     queryKey: ["ticket-config", eventId],
     queryFn: () =>
-      apiFetch<EventTicketConfig[]>(`/api/payments/ticket-configs/?event=${eventId}`).then(
-        (list) => (Array.isArray(list) ? (list[0] ?? null) : null),
-      ),
+      // The list is paginated ({count, results}); an event has at most one config.
+      apiFetch<{ results: EventTicketConfig[] } | EventTicketConfig[]>(
+        `/api/payments/ticket-configs/?event=${eventId}`,
+      ).then((page) => (Array.isArray(page) ? page : (page.results ?? []))[0] ?? null),
     enabled: !!eventId,
   });
 }
@@ -114,12 +115,13 @@ export function useMyRegistration(eventId: string | undefined) {
 export function useRegisterForEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (eventId: string) =>
+    mutationFn: ({ eventId, cpf }: { eventId: string; cpf?: string }) =>
       apiFetch<EventRegistration>("/api/payments/registrations/", {
         method: "POST",
-        body: JSON.stringify({ event_id: eventId }),
+        body: JSON.stringify(cpf ? { event_id: eventId, cpf } : { event_id: eventId }),
       }),
-    onSuccess: (_d, eventId) => {
+    onSuccess: (_d, { eventId, cpf }) => {
+      if (cpf) qc.invalidateQueries({ queryKey: ["me"] });
       qc.invalidateQueries({ queryKey: ["registrations", eventId] });
       qc.invalidateQueries({ queryKey: ["my-registration", eventId] });
       qc.invalidateQueries({ queryKey: ["registration-stats", eventId] });

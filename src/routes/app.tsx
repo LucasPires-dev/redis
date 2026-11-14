@@ -8,6 +8,7 @@ import {
   Sparkles,
   Calendar,
   GraduationCap,
+  BookOpenCheck,
   Clapperboard,
   ChevronsUpDown,
   LogOut,
@@ -84,6 +85,8 @@ const NAV: {
   },
   { to: "/app/eventos", label: "Eventos", icon: Calendar, hideForMinistryLeader: true },
   { to: "/app/cursos", label: "Cursos", icon: GraduationCap, hideForMinistryLeader: true },
+  // Everyone: open classes to enroll in and their own enrollments.
+  { to: "/app/meus-cursos", label: "Meus cursos", icon: BookOpenCheck },
   // Appointing responsibles: manager, campus leaders and general area responsibles.
   {
     to: "/app/responsaveis",

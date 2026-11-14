@@ -9,6 +9,8 @@ import {
   Check,
   X,
   Plus,
+  Pencil,
+  Wallet,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +24,10 @@ import { DetailSection, EmptyState } from "@/components/detail/DetailSection";
 import { LessonFormDialog } from "@/components/courses/LessonFormDialog";
 import { AddTeacherDialog } from "@/components/courses/AddTeacherDialog";
 import { AddEnrollmentDialog } from "@/components/courses/AddEnrollmentDialog";
+import { ClassFinanceTab } from "@/components/courses/ClassFinanceTab";
+import { CourseClassFormDialog } from "@/components/courses/CourseClassFormDialog";
+import { PaymentStatusBadge } from "@/components/courses/PaymentStatusBadge";
+import { formatBRL } from "@/lib/api/payments";
 import {
   useCourseClass,
   useEnrollments,
@@ -31,6 +37,7 @@ import {
   WEEKDAY_LABEL,
   TEACHER_ROLE_LABEL,
   ENROLLMENT_STATUS_LABEL,
+  holdsSeat,
   type Lesson,
 } from "@/lib/api/courses";
 
@@ -52,6 +59,7 @@ function ClassDetail() {
   const [showNewLesson, setShowNewLesson] = useState(false);
   const [showAddTeacher, setShowAddTeacher] = useState(false);
   const [showAddEnrollment, setShowAddEnrollment] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -65,7 +73,12 @@ function ClassDetail() {
     .filter(Boolean)
     .join(" · ");
 
-  const activeEnrollments = (enrollments ?? []).filter((e) => e.status === "active");
+  const activeEnrollments = (enrollments ?? []).filter(
+    (e) => e.status === "active" && holdsSeat(e),
+  );
+  const isPaid = cc.fee_items.length > 0;
+  // Enrolling into a paid class creates a charge: coordinators only.
+  const canEnroll = isPaid ? cc.can_manage_finances : cc.can_manage;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -76,11 +89,31 @@ function ClassDetail() {
         icon={<GraduationCap className="h-6 w-6" />}
         title={cc.name}
         subtitle={schedule || cc.description || cc.course_name}
-        actions={<Badge variant="outline">{cc.campus.name}</Badge>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{cc.campus.name}</Badge>
+            {cc.can_manage_finances && (
+              <Button size="sm" variant="outline" onClick={() => setShowEdit(true)}>
+                <Pencil className="mr-1.5 h-4 w-4" /> Editar turma
+              </Button>
+            )}
+          </div>
+        }
       />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard icon={<Users className="h-4 w-4" />} label="Inscritos" value={cc.enrolled_count} />
+        <StatCard
+          icon={<Users className="h-4 w-4" />}
+          label="Inscritos"
+          value={cc.enrolled_count}
+          hint={
+            cc.max_capacity != null
+              ? `${cc.seats_left ?? 0} de ${cc.max_capacity} vagas livres`
+              : isPaid
+                ? `Matrícula a partir de ${formatBRL(cc.base_price_cents)}`
+                : undefined
+          }
+        />
         <StatCard icon={<BookOpen className="h-4 w-4" />} label="Aulas" value={cc.lesson_count} />
         <StatCard
           icon={<UserCheck className="h-4 w-4" />}
@@ -113,8 +146,14 @@ function ClassDetail() {
       <AddEnrollmentDialog
         open={showAddEnrollment}
         onOpenChange={setShowAddEnrollment}
-        classId={classId}
+        courseClass={cc}
         existingEnrollments={enrollments ?? []}
+      />
+      <CourseClassFormDialog
+        open={showEdit}
+        onOpenChange={setShowEdit}
+        courseId={courseId}
+        courseClass={cc}
       />
 
       <Tabs defaultValue="lessons">
@@ -122,6 +161,11 @@ function ClassDetail() {
           <TabsTrigger value="lessons">Aulas & Presença</TabsTrigger>
           <TabsTrigger value="students">Alunos ({activeEnrollments.length})</TabsTrigger>
           <TabsTrigger value="teachers">Professores ({cc.teachers.length})</TabsTrigger>
+          {cc.can_manage_finances && (
+            <TabsTrigger value="finance">
+              <Wallet className="mr-1.5 h-4 w-4" /> Financeiro
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="lessons" className="space-y-4 pt-4">
@@ -145,16 +189,15 @@ function ClassDetail() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-semibold">
-                        Aula {l.order}{l.title ? ` — ${l.title}` : ""}
+                        Aula {l.order}
+                        {l.title ? ` — ${l.title}` : ""}
                       </h4>
                       <Badge variant="secondary" className="text-[10px]">
                         {l.attendance_count}/{l.total_enrolled}
                       </Badge>
                     </div>
                     {l.date && (
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {formatDate(l.date)}
-                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">{formatDate(l.date)}</div>
                     )}
                   </CardContent>
                 </Card>
@@ -172,29 +215,40 @@ function ClassDetail() {
         </TabsContent>
 
         <TabsContent value="students" className="space-y-4 pt-4">
-          <div className="flex justify-end">
-            <Button size="sm" variant="outline" onClick={() => setShowAddEnrollment(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Inscrever aluno
-            </Button>
-          </div>
+          {canEnroll && (
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" onClick={() => setShowAddEnrollment(true)}>
+                <Plus className="mr-1.5 h-4 w-4" /> Inscrever aluno
+              </Button>
+            </div>
+          )}
           <div className="space-y-2">
-            {(enrollments ?? []).map((e) => (
-              <Card key={e.id}>
+            {(enrollments ?? []).filter(holdsSeat).map((e) => (
+              <Card key={e.id} data-testid="student-row">
                 <CardContent className="flex items-center justify-between p-3">
                   <div>
                     <div className="text-sm font-medium">{e.person.name}</div>
                     <div className="text-xs text-muted-foreground">{e.person.email}</div>
                   </div>
-                  <Badge
-                    variant={e.status === "active" ? "default" : e.status === "completed" ? "secondary" : "destructive"}
-                    className="text-[10px]"
-                  >
-                    {ENROLLMENT_STATUS_LABEL[e.status]}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {isPaid && <PaymentStatusBadge status={e.payment_status} />}
+                    <Badge
+                      variant={
+                        e.status === "active"
+                          ? "default"
+                          : e.status === "completed"
+                            ? "secondary"
+                            : "destructive"
+                      }
+                      className="text-[10px]"
+                    >
+                      {ENROLLMENT_STATUS_LABEL[e.status]}
+                    </Badge>
+                  </div>
                 </CardContent>
               </Card>
             ))}
-            {(enrollments ?? []).length === 0 && (
+            {(enrollments ?? []).filter(holdsSeat).length === 0 && (
               <EmptyState>Nenhum aluno inscrito.</EmptyState>
             )}
           </div>
@@ -220,11 +274,15 @@ function ClassDetail() {
                 </CardContent>
               </Card>
             ))}
-            {cc.teachers.length === 0 && (
-              <EmptyState>Nenhum professor escalado.</EmptyState>
-            )}
+            {cc.teachers.length === 0 && <EmptyState>Nenhum professor escalado.</EmptyState>}
           </div>
         </TabsContent>
+
+        {cc.can_manage_finances && (
+          <TabsContent value="finance" className="pt-4">
+            <ClassFinanceTab courseClass={cc} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
@@ -237,14 +295,16 @@ function AttendancePanel({
 }: {
   lesson: Lesson;
   classId: string;
-  enrollments: { id: string; person: { id: string; name: string; email: string }; status: string }[];
+  enrollments: {
+    id: string;
+    person: { id: string; name: string; email: string };
+    status: string;
+  }[];
 }) {
   const { data: attendance, isLoading } = useLessonAttendance(lesson.id);
   const saveAttendance = useSaveAttendance();
 
-  const attendanceMap = new Map(
-    (attendance ?? []).map((a) => [a.person.id, a.present])
-  );
+  const attendanceMap = new Map((attendance ?? []).map((a) => [a.person.id, a.present]));
 
   const [localState, setLocalState] = useState<Map<string, boolean>>(new Map());
 
@@ -276,7 +336,8 @@ function AttendancePanel({
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-semibold">
-            Presença — Aula {lesson.order}{lesson.title ? ` (${lesson.title})` : ""}
+            Presença — Aula {lesson.order}
+            {lesson.title ? ` (${lesson.title})` : ""}
           </h4>
           <Button size="sm" onClick={handleSave} disabled={saveAttendance.isPending}>
             {saveAttendance.isPending ? "Salvando…" : "Salvar presença"}
