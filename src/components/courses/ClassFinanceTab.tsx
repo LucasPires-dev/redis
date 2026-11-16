@@ -58,6 +58,7 @@ import { ApiError, apiErrorMessage } from "@/lib/api/client";
 import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { formatBRL, MIN_PAID_PRICE_CENTS } from "@/lib/api/payments";
 import { centsToInput, parseCents } from "@/lib/money";
+import { CouponsManager } from "@/components/coupons/CouponsManager";
 
 type DialogKind = "scholarship" | "manual" | "cancel";
 
@@ -110,9 +111,12 @@ export function ClassFinanceTab({ courseClass }: { courseClass: CourseClass }) {
           label="Previsto"
           value={formatBRL(summary.expected_cents)}
           hint={
-            summary.scholarship_cents
-              ? `${formatBRL(summary.scholarship_cents)} em bolsas`
-              : undefined
+            [
+              summary.scholarship_cents && `${formatBRL(summary.scholarship_cents)} em bolsas`,
+              summary.coupon_cents && `${formatBRL(summary.coupon_cents)} em cupons`,
+            ]
+              .filter(Boolean)
+              .join(" · ") || undefined
           }
         />
         <StatCard
@@ -198,6 +202,9 @@ export function ClassFinanceTab({ courseClass }: { courseClass: CourseClass }) {
         )}
       </DetailSection>
 
+      {courseClass.fee_items.some((i) => i.price_cents > 0) && (
+        <CouponsManager target={{ courseClass: classId }} />
+      )}
       <ExpensesSection classId={classId} />
 
       {dialog?.kind === "scholarship" && (
@@ -289,6 +296,12 @@ function EnrollmentRow({
               <div>
                 <span className="text-muted-foreground">Total </span>
                 {formatBRL(e.amount_cents)}
+                {e.coupon_discount_cents > 0 && (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    (cupom {e.coupon_code} {formatBRL(e.coupon_discount_cents)})
+                  </span>
+                )}
                 {e.discount_cents > 0 && (
                   <span className="text-muted-foreground">
                     {" "}

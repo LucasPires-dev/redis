@@ -113,6 +113,10 @@ export interface EnrollmentFinance extends Enrollment {
   items: EnrollmentItem[];
   payments: EnrollmentPayment[];
   gross_cents: number;
+  /** Discount coupon used at enrollment and what it took off. */
+  coupon_code: string | null;
+  coupon_discount_cents: number;
+  /** Scholarship. */
   discount_cents: number;
   amount_cents: number;
   paid_cents: number;
@@ -216,6 +220,7 @@ export interface FinanceSummary {
   received_manual_cents: number;
   outstanding_cents: number;
   scholarship_cents: number;
+  coupon_cents: number;
   refunded_cents: number;
   expenses_cents: number;
   balance_cents: number;
@@ -954,6 +959,7 @@ export function useSelfEnroll() {
       items: FeeChoice[];
       installments: number;
       cpf?: string;
+      coupon_code?: string;
     }) =>
       apiFetch<MyEnrollment>(`/api/course-classes/${classId}/enroll/`, {
         method: "POST",

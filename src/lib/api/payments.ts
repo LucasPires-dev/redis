@@ -58,6 +58,9 @@ export interface EventRegistration {
   guests: RegistrationGuest[];
   /** What this registration was charged, frozen at registration time. */
   amount_cents: number;
+  /** Code of the discount coupon used, and what it took off amount_cents. */
+  coupon: string | null;
+  discount_cents: number;
   payment_url: string;
   paid_at: string | null;
   /** What the person shows at the door (QR code or typed). */
@@ -81,6 +84,8 @@ export interface RegistrationStats {
   /** People waiting in line. */
   waitlist: number;
   revenue_cents: number;
+  /** Coupon discounts on confirmed registrations. */
+  discount_cents: number;
 }
 
 export interface CreateTicketConfigInput {
@@ -180,12 +185,13 @@ export interface RegisterInput {
   cpf?: string;
   ticketTypeId?: string;
   guestNames?: string[];
+  couponCode?: string;
 }
 
 export function useRegisterForEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ eventId, cpf, ticketTypeId, guestNames }: RegisterInput) =>
+    mutationFn: ({ eventId, cpf, ticketTypeId, guestNames, couponCode }: RegisterInput) =>
       apiFetch<EventRegistration>("/api/payments/registrations/", {
         method: "POST",
         body: JSON.stringify({
@@ -193,6 +199,7 @@ export function useRegisterForEvent() {
           ...(cpf ? { cpf } : {}),
           ...(ticketTypeId ? { ticket_type_id: ticketTypeId } : {}),
           ...(guestNames?.length ? { guest_names: guestNames } : {}),
+          ...(couponCode ? { coupon_code: couponCode } : {}),
         }),
       }),
     onSuccess: (_d, { eventId, cpf }) => {

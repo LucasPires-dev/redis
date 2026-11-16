@@ -82,6 +82,7 @@ import { PublicBadge, VisibilityField } from "@/components/VisibilityField";
 import { EVENT_VISIBILITY_HINTS } from "@/lib/visibility";
 import { SignUpPanel } from "@/components/events/SignUpPanel";
 import { TicketTypesManager } from "@/components/events/TicketTypesManager";
+import { CouponsManager } from "@/components/coupons/CouponsManager";
 import { DuplicateEventDialog, RepeatEventDialog } from "@/components/events/EventCopyDialogs";
 import { RegistrationActions } from "@/components/events/RegistrationActions";
 import {
@@ -875,6 +876,11 @@ function TicketConfigSection({
           <TicketTypesManager config={config} />
         </div>
       )}
+      {config && (config.price_cents > 0 || config.types.some((t) => t.price_cents > 0)) && (
+        <div className="mt-6">
+          <CouponsManager target={{ event: eventId }} />
+        </div>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -967,6 +973,9 @@ function RegistrationSection({ eventId, isManager }: { eventId: string; isManage
           {stats.waitlist > 0 && <StatCard label="Lista de espera" value={stats.waitlist} />}
           {config.price_cents > 0 && (
             <StatCard label="Receita" value={formatBRL(stats.revenue_cents)} />
+          )}
+          {stats.discount_cents > 0 && (
+            <StatCard label="Descontos (cupons)" value={formatBRL(stats.discount_cents)} />
           )}
         </div>
       )}
