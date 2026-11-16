@@ -18,12 +18,15 @@ import {
   type EventTicketConfig,
 } from "@/lib/api/payments";
 import { cn, formatDateTime } from "@/lib/utils";
+import { CouponField } from "@/components/coupons/CouponField";
+import { couponDiscount, type CheckedCoupon } from "@/lib/api/coupons";
 
 export function SignUpPanel({ eventId, config }: { eventId: string; config: EventTicketConfig }) {
   const types = config.types.filter((t) => t.on_sale);
   const firstAvailable = types.find((t) => !t.sold_out) ?? types[0];
   const [typeId, setTypeId] = useState<string | undefined>(firstAvailable?.id);
   const [guests, setGuests] = useState<string[]>([]);
+  const [coupon, setCoupon] = useState<CheckedCoupon | null>(null);
   const { data: waiting } = useMyWaitlist(eventId);
   const register = useRegisterForEvent();
   const join = useJoinWaitlist();
@@ -34,7 +37,9 @@ export function SignUpPanel({ eventId, config }: { eventId: string; config: Even
   const chosen = types.find((t) => t.id === typeId);
   const unit = chosen ? chosen.price_cents : config.price_cents;
   const seats = 1 + guests.length;
-  const total = unit * seats;
+  const gross = unit * seats;
+  const discount = coupon && gross > 0 ? couponDiscount(coupon, gross) : 0;
+  const total = gross - discount;
   const full = config.free_seats !== null && config.free_seats < seats;
   const offer = waiting?.offer_expires_at ? waiting : null;
 
@@ -53,10 +58,12 @@ export function SignUpPanel({ eventId, config }: { eventId: string; config: Even
         cpf: cpfValue,
         ticketTypeId: hasTypes ? typeId : undefined,
         guestNames: guests.map((g) => g.trim()),
+        couponCode: coupon && gross > 0 ? coupon.code : undefined,
       },
       {
         onSuccess: (reg) => {
           setGuests([]);
+          setCoupon(null);
           toast.success(
             reg.payment_url ? "Inscrição feita! Conclua o pagamento." : "Inscrição confirmada!",
           );
@@ -150,6 +157,15 @@ export function SignUpPanel({ eventId, config }: { eventId: string; config: Even
         </div>
       )}
 
+      {gross > 0 && (
+        <CouponField
+          target={{ event: eventId }}
+          value={coupon}
+          onChange={setCoupon}
+          discountCents={discount}
+        />
+      )}
+
       {offer && (
         <p
           className="flex items-start gap-2 rounded-lg bg-emerald-500/10 px-3 py-2.5 text-sm font-medium text-emerald-800 dark:text-emerald-300"
@@ -217,7 +233,7 @@ export function SignUpPanel({ eventId, config }: { eventId: string; config: Even
           onClick={() => signUp()}
         >
           Inscrever-se{seats > 1 && ` (${seats} pessoas)`}
-          {total > 0 && ` · ${formatTicketPrice(total)}`}
+          {gross > 0 && ` · ${total > 0 ? formatTicketPrice(total) : "Grátis com cupom"}`}
         </Button>
       )}
       {cpf.dialog}

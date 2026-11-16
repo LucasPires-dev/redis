@@ -69,6 +69,8 @@ import { cpfDigits, isValidCpf } from "@/lib/cpf";
 import { CpfInput } from "@/components/CpfInput";
 import { useCpfPrompt } from "@/hooks/use-cpf-prompt";
 import { formatBRL, MIN_PAID_PRICE_CENTS } from "@/lib/api/payments";
+import { CouponField } from "@/components/coupons/CouponField";
+import { couponDiscount, type CheckedCoupon } from "@/lib/api/coupons";
 
 function formatDate(d: string | null) {
   return d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "";
@@ -263,8 +265,11 @@ function EnrollDialog({
   const [selection, setSelection] = useState<FeeSelection>(() => initialSelection(c.fee_items));
   const [installments, setInstallments] = useState(1);
   const [cpf, setCpf] = useState("");
-  const total = selectionTotal(c.fee_items, selection);
-  const tooLow = total > 0 && total < MIN_PAID_PRICE_CENTS;
+  const [coupon, setCoupon] = useState<CheckedCoupon | null>(null);
+  const gross = selectionTotal(c.fee_items, selection);
+  const tooLow = gross > 0 && gross < MIN_PAID_PRICE_CENTS;
+  const discount = coupon && gross > 0 ? couponDiscount(coupon, gross) : 0;
+  const total = gross - discount;
   // Asaas needs a CPF to charge: asked once, then kept on the person.
   const askCpf = total > 0 && me?.has_cpf === false;
 
@@ -275,6 +280,7 @@ function EnrollDialog({
         items: toChoices(selection),
         installments,
         ...(askCpf ? { cpf: cpfDigits(cpf) } : {}),
+        ...(coupon && gross > 0 ? { coupon_code: coupon.code } : {}),
       },
       {
         onSuccess: (enrollment) => {
@@ -329,6 +335,14 @@ function EnrollDialog({
             </li>
           </ul>
         )}
+        {gross > 0 && (
+          <CouponField
+            target={{ courseClass: c.id }}
+            value={coupon}
+            onChange={setCoupon}
+            discountCents={discount}
+          />
+        )}
         {askCpf && <CpfInput value={cpf} onChange={setCpf} />}
         {tooLow && (
           <p className="text-sm text-destructive">
@@ -353,7 +367,9 @@ function EnrollDialog({
               ? "Inscrevendo…"
               : total > 0
                 ? `Inscrever e pagar ${formatBRL(total)}`
-                : "Confirmar inscrição"}
+                : gross > 0
+                  ? "Confirmar inscrição (grátis com cupom)"
+                  : "Confirmar inscrição"}
           </Button>
         </DialogFooter>
       </DialogContent>
